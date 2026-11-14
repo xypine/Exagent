@@ -6,11 +6,7 @@ export type Capital = { city: string; country: string };
 const CAPITALS: Capital[] = capitals;
 
 const normalize = (s: string) =>
-  s
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "")
-    .toLowerCase()
-    .trim();
+  s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().trim();
 
 export const formatLocation = (c: Capital) => `${c.city}, ${c.country}`;
 

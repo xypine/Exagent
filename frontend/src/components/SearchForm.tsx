@@ -2,9 +2,9 @@ import { createMutation } from "@tanstack/solid-query";
 import { createSignal, For, Show } from "solid-js";
 
 import { createSearch } from "../api";
-import type { SearchInput } from "../types";
 import { INDUSTRIES, searchIndustries } from "../industries";
 import { searchLocations } from "../locations";
+import type { SearchInput } from "../types";
 import { Autocomplete } from "./Autocomplete";
 
 export function SearchForm(props: {
@@ -65,9 +65,10 @@ export function SearchForm(props: {
         class="animate-rise space-y-4 rounded-2xl border border-line bg-ink-2/60 p-6 shadow-2xl backdrop-blur [animation-delay:120ms]"
       >
         <div class="grid gap-4 sm:grid-cols-2">
-          <label class="space-y-1.5">
+          <label for="location" class="space-y-1.5">
             <span class="font-mono text-xs text-dim uppercase">Location</span>
             <Autocomplete
+              inputId="location"
               value={location()}
               onChange={setLocation}
               search={searchLocations}
@@ -75,9 +76,10 @@ export function SearchForm(props: {
               listId="location-suggestions"
             />
           </label>
-          <label class="space-y-1.5">
+          <label for="industry" class="space-y-1.5">
             <span class="font-mono text-xs text-dim uppercase">Industry</span>
             <Autocomplete
+              inputId="industry"
               value={industry()}
               onChange={setIndustry}
               search={searchIndustries}
