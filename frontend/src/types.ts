@@ -1,4 +1,9 @@
-export type JobStatus = "queued" | "finding_companies" | "done" | "failed";
+export type JobStatus =
+  | "queued"
+  | "finding_companies"
+  | "finding_people"
+  | "done"
+  | "failed";
 
 export type CompanySize = "small" | "medium" | "large";
 
@@ -19,8 +24,19 @@ export interface Person {
   id: string;
   name: string;
   title: string;
-  url?: string;
-  relevance?: string;
+  company_id: string;
+  company_name: string;
+  matched_job_title: string;
+  profile_url: string;
+  evidence_url: string;
+  evidence_summary: string;
+}
+
+export interface PeopleSearchStats {
+  companies_searched: number;
+  companies_available: number;
+  request_count: number;
+  batch_size: number;
 }
 
 export interface Company {
@@ -36,6 +52,9 @@ export interface SearchJob {
   status: JobStatus;
   error?: string | null;
   companies: Company[];
+  people: Person[];
+  people_error?: string | null;
+  people_search_stats: PeopleSearchStats;
 }
 
 export interface PersonInsights {

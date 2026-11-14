@@ -60,8 +60,30 @@ export const mockApi = {
     await wait(200);
     const elapsed = Date.now() - (started.get(jobId) ?? 0);
     if (elapsed < 1500)
-      return { job_id: jobId, status: "finding_companies", companies: [] };
-    return { job_id: jobId, status: "done", companies: COMPANIES };
+      return {
+        job_id: jobId,
+        status: "finding_companies",
+        companies: [],
+        people: [],
+        people_search_stats: {
+          companies_searched: 0,
+          companies_available: 0,
+          request_count: 0,
+          batch_size: 20,
+        },
+      };
+    return {
+      job_id: jobId,
+      status: "done",
+      companies: COMPANIES,
+      people: [],
+      people_search_stats: {
+        companies_searched: 20,
+        companies_available: 50,
+        request_count: 80,
+        batch_size: 20,
+      },
+    };
   },
   async getPersonInsights(personId: string): Promise<PersonInsights> {
     await wait(600);

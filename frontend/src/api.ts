@@ -59,6 +59,13 @@ export async function getSearch(jobId: string): Promise<SearchJob> {
   return request(`/api/v1/searches/${encodeURIComponent(jobId)}`);
 }
 
+/** Start the next capped batch of automatic people research for a completed search. */
+export async function searchMorePeople(jobId: string): Promise<SearchJob> {
+  return request(`/api/v1/searches/${encodeURIComponent(jobId)}/people`, {
+    method: "POST",
+  });
+}
+
 /** Key insights for one person (work history, connections, hobbies, education). */
 export async function getPersonInsights(
   personId: string,

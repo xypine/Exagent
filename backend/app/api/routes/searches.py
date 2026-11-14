@@ -19,7 +19,7 @@ router = APIRouter()
 ClientDependency = Annotated[ClientContext, Depends(enforce_rate_limit)]
 DbDependency = Annotated[Session, Depends(get_db_session)]
 Criteria = Annotated[str, StringConstraints(strip_whitespace=True, min_length=2, max_length=120)]
-JobStatus = Literal["queued", "finding_companies", "done", "failed"]
+JobStatus = Literal["queued", "finding_companies", "finding_people", "done", "failed"]
 _NUMERIC_CITATION = re.compile(r"\s*\[\d{1,3}(?:\s*(?:,|[-–—])\s*\d{1,3})*\]")
 
 
@@ -54,6 +54,25 @@ class CompanyResponse(BaseModel):
     sources: list[SourceResponse]
 
 
+class PersonResponse(BaseModel):
+    id: str
+    company_id: str
+    company_name: str
+    name: str
+    title: str
+    matched_job_title: str
+    profile_url: str
+    evidence_url: str
+    evidence_summary: str
+
+
+class PeopleSearchStatsResponse(BaseModel):
+    companies_searched: int
+    companies_available: int
+    request_count: int
+    batch_size: int
+
+
 class SearchCreatedResponse(BaseModel):
     job_id: UUID
     status: JobStatus
@@ -64,6 +83,9 @@ class SearchResponse(SearchCreatedResponse):
 
     error: str | None = None
     companies: list[CompanyResponse] = Field(default_factory=list)
+    people: list[PersonResponse] = Field(default_factory=list)
+    people_error: str | None = None
+    people_search_stats: PeopleSearchStatsResponse
 
 
 @router.post(
@@ -93,11 +115,45 @@ async def get_search(job_id: UUID, context: ClientDependency, db: DbDependency) 
     )
     if job is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Search job not found.")
+    return _search_response(job, CompanySearchService(db).settings.people_search_batch_size)
+
+
+@router.post(
+    "/searches/{job_id}/people",
+    response_model=SearchResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def search_more_people(
+    job_id: UUID,
+    background_tasks: BackgroundTasks,
+    context: ClientDependency,
+    db: DbDependency,
+) -> SearchResponse:
+    job = db.scalar(
+        select(SearchJob).where(SearchJob.id == job_id, SearchJob.client_id == context.client_id)
+    )
+    if job is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Search job not found.")
+    service = CompanySearchService(db)
+    if service.search_more_people(job):
+        background_tasks.add_task(refresh_company_search, job.id)
+    return _search_response(job, service.settings.people_search_batch_size)
+
+
+def _search_response(job: SearchJob, batch_size: int) -> SearchResponse:
     return SearchResponse.model_validate(
         {
             "job_id": job.id,
             "status": job.status,
             "error": job.error,
             "companies": job.companies,
+            "people": job.people,
+            "people_error": job.people_error,
+            "people_search_stats": {
+                "companies_searched": job.people_companies_searched,
+                "companies_available": len(job.companies),
+                "request_count": job.people_request_count,
+                "batch_size": batch_size,
+            },
         }
     )

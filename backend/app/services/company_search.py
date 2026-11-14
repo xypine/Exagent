@@ -9,7 +9,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
-from app.db.models import CompanySearchCache, CompanySize, SearchJob
+from app.db.models import CompanySearchCache, CompanySize, PeopleSearchCache, SearchJob
 from app.db.session import SessionLocal
 from app.services.exa_provider import (
     ExaProvider,
@@ -19,9 +19,11 @@ from app.services.exa_provider import (
     normalize_domain,
     normalize_website_url,
 )
+from app.services.people_search import discover_key_people
 
 JOB_QUEUED = "queued"
 JOB_FINDING_COMPANIES = "finding_companies"
+JOB_FINDING_PEOPLE = "finding_people"
 JOB_DONE = "done"
 JOB_FAILED = "failed"
 JOB_TERMINAL_STATUSES = (JOB_DONE, JOB_FAILED)
@@ -97,34 +99,58 @@ class CompanySearchService:
         self._session = session
         self._settings = settings or get_settings()
 
+    @property
+    def settings(self) -> Settings:
+        return self._settings
+
     def create_job(
         self, *, client_id: UUID, area: str, industry: str, company_size: CompanySize
     ) -> tuple[SearchJob, bool]:
-        """Create a job and return whether this request must start a refresh."""
+        """Create a job and automatically start its first key-people batch."""
         now = datetime.now(UTC)
         key = cache_key_for(area, industry, company_size)
         cache = self._session.get(CompanySearchCache, key)
         if cache is not None and cache.expires_at is not None and cache.expires_at > now:
-            job = self._new_job(client_id, area, industry, company_size, key, status=JOB_DONE)
+            job = self._new_job(
+                client_id, area, industry, company_size, key, status=JOB_FINDING_PEOPLE
+            )
             job.companies = cache.companies
-            job.completed_at = now
+            people_cache = self._session.get(PeopleSearchCache, key)
+            if self._people_cache_is_fresh(people_cache, now, len(cache.companies)):
+                assert people_cache is not None
+                self._apply_people_cache(job, people_cache, status=JOB_DONE, completed_at=now)
+                should_start_refresh = False
+            else:
+                should_start_refresh = self._claim_people_refresh(
+                    job, people_cache, cache.expires_at
+                )
             self._session.add(job)
             self._session.commit()
             self._session.refresh(job)
-            return job, False
+            return job, should_start_refresh
 
         # Cache misses are serialized in PostgreSQL. It prevents an expired key
         # from launching multiple identical provider searches concurrently.
         self._session.execute(select(func.pg_advisory_xact_lock(func.hashtext(key))))
         cache = self._session.get(CompanySearchCache, key)
         if cache is not None and cache.expires_at is not None and cache.expires_at > now:
-            job = self._new_job(client_id, area, industry, company_size, key, status=JOB_DONE)
+            job = self._new_job(
+                client_id, area, industry, company_size, key, status=JOB_FINDING_PEOPLE
+            )
             job.companies = cache.companies
-            job.completed_at = now
+            people_cache = self._session.get(PeopleSearchCache, key)
+            if self._people_cache_is_fresh(people_cache, now, len(cache.companies)):
+                assert people_cache is not None
+                self._apply_people_cache(job, people_cache, status=JOB_DONE, completed_at=now)
+                should_start_refresh = False
+            else:
+                should_start_refresh = self._claim_people_refresh(
+                    job, people_cache, cache.expires_at
+                )
             self._session.add(job)
             self._session.commit()
             self._session.refresh(job)
-            return job, False
+            return job, should_start_refresh
 
         job = self._new_job(client_id, area, industry, company_size, key, status=JOB_QUEUED)
         self._session.add(job)
@@ -163,7 +189,12 @@ class CompanySearchService:
 
     async def refresh(self, job_id: UUID) -> None:
         job = self._session.get(SearchJob, job_id)
-        if job is None or job.status != JOB_QUEUED:
+        if job is None:
+            return
+        if job.status == JOB_FINDING_PEOPLE:
+            await self._refresh_people(job)
+            return
+        if job.status != JOB_QUEUED:
             return
 
         self._set_jobs_status(job.cache_key, JOB_FINDING_COMPANIES)
@@ -200,10 +231,137 @@ class CompanySearchService:
         for waiting_job in self._jobs_for_cache(job.cache_key):
             if waiting_job.status not in JOB_TERMINAL_STATUSES:
                 waiting_job.companies = companies
-                waiting_job.status = JOB_DONE
+                waiting_job.people = []
+                waiting_job.people_error = None
+                waiting_job.people_companies_searched = 0
+                waiting_job.people_request_count = 0
+                waiting_job.status = JOB_FINDING_PEOPLE
                 waiting_job.error = None
-                waiting_job.completed_at = now
+                waiting_job.completed_at = None
+        people_cache = self._session.get(PeopleSearchCache, job.cache_key)
+        if people_cache is None:
+            people_cache = PeopleSearchCache(
+                cache_key=job.cache_key,
+                refreshing_job_id=job.id,
+                expires_at=cache.expires_at,
+            )
+            self._session.add(people_cache)
+        else:
+            people_cache.people = []
+            people_cache.people_error = None
+            people_cache.companies_searched = 0
+            people_cache.request_count = 0
+            people_cache.expires_at = cache.expires_at
+            people_cache.refreshing_job_id = job.id
         self._session.commit()
+        await self._refresh_people(job)
+
+    def search_more_people(self, job: SearchJob) -> bool:
+        """Queue the next capped key-people batch and return whether to start it."""
+        if job.status != JOB_DONE:
+            return False
+        cache = self._session.get(PeopleSearchCache, job.cache_key)
+        if cache is None or cache.companies_searched >= len(job.companies):
+            return False
+
+        job.status = JOB_FINDING_PEOPLE
+        job.completed_at = None
+        should_start_refresh = cache.refreshing_job_id is None
+        if should_start_refresh:
+            cache.refreshing_job_id = job.id
+        self._session.commit()
+        self._session.refresh(job)
+        return should_start_refresh
+
+    def _people_cache_is_fresh(
+        self, cache: PeopleSearchCache | None, now: datetime, company_count: int
+    ) -> bool:
+        return (
+            cache is not None
+            and cache.expires_at is not None
+            and cache.expires_at > now
+            and cache.companies_searched
+            >= min(company_count, self._settings.people_search_batch_size)
+        )
+
+    def _claim_people_refresh(
+        self,
+        job: SearchJob,
+        cache: PeopleSearchCache | None,
+        expires_at: datetime | None,
+    ) -> bool:
+        if cache is None:
+            self._session.add(
+                PeopleSearchCache(
+                    cache_key=job.cache_key,
+                    expires_at=expires_at,
+                    refreshing_job_id=job.id,
+                )
+            )
+            return True
+        if cache.refreshing_job_id is None:
+            cache.expires_at = expires_at
+            cache.refreshing_job_id = job.id
+            return True
+        return False
+
+    async def _refresh_people(self, job: SearchJob) -> None:
+        cache = self._session.get(PeopleSearchCache, job.cache_key)
+        if cache is None or cache.refreshing_job_id != job.id:
+            return
+
+        companies = job.companies[
+            cache.companies_searched : cache.companies_searched
+            + self._settings.people_search_batch_size
+        ]
+        if not companies:
+            self._complete_people(job.cache_key, cache)
+            self._session.commit()
+            return
+
+        provider = ExaProvider(self._settings)
+        try:
+            people = await discover_key_people(provider, companies=companies, industry=job.industry)
+        except Exception:
+            self._complete_people(
+                job.cache_key,
+                cache,
+                error="The key people search failed. You can try searching more again.",
+            )
+        else:
+            cache.people = [*cache.people, *people]
+            cache.people_error = None
+            cache.companies_searched += len(companies)
+            self._complete_people(job.cache_key, cache)
+        finally:
+            cache.request_count += provider.metrics.request_starts
+            await provider.close()
+        self._session.commit()
+
+    def _complete_people(
+        self, cache_key: str, cache: PeopleSearchCache, *, error: str | None = None
+    ) -> None:
+        now = datetime.now(UTC)
+        cache.people_error = error
+        cache.refreshing_job_id = None
+        for waiting_job in self._jobs_for_cache(cache_key):
+            if waiting_job.status == JOB_FINDING_PEOPLE:
+                self._apply_people_cache(waiting_job, cache, status=JOB_DONE, completed_at=now)
+
+    @staticmethod
+    def _apply_people_cache(
+        job: SearchJob,
+        cache: PeopleSearchCache,
+        *,
+        status: str,
+        completed_at: datetime | None,
+    ) -> None:
+        job.people = cache.people
+        job.people_error = cache.people_error
+        job.people_companies_searched = cache.companies_searched
+        job.people_request_count = cache.request_count
+        job.status = status
+        job.completed_at = completed_at
 
     def _set_jobs_status(self, cache_key: str, status: str) -> None:
         for job in self._jobs_for_cache(cache_key):

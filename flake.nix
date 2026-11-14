@@ -18,6 +18,8 @@
             packages = with pkgs; [
               python313
               uv
+              ruff
+              biome
               nodejs_22
               pnpm
               gnumake

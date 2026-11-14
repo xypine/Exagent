@@ -2,7 +2,7 @@ from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 from app.core.config import Settings
-from app.db.models import CompanySearchCache
+from app.db.models import CompanySearchCache, PeopleSearchCache
 from app.services.company_search import (
     JOB_DONE,
     CompanySearchService,
@@ -55,15 +55,20 @@ class FallbackProvider:
 
 
 class CacheHitSession:
-    def __init__(self, cache: CompanySearchCache) -> None:
+    def __init__(self, cache: CompanySearchCache, people_cache: PeopleSearchCache) -> None:
         self.cache = cache
+        self.people_cache = people_cache
         self.added: list[object] = []
         self.commits = 0
 
-    def get(self, model: type[CompanySearchCache], key: str) -> CompanySearchCache | None:
-        assert model is CompanySearchCache
+    def get(
+        self, model: type[CompanySearchCache] | type[PeopleSearchCache], key: str
+    ) -> CompanySearchCache | PeopleSearchCache:
         assert key == self.cache.cache_key
-        return self.cache
+        if model is CompanySearchCache:
+            return self.cache
+        assert model is PeopleSearchCache
+        return self.people_cache
 
     def add(self, value: object) -> None:
         self.added.append(value)
@@ -160,7 +165,7 @@ async def test_company_search_tries_small_after_all_larger_sizes_return_no_match
     assert "fewer than 25 employees" in provider.queries[2]
 
 
-def test_fresh_cache_creates_completed_job_without_scheduling_refresh() -> None:
+def test_fresh_cache_reuses_completed_key_people_without_scheduling_refresh() -> None:
     key = cache_key_for("Helsinki", "Fintech", "small")
     companies = [{"id": "company-1", "name": "Example", "sources": []}]
     cache = CompanySearchCache(
@@ -168,7 +173,14 @@ def test_fresh_cache_creates_completed_job_without_scheduling_refresh() -> None:
         companies=companies,
         expires_at=datetime.now(UTC) + timedelta(minutes=5),
     )
-    session = CacheHitSession(cache)
+    people_cache = PeopleSearchCache(
+        cache_key=key,
+        people=[{"id": "person-1", "name": "Aino"}],
+        companies_searched=1,
+        request_count=1,
+        expires_at=datetime.now(UTC) + timedelta(minutes=5),
+    )
+    session = CacheHitSession(cache, people_cache)
     service = CompanySearchService(session, Settings())  # type: ignore[arg-type]
 
     job, should_start_refresh = service.create_job(
@@ -179,6 +191,9 @@ def test_fresh_cache_creates_completed_job_without_scheduling_refresh() -> None:
     assert job.status == JOB_DONE
     assert job.company_size == "small"
     assert job.companies == companies
+    assert job.people == people_cache.people
+    assert job.people_companies_searched == 1
+    assert job.people_request_count == 1
     assert len(session.added) == 1
     assert session.commits == 1
 
