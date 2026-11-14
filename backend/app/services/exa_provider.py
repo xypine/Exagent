@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import random
 import re
 from collections import deque
@@ -18,6 +19,8 @@ from pydantic import BaseModel, ConfigDict, ValidationError, model_validator
 
 from app.core.config import Settings
 from app.services.exa_rate_limiter import ExaRateLimiter, ExaRateLimiterQueueError
+
+logger = logging.getLogger(__name__)
 
 
 class ProviderCompany(BaseModel):
@@ -656,6 +659,14 @@ class ExaProvider:
                 if isinstance(provider_error, ExaProviderRateLimit):
                     self.metrics.throttled_responses += 1
                 if not provider_error.retryable or attempt >= self._max_retries:
+                    logger.error(
+                        "Exa request failed after %d attempt(s) (code=%s, retryable=%s): %s",
+                        attempt + 1,
+                        provider_error.code,
+                        provider_error.retryable,
+                        error,
+                        exc_info=True,
+                    )
                     raise provider_error from None
 
                 self.metrics.retries += 1
