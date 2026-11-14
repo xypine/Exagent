@@ -27,9 +27,11 @@ jobs:
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
 
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm check
-      - run: pnpm test
+      # The frontend has its own lockfile; ignore the parent workspace so pnpm
+      # treats it as the standalone project used by its Docker image.
+      - run: pnpm --ignore-workspace install --frozen-lockfile
+      - run: pnpm --ignore-workspace check
+      - run: pnpm --ignore-workspace test
 
   backend:
     name: Backend
