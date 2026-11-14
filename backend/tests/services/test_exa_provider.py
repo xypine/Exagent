@@ -11,6 +11,7 @@ from app.core.config import Settings
 from app.services.exa_provider import (
     ExaProvider,
     ExaProviderError,
+    ExaProviderInvalidResponse,
     ExaProviderRateLimit,
     ExaProviderTimeout,
     _preserve_rate_limit_response,
@@ -48,7 +49,19 @@ def _response() -> SimpleNamespace:
         entities=[entity],
         subpages=[],
     )
-    return SimpleNamespace(results=[result])
+    output = SimpleNamespace(
+        content={
+            "companies": [
+                {
+                    "name": "Example Wealth",
+                    "website_url": "https://example.fi/",
+                    "summary": "A wealth manager in Helsinki.",
+                    "highlights": ["Our Helsinki office"],
+                }
+            ]
+        }
+    )
+    return SimpleNamespace(results=[result], output=output)
 
 
 class FakeClient:
@@ -73,13 +86,58 @@ async def test_provider_returns_neutral_dtos_and_bounded_company_search() -> Non
     assert response.results[0].url == "https://example.fi/"
     assert response.results[0].entities[0].name == "Example Wealth"
     assert response.results[0].highlights == ("Our Helsinki office",)
+    assert response.output.companies[0].name == "Example Wealth"
+    assert response.output.companies[0].website_url == "https://example.fi/"
     query, kwargs = client.calls[0]
     assert query == "Companies in Helsinki"
     assert kwargs["category"] == "company"
     assert kwargs["type"] == "auto"
     assert kwargs["num_results"] == 20
     assert kwargs["contents"]["highlights"]["max_characters"] == 2000
+    assert kwargs["output_schema"]["type"] == "object"
+    assert kwargs["output_schema"]["required"] == ["companies"]
     assert "user_location" not in kwargs
+
+
+async def test_resolve_and_enrich_also_require_structured_output() -> None:
+    client = FakeClient([_response(), _response()])
+    provider = ExaProvider(_settings(), client=client)
+
+    await provider.resolve_company("Example Wealth")
+    await provider.enrich_company(
+        "Example Wealth",
+        domain="example.fi",
+        summary_query="Describe Example Wealth",
+    )
+
+    assert len(client.calls) == 2
+    for _query, kwargs in client.calls:
+        assert kwargs["output_schema"]["type"] == "object"
+        assert kwargs["output_schema"]["required"] == ["companies"]
+
+
+@pytest.mark.parametrize(
+    "output",
+    [
+        None,
+        SimpleNamespace(content="not an object"),
+        SimpleNamespace(content={"companies": "secret-token"}),
+        SimpleNamespace(content={"companies": [{"name": "Missing fields"}]}),
+    ],
+)
+async def test_invalid_structured_output_is_rejected_without_retrying(output: object) -> None:
+    raw_response = _response()
+    raw_response.output = output
+    client = FakeClient([raw_response])
+    provider = ExaProvider(_settings(exa_max_retries=3), client=client)
+
+    with pytest.raises(ExaProviderInvalidResponse) as caught:
+        await provider.discover_companies("Helsinki", num_results=1)
+
+    assert str(caught.value) == "Exa returned an invalid structured response."
+    assert "secret-token" not in str(caught.value)
+    assert len(client.calls) == 1
+    assert provider.metrics.retries == 0
 
 
 async def test_retry_after_is_honored_and_retry_acquires_new_permit() -> None:

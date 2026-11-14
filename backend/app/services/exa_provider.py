@@ -13,9 +13,47 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import httpx
 from exa_py import AsyncExa, ExaTimeoutError
+from exa_py.api import DeepObjectOutputSchema
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 from app.core.config import Settings
 from app.services.exa_rate_limiter import ExaRateLimiter, ExaRateLimiterQueueError
+
+
+class ProviderCompany(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    name: str
+    website_url: str
+    summary: str
+    highlights: tuple[str, ...]
+
+
+class ProviderSearchOutput(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    companies: tuple[ProviderCompany, ...]
+
+
+_COMPANY_OUTPUT_SCHEMA: DeepObjectOutputSchema = {
+    "type": "object",
+    "properties": {
+        "companies": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "website_url": {"type": "string"},
+                    "summary": {"type": "string"},
+                    "highlights": {"type": "array", "items": {"type": "string"}},
+                },
+                "required": ["name", "website_url", "summary", "highlights"],
+            },
+        }
+    },
+    "required": ["companies"],
+}
 
 
 class ExaProviderError(Exception):
@@ -53,6 +91,13 @@ class ExaProviderUnavailable(ExaProviderError):
         super().__init__("Exa is temporarily unavailable.")
 
 
+class ExaProviderInvalidResponse(ExaProviderError):
+    code = "provider_invalid_response"
+
+    def __init__(self) -> None:
+        super().__init__("Exa returned an invalid structured response.")
+
+
 @dataclass(frozen=True)
 class ProviderEntity:
     kind: str | None
@@ -77,6 +122,7 @@ class ProviderDocument:
 @dataclass(frozen=True)
 class ProviderSearchResponse:
     results: tuple[ProviderDocument, ...]
+    output: ProviderSearchOutput
 
 
 @dataclass
@@ -199,6 +245,16 @@ def _to_document(value: Any) -> ProviderDocument:
     )
 
 
+def _to_output(value: Any) -> ProviderSearchOutput:
+    content = _read(_read(value, "output"), "content")
+    if not isinstance(content, Mapping):
+        raise ExaProviderInvalidResponse()
+    try:
+        return ProviderSearchOutput.model_validate(dict(content))
+    except ValidationError:
+        raise ExaProviderInvalidResponse() from None
+
+
 class ExaProvider:
     def __init__(
         self,
@@ -236,26 +292,30 @@ class ExaProvider:
 
     async def discover_companies(self, query: str, *, num_results: int) -> ProviderSearchResponse:
         return await self._request(
-            lambda: self._client.search(
+            lambda output_schema: self._client.search(
                 query,
                 type="auto",
                 category="company",
                 num_results=num_results,
                 contents={"highlights": {"query": query, "max_characters": 2000}},
+                output_schema=output_schema,
                 timeout=self._timeout_seconds,
-            )
+            ),
+            output_schema=_COMPANY_OUTPUT_SCHEMA,
         )
 
     async def resolve_company(self, query: str, *, num_results: int = 3) -> ProviderSearchResponse:
         return await self._request(
-            lambda: self._client.search(
+            lambda output_schema: self._client.search(
                 query,
                 type="auto",
                 category="company",
                 num_results=num_results,
                 contents=False,
+                output_schema=output_schema,
                 timeout=self._timeout_seconds,
-            )
+            ),
+            output_schema=_COMPANY_OUTPUT_SCHEMA,
         )
 
     async def enrich_company(
@@ -267,7 +327,7 @@ class ExaProvider:
         num_results: int = 5,
     ) -> ProviderSearchResponse:
         return await self._request(
-            lambda: self._client.search(
+            lambda output_schema: self._client.search(
                 query,
                 type="auto",
                 category="company",
@@ -286,15 +346,22 @@ class ExaProvider:
                         "offices",
                     ],
                 },
+                output_schema=output_schema,
                 timeout=self._timeout_seconds,
-            )
+            ),
+            output_schema=_COMPANY_OUTPUT_SCHEMA,
         )
 
     async def close(self) -> None:
         if isinstance(self._client, AsyncExa):
             await self._client.aclose()
 
-    async def _request(self, call: Callable[[], Awaitable[Any]]) -> ProviderSearchResponse:
+    async def _request(
+        self,
+        call: Callable[[DeepObjectOutputSchema], Awaitable[Any]],
+        *,
+        output_schema: DeepObjectOutputSchema,
+    ) -> ProviderSearchResponse:
         for attempt in range(self._max_retries + 1):
             try:
                 wait = await self._limiter.acquire()
@@ -308,7 +375,7 @@ class ExaProvider:
             try:
                 async with self._semaphore:
                     async with asyncio.timeout(self._timeout_seconds):
-                        response = await call()
+                        response = await call(output_schema)
             except Exception as error:
                 provider_error = self._normalize_error(error)
                 if isinstance(provider_error, ExaProviderRateLimit):
@@ -320,8 +387,10 @@ class ExaProvider:
                 delay = self._retry_delay(attempt, provider_error)
                 await self._sleep(delay)
             else:
+                output = _to_output(response)
                 return ProviderSearchResponse(
-                    results=tuple(_to_document(result) for result in response.results)
+                    results=tuple(_to_document(result) for result in response.results),
+                    output=output,
                 )
 
         raise AssertionError("Exa retry loop exited unexpectedly")
