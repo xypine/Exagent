@@ -16,7 +16,11 @@ depends_on: Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    op.drop_constraint("ck_search_jobs_company_size", "search_jobs", type_="check")
+    # Some development databases were stamped at revision 02 before its
+    # company-size column and constraint were introduced. PostgreSQL's
+    # idempotent DDL lets those databases converge on this revision.
+    op.execute("ALTER TABLE search_jobs ADD COLUMN IF NOT EXISTS company_size VARCHAR(32)")
+    op.execute("ALTER TABLE search_jobs DROP CONSTRAINT IF EXISTS ck_search_jobs_company_size")
     op.execute(
         """
         UPDATE search_jobs
@@ -35,7 +39,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_constraint("ck_search_jobs_company_size", "search_jobs", type_="check")
+    op.execute("ALTER TABLE search_jobs DROP CONSTRAINT IF EXISTS ck_search_jobs_company_size")
     op.execute(
         """
         UPDATE search_jobs
