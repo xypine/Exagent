@@ -60,12 +60,10 @@ export default function App() {
       <header class="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
         <button
           type="button"
-          class="flex items-center gap-2 text-lg font-bold tracking-tight"
+          class="flex items-center gap-3 text-3xl font-bold tracking-tight"
           onClick={resetJob}
         >
-          <span class="grid size-7 place-items-center rounded-md bg-signal text-sm text-signal-ink">
-            X
-          </span>
+          <img src="/logo.svg" alt="" class="h-20 w-auto" />
           Exagent
         </button>
       </header>
