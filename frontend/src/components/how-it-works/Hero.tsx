@@ -13,10 +13,10 @@ export function RecedingHero(props: { children: JSX.Element }) {
       <div class="flex justify-center pb-10">
         <a
           href="#how-it-works"
-          class="group flex flex-col items-center gap-2 text-s tracking-[0.25em] text-dim uppercase transition hover:text-signal"
+          class="group flex flex-col items-center gap-2 text-s tracking-[0.25em] text-dim uppercase transition hover:text-star"
         >
           How it works
-          <span class="grid size-9 place-items-center rounded-full border border-line transition group-hover:border-signal">
+          <span class="grid size-9 place-items-center rounded-full border border-line transition group-hover:border-star">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"

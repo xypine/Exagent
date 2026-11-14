@@ -40,12 +40,12 @@ export function HowItWorks(props: { onTryIt?: () => void }) {
 
       <div class="mx-auto max-w-6xl px-6 pt-24">
         <div ref={reveal} class="max-w-3xl">
-          <p class="text-xs tracking-[0.25em] text-signal uppercase">
+          <p class="text-xs tracking-[0.25em] text-star uppercase">
             How it works
           </p>
           <h2 class="mt-3 text-4xl leading-[1.05] font-bold tracking-tight sm:text-5xl">
             From a city and a hunch to{" "}
-            <span class="text-signal">people worth messaging.</span>
+            <span class="text-star">people worth messaging.</span>
           </h2>
           <p class="mt-5 max-w-2xl text-lg leading-8 text-dim">
             You want to send open applications but don't know to whom. Exagent
@@ -73,18 +73,17 @@ export function HowItWorks(props: { onTryIt?: () => void }) {
                   <div
                     class="step-card w-full rounded-2xl border p-6 transition duration-500"
                     classList={{
-                      "border-signal/60 bg-ink-2/80 opacity-100":
-                        step() === i(),
+                      "border-star/60 bg-ink-2/80 opacity-100": step() === i(),
                       "border-line/60 bg-ink-2/30 opacity-40": step() !== i(),
                     }}
                   >
-                    <p class="text-xs text-signal">{s.n}</p>
+                    <p class="text-xs text-star">{s.n}</p>
                     <h3 class="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
                       {s.title}
                     </h3>
                     <p class="mt-3 leading-7 text-dim">{s.body}</p>
                     {i() === 4 && (
-                      <p class="mt-4 border-l-2 border-signal pl-3 text-sm text-dim">
+                      <p class="mt-4 border-l-2 border-star pl-3 text-sm text-dim">
                         They don't need to know your field. A CFO at a software
                         company can be a great contact for a developer: the
                         company hires developers, and the CFO approves the
@@ -105,7 +104,7 @@ export function HowItWorks(props: { onTryIt?: () => void }) {
         {/* Trust + limits */}
         <div class="mt-28 grid gap-12 lg:grid-cols-[1.4fr_1fr]">
           <div ref={reveal}>
-            <p class="text-xs tracking-[0.25em] text-signal uppercase">
+            <p class="text-xs tracking-[0.25em] text-star uppercase">
               Why you can trust it
             </p>
             <h3 class="mt-2 text-3xl font-bold tracking-tight">
@@ -135,7 +134,7 @@ export function HowItWorks(props: { onTryIt?: () => void }) {
                 <For each={LIMITS}>
                   {(l) => (
                     <li class="flex gap-3 text-sm leading-6">
-                      <span class="text-signal">—</span>
+                      <span class="text-star">—</span>
                       <span>{l}</span>
                     </li>
                   )}
@@ -148,7 +147,7 @@ export function HowItWorks(props: { onTryIt?: () => void }) {
         {/* Closing CTA */}
         <div
           ref={reveal}
-          class="cta relative mt-28 overflow-hidden rounded-3xl border border-signal/40 px-6 py-16 text-center"
+          class="cta relative mt-28 overflow-hidden rounded-3xl border border-star/40 px-6 py-16 text-center"
         >
           <h3 class="text-4xl font-bold tracking-tight sm:text-5xl">
             Your next open application starts here.

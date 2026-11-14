@@ -107,13 +107,15 @@ export function PipelineStage(props: {
               onClick={() => props.onJump(i())}
               class="group relative h-8 flex-1 overflow-hidden rounded-md border text-[10px] transition"
               classList={{
-                "border-signal text-signal-ink": props.step === i(),
-                "border-signal/40 text-signal": props.step > i(),
-                "border-line text-dim hover:border-signal/60": props.step < i(),
+                "border-star text-signal-ink shadow-card": props.step === i(),
+                "border-star/70 bg-star/10 font-semibold text-star":
+                  props.step > i(),
+                "border-signal/25 bg-ink-2 text-dim hover:border-star/60":
+                  props.step < i(),
               }}
             >
               <span
-                class="absolute inset-0 origin-left bg-signal transition-transform duration-500"
+                class="absolute inset-0 origin-left bg-gradient-to-r from-signal to-star transition-transform duration-500"
                 style={{
                   transform: `scaleX(${props.step === i() ? 1 : 0})`,
                 }}
@@ -127,7 +129,7 @@ export function PipelineStage(props: {
       <div class="stage relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-line">
         <div class="stage-grid pointer-events-none absolute inset-0" />
 
-        <p class="absolute top-3 left-4 z-10 text-[13px] tracking-[0.1em] text-signal uppercase text font-extrabold">
+        <p class="absolute top-3 left-4 z-10 text-[13px] tracking-[0.1em] text-star uppercase text font-extrabold">
           {STEPS[props.step]?.label}
         </p>
 
@@ -200,7 +202,7 @@ export function PipelineStage(props: {
         <For each={DEMO_COMPANIES}>
           {(name, i) => (
             <div
-              class="stage-node absolute z-10 flex items-center gap-1.5 rounded-full border border-signal/50 bg-ink px-2.5 py-1 text-[10px] font-semibold whitespace-nowrap shadow-lg sm:text-xs"
+              class="stage-node absolute z-10 flex items-center gap-1.5 rounded-full border border-signal/60 bg-ink-2 px-2.5 py-1 text-[10px] font-semibold whitespace-nowrap shadow-lg sm:text-xs"
               style={{
                 left: `${CX[i()]}%`,
                 top: `${props.step === 1 ? COMPANY_Y + 30 : props.step >= 5 ? -5 : COMPANY_Y}%`,
@@ -217,7 +219,7 @@ export function PipelineStage(props: {
 
         {/* You */}
         <div
-          class="stage-node absolute z-10 flex items-center gap-1.5 rounded-full border border-signal bg-ink px-3 py-1.5 text-[10px] whitespace-nowrap shadow-[0_0_40px_-8px_var(--color-signal)] sm:text-xs"
+          class="stage-node absolute z-10 flex items-center gap-1.5 rounded-full border-2 border-star bg-ink-2 px-3 py-1.5 text-[10px] whitespace-nowrap shadow-[0_0_40px_-8px_var(--color-star)] sm:text-xs"
           style={{
             left: "50%",
             top: `${props.step === 0 ? 50 : props.step >= 5 ? 110 : YOU_Y}%`,
@@ -225,12 +227,14 @@ export function PipelineStage(props: {
             transform: `translate(-50%, -50%) scale(${props.step === 0 ? 1.25 : 0.9})`,
           }}
         >
-          <span class="font-semibold text-signal">YOU</span>
-          <span class="rounded-full border border-line px-2 py-0.5">
+          <span class="font-semibold text-star">YOU</span>
+          <span class="rounded-full border border-star/30 bg-star/10 px-2 py-0.5">
             Helsinki
           </span>
-          <span class="rounded-full border border-line px-2 py-0.5">SaaS</span>
-          <span class="rounded-full border border-dashed border-signal/60 px-2 py-0.5 text-signal">
+          <span class="rounded-full border border-star/30 bg-star/10 px-2 py-0.5">
+            SaaS
+          </span>
+          <span class="rounded-full border border-dashed border-star/60 px-2 py-0.5 text-star">
             + about you
           </span>
         </div>
@@ -248,8 +252,8 @@ export function PipelineStage(props: {
                 onClick={() => props.step === 5 && setSelected(p.id)}
                 class="stage-node absolute z-10 flex items-center gap-2.5 border bg-ink-2 text-left"
                 classList={{
-                  "border-signal": selected() === p.id,
-                  "border-line hover:border-signal/70 cursor-pointer":
+                  "border-star": selected() === p.id,
+                  "border-signal/25 shadow-card hover:border-star/70 cursor-pointer":
                     props.step === 5 && selected() !== p.id,
                   "border-transparent": props.step !== 5,
                   "cursor-default": props.step !== 5,
@@ -339,7 +343,7 @@ export function PipelineStage(props: {
                       )}
                     </For>
                   </span>
-                  <span class="w-6 shrink-0 text-right text-xs font-semibold text-signal">
+                  <span class="w-6 shrink-0 text-right text-xs font-semibold text-star">
                     {p.score}
                   </span>
                   <span
@@ -362,10 +366,10 @@ export function PipelineStage(props: {
           {(p) => {
             const conf = confidenceFor(p().sources);
             return (
-              <div class="animate-rise absolute inset-x-2 bottom-2 z-30 max-h-[80%] overflow-auto rounded-2xl border border-signal/60 bg-ink/95 p-4 shadow-2xl backdrop-blur sm:inset-x-4 sm:bottom-4 sm:p-5">
+              <div class="animate-rise absolute inset-x-2 bottom-2 z-30 max-h-[80%] overflow-auto rounded-2xl border border-star/60 bg-ink/95 p-4 shadow-2xl backdrop-blur sm:inset-x-4 sm:bottom-4 sm:p-5">
                 <div class="flex items-start justify-between gap-3">
                   <div>
-                    <p class="text-[10px] tracking-widest text-signal uppercase">
+                    <p class="text-[10px] tracking-widest text-star uppercase">
                       #{p().rank + 1} on your shortlist
                     </p>
                     <h4 class="mt-1 text-lg font-semibold">{p().name}</h4>
@@ -374,7 +378,7 @@ export function PipelineStage(props: {
                     </p>
                   </div>
                   <div class="text-right">
-                    <p class="text-3xl font-bold text-signal">{p().score}</p>
+                    <p class="text-3xl font-bold text-star">{p().score}</p>
                     <button
                       type="button"
                       onClick={() => setSelected(null)}
@@ -388,7 +392,7 @@ export function PipelineStage(props: {
                   class="mt-2 inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px]"
                   classList={{
                     "border-ok/60 text-ok": conf === "high",
-                    "border-signal/60 text-signal": conf === "medium",
+                    "border-star/60 text-star": conf === "medium",
                     "border-bad/60 text-bad": conf === "low",
                   }}
                 >
@@ -425,8 +429,8 @@ export function PipelineStage(props: {
                     )}
                   </For>
                 </ul>
-                <p class="mt-3 rounded-lg bg-signal/10 px-3 py-2 text-sm">
-                  <span class="mr-1 text-signal">✦ Opening angle:</span>
+                <p class="mt-3 rounded-lg bg-star/10 px-3 py-2 text-sm">
+                  <span class="mr-1 text-star">✦ Opening angle:</span>
                   {p().angle}
                 </p>
                 <p class="mt-2 text-[10px] text-dim">

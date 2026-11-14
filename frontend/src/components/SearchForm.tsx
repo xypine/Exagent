@@ -45,13 +45,13 @@ export function SearchForm(props: {
   return (
     <main class="mx-auto grid max-w-6xl gap-12 px-6 pt-10 pb-16 lg:grid-cols-[1.1fr_1fr] lg:pt-20">
       <section class="animate-rise space-y-6">
-        <p class="text-s tracking-[0.25em] text-signal uppercase">
+        <p class="text-s tracking-[0.25em] text-star uppercase">
           The hidden job market — unlocked
         </p>
         <h1 class="text-5xl leading-[1.02] font-bold tracking-tight sm:text-6xl">
           Find who matters.
           <br />
-          <span class="text-signal">Say what works.</span>
+          <span class="text-star">Say what works.</span>
         </h1>
         <p class="max-w-lg text-lg leading-8 text-dim">
           Tell us where you want to work. We will find the most relevant people
@@ -65,7 +65,9 @@ export function SearchForm(props: {
       >
         <div class="grid gap-4 sm:grid-cols-2">
           <label for="area" class="space-y-1.5">
-            <span class="text-xs text-dim uppercase">Area</span>
+            <span class="text-xs font-semibold tracking-wider text-star uppercase">
+              Area
+            </span>
             <Autocomplete
               inputId="area"
               value={area()}
@@ -77,7 +79,9 @@ export function SearchForm(props: {
             />
           </label>
           <label for="industry" class="space-y-1.5">
-            <span class="text-xs text-dim uppercase">Industry</span>
+            <span class="text-xs font-semibold tracking-wider text-star uppercase">
+              Industry
+            </span>
             <Autocomplete
               inputId="industry"
               value={industry()}
@@ -90,16 +94,16 @@ export function SearchForm(props: {
           </label>
         </div>
         <fieldset>
-          <legend class="mb-1.5 font-mono text-xs text-dim uppercase">
+          <legend class="mb-1.5 font-mono text-xs font-semibold tracking-wider text-star uppercase">
             Company size
           </legend>
           <div class="grid grid-cols-3 gap-2">
             <For each={COMPANY_SIZES}>
               {(size) => (
                 <label
-                  class="cursor-pointer rounded-xl border border-line bg-ink-2 px-3 py-3 text-center text-sm text-dim transition hover:border-signal hover:text-signal has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-signal"
+                  class="cursor-pointer rounded-xl border border-line bg-ink-2 px-3 py-3 text-center text-sm text-dim transition hover:border-star hover:text-star has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-star"
                   classList={{
-                    "border-signal bg-signal/10 text-signal":
+                    "border-star bg-star/10 text-star":
                       companySize() === size.value,
                   }}
                 >

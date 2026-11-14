@@ -56,7 +56,7 @@ export function ScoreSimulator() {
     >
       <div class="space-y-6">
         <div>
-          <p class="text-xs tracking-[0.25em] text-signal uppercase">
+          <p class="text-xs tracking-[0.25em] text-star uppercase">
             Try the scoring
           </p>
           <h3 class="mt-2 text-3xl font-bold tracking-tight">
@@ -75,9 +75,8 @@ export function ScoreSimulator() {
                 onClick={() => applyPreset(i())}
                 class="rounded-full border px-3 py-1.5 text-xs transition"
                 classList={{
-                  "border-signal bg-signal/10 text-signal": preset() === i(),
-                  "border-line text-dim hover:border-signal/60":
-                    preset() !== i(),
+                  "border-star bg-star/10 text-star": preset() === i(),
+                  "border-line text-dim hover:border-star/60": preset() !== i(),
                 }}
               >
                 {p.label}
@@ -136,7 +135,7 @@ export function ScoreSimulator() {
             role="switch"
             aria-checked={hasProfile()}
             onClick={() => setHasProfile((v) => !v)}
-            class="flex items-center gap-3 rounded-xl border border-line p-3 text-left text-sm transition hover:border-signal/60"
+            class="flex items-center gap-3 rounded-xl border border-line p-3 text-left text-sm transition hover:border-star/60"
           >
             <span
               class="relative h-5 w-9 shrink-0 rounded-full transition"
@@ -223,7 +222,7 @@ export function ScoreSimulator() {
           class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs"
           classList={{
             "border-ok/60 text-ok": confidence() === "high",
-            "border-signal/60 text-signal": confidence() === "medium",
+            "border-star/60 text-star": confidence() === "medium",
             "border-bad/60 text-bad": confidence() === "low",
           }}
         >
@@ -253,7 +252,7 @@ export function ScoreSimulator() {
           <Show
             when={hasProfile()}
             fallback={
-              <span class="text-signal">
+              <span class="text-star">
                 No profile, so only decision power counts. Add a few lines about
                 yourself for a sharper match.
               </span>

@@ -96,7 +96,7 @@ export function Autocomplete(props: {
         <button
           type="button"
           aria-label={props.clearLabel}
-          class="pointer-events-none absolute top-1/2 right-2 grid size-8 -translate-y-1/2 place-items-center rounded-md text-xl text-dim opacity-0 transition group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100 hover:bg-line hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal"
+          class="pointer-events-none absolute top-1/2 right-2 grid size-8 -translate-y-1/2 place-items-center rounded-md text-xl text-dim opacity-0 transition group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100 hover:bg-line hover:text-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-star"
           onClick={() => {
             props.onChange("");
             setOpen(false);
@@ -123,7 +123,7 @@ export function Autocomplete(props: {
                 aria-selected={i() === active()}
                 tabIndex={-1}
                 class="block w-full cursor-pointer px-4 py-2 text-left text-sm"
-                classList={{ "bg-line text-signal": i() === active() }}
+                classList={{ "bg-line text-star": i() === active() }}
                 onMouseEnter={() => setActive(i())}
                 // mousedown fires before the input's blur, which would close the list.
                 onMouseDown={(e) => {

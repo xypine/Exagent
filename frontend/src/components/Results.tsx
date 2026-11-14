@@ -39,7 +39,7 @@ function People({ people }: { people: Person[] }) {
                   href={person.profile_url}
                   target="_blank"
                   rel="noreferrer"
-                  class="font-mono text-xs text-dim hover:text-signal"
+                  class="font-mono text-xs text-dim hover:text-star"
                 >
                   profile ↗
                 </a>
@@ -49,7 +49,7 @@ function People({ people }: { people: Person[] }) {
                 href={person.evidence_url}
                 target="_blank"
                 rel="noreferrer"
-                class="mt-2 inline-block font-mono text-xs text-dim hover:text-signal"
+                class="mt-2 inline-block font-mono text-xs text-dim hover:text-star"
               >
                 current-role evidence ↗
               </a>
@@ -111,7 +111,7 @@ export function Results(props: {
         <button
           type="button"
           onClick={props.onReset}
-          class="ml-auto rounded-full border border-line px-3 py-1 text-sm text-dim hover:border-signal hover:text-signal"
+          class="ml-auto rounded-full border border-line px-3 py-1 text-sm text-dim hover:border-star hover:text-star"
         >
           ← New search
         </button>
@@ -123,13 +123,13 @@ export function Results(props: {
             <li
               class="relative overflow-hidden rounded-lg border px-3 py-2"
               classList={{
-                "border-signal text-signal": i() <= stepIndex(job.data?.status),
+                "border-star text-star": i() <= stepIndex(job.data?.status),
                 "border-line text-dim": i() > stepIndex(job.data?.status),
               }}
             >
               {step.label}
               <Show when={running() && i() === stepIndex(job.data?.status)}>
-                <span class="absolute inset-y-0 left-0 w-1/3 animate-scan bg-signal/15" />
+                <span class="absolute inset-y-0 left-0 w-1/3 animate-scan bg-star/15" />
               </Show>
             </li>
           )}
@@ -163,7 +163,7 @@ export function Results(props: {
           type="button"
           disabled={morePeople.isPending}
           onClick={() => morePeople.mutate()}
-          class="mt-3 rounded-lg border border-signal px-3 py-2 text-sm text-signal transition hover:bg-signal/10 disabled:cursor-not-allowed disabled:opacity-50"
+          class="mt-3 rounded-lg border border-star px-3 py-2 text-sm text-star transition hover:bg-star/10 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {morePeople.isPending
             ? "Starting people search…"
@@ -223,7 +223,7 @@ export function Results(props: {
                     href={company.url}
                     target="_blank"
                     rel="noreferrer"
-                    class="text-xs text-dim hover:text-signal"
+                    class="text-xs text-dim hover:text-star"
                   >
                     visit ↗
                   </a>
@@ -239,7 +239,7 @@ export function Results(props: {
                             href={source.url}
                             target="_blank"
                             rel="noreferrer"
-                            class="text-dim hover:text-signal"
+                            class="text-dim hover:text-star"
                           >
                             {source.title ?? source.url} ↗
                           </a>

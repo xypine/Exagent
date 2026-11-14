@@ -22,10 +22,10 @@ export function InsightsPanel(props: { person: Person; onClose: () => void }) {
   }));
 
   return (
-    <div class="animate-rise rounded-2xl border border-signal/50 bg-ink-2 p-5">
+    <div class="animate-rise rounded-2xl border border-star/50 bg-ink-2 p-5">
       <div class="flex items-start justify-between gap-3">
         <div>
-          <p class="text-xs tracking-widest text-signal uppercase">
+          <p class="text-xs tracking-widest text-star uppercase">
             Key insights
           </p>
           <h3 class="mt-1 text-xl font-semibold">{props.person.name}</h3>
@@ -46,7 +46,7 @@ export function InsightsPanel(props: { person: Person; onClose: () => void }) {
           href={props.person.url}
           target="_blank"
           rel="noreferrer"
-          class="mt-2 inline-block text-xs text-dim hover:text-signal"
+          class="mt-2 inline-block text-xs text-dim hover:text-star"
         >
           profile ↗
         </a>
@@ -69,8 +69,8 @@ export function InsightsPanel(props: { person: Person; onClose: () => void }) {
               <ul class="mt-5 space-y-2">
                 <For each={data().key_insights}>
                   {(k) => (
-                    <li class="rounded-lg bg-signal/10 px-3 py-2 text-sm">
-                      <span class="mr-2 text-signal">✦</span>
+                    <li class="rounded-lg bg-star/10 px-3 py-2 text-sm">
+                      <span class="mr-2 text-star">✦</span>
                       {k}
                     </li>
                   )}
@@ -84,8 +84,8 @@ export function InsightsPanel(props: { person: Person; onClose: () => void }) {
                       onClick={() => setTab(t.key)}
                       class="rounded-lg border px-3 py-2 text-sm transition"
                       classList={{
-                        "border-signal text-signal": tab() === t.key,
-                        "border-line text-dim hover:border-signal/60":
+                        "border-star text-star": tab() === t.key,
+                        "border-line text-dim hover:border-star/60":
                           tab() !== t.key,
                       }}
                     >
