@@ -106,7 +106,7 @@ async def discover_key_people(
                     company_name,
                     company_domain=domain,
                     job_titles=titles,
-                    num_results=10,
+                    num_results=4,
                 )
         except Exception:
             if on_company_complete is None:
@@ -115,7 +115,7 @@ async def discover_key_people(
             return []
 
         discovered_people: list[dict[str, Any]] = []
-        for candidate in rank_by_hiring_influence(discovery.output.people):
+        for candidate in rank_by_hiring_influence(discovery.output.people)[:4]:
             normalized = normalize_person(
                 candidate, company_id=company_id, company_name=company_name
             )

@@ -13,7 +13,18 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "education", label: "Education" },
 ];
 
-export function InsightsPanel(props: { person: Person; onClose: () => void }) {
+function decisionPowerLabel(score: number) {
+  if (score >= 80) return "Very high";
+  if (score >= 60) return "High";
+  if (score >= 40) return "Medium";
+  return "Low";
+}
+
+export function InsightsPanel(props: {
+  person: Person;
+  score: number;
+  onClose: () => void;
+}) {
   const [tab, setTab] = createSignal<Tab>("work_history");
   const insights = createQuery(() => ({
     queryKey: ["insights", props.person.id],
@@ -29,19 +40,27 @@ export function InsightsPanel(props: { person: Person; onClose: () => void }) {
           <h3 class="mt-1 text-xl font-semibold">{props.person.name}</h3>
           <p class="text-sm text-dim">{props.person.title}</p>
         </div>
-        <button
-          type="button"
-          aria-label="Close"
-          onClick={props.onClose}
-          class="text-dim hover:text-paper"
-        >
-          ✕
-        </button>
+        <div class="flex items-start gap-4">
+          <div class="text-right">
+            <p class="text-xs text-dim">Decision power</p>
+            <p class="mt-1 text-xl font-semibold text-star">
+              {props.score} · {decisionPowerLabel(props.score)}
+            </p>
+          </div>
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={props.onClose}
+            class="text-dim hover:text-paper"
+          >
+            ✕
+          </button>
+        </div>
       </div>
 
-      <Show when={props.person.url}>
+      <Show when={props.person.profile_url}>
         <a
-          href={props.person.url}
+          href={props.person.profile_url}
           target="_blank"
           rel="noreferrer"
           class="mt-2 inline-block text-xs text-dim hover:text-star"
@@ -49,6 +68,18 @@ export function InsightsPanel(props: { person: Person; onClose: () => void }) {
           profile ↗
         </a>
       </Show>
+
+      <p class="mt-4 border-l-2 border-star/50 pl-3 text-sm text-dim">
+        {props.person.evidence_summary}
+      </p>
+      <a
+        href={props.person.evidence_url}
+        target="_blank"
+        rel="noreferrer"
+        class="mt-2 inline-block text-xs text-dim hover:text-star"
+      >
+        current-role evidence ↗
+      </a>
 
       <Show
         when={!insights.isPending}

@@ -1,4 +1,10 @@
-import type { Company, PersonInsights, SearchInput, SearchJob } from "./types";
+import type {
+  Company,
+  Person,
+  PersonInsights,
+  SearchInput,
+  SearchJob,
+} from "./types";
 
 const COMPANIES: Company[] = [
   {
@@ -46,6 +52,70 @@ const COMPANIES: Company[] = [
   },
 ];
 
+const PEOPLE: Person[] = [
+  {
+    id: "p1",
+    company_id: "c1",
+    company_name: "Aurora Robotics",
+    name: "Alan Parson",
+    title: "CTO",
+    matched_job_title: "CTO",
+    profile_url: "https://example.com/alan",
+    evidence_url: "https://example.com/aurora/team",
+    evidence_summary: "Leads Aurora Robotics' engineering organization.",
+    decision_power_score: 80,
+  },
+  {
+    id: "p2",
+    company_id: "c1",
+    company_name: "Aurora Robotics",
+    name: "Matti Meikäläinen",
+    title: "Product Owner",
+    matched_job_title: "Product Owner",
+    profile_url: "https://example.com/matti",
+    evidence_url: "https://example.com/aurora/team",
+    evidence_summary: "Owns product direction for Aurora's warehouse platform.",
+    decision_power_score: 20,
+  },
+  {
+    id: "p3",
+    company_id: "c2",
+    company_name: "Northwind Health",
+    name: "Sofia Lind",
+    title: "Head of Data",
+    matched_job_title: "Head of Data",
+    profile_url: "https://example.com/sofia",
+    evidence_url: "https://example.com/northwind/team",
+    evidence_summary:
+      "Runs data strategy for Northwind Health's Nordic expansion.",
+    decision_power_score: 60,
+  },
+  {
+    id: "p4",
+    company_id: "c2",
+    company_name: "Northwind Health",
+    title: "VP Engineering",
+    matched_job_title: "VP Engineering",
+    name: "Jari Korhonen",
+    profile_url: "https://example.com/jari",
+    evidence_url: "https://example.com/northwind/team",
+    evidence_summary: "Leads Northwind Health's engineering teams.",
+    decision_power_score: 80,
+  },
+  {
+    id: "p5",
+    company_id: "c3",
+    company_name: "Kide Energy",
+    name: "Emma Virtanen",
+    title: "CEO",
+    matched_job_title: "CEO",
+    profile_url: "https://example.com/emma",
+    evidence_url: "https://example.com/kide/team",
+    evidence_summary: "Founder and chief executive of Kide Energy.",
+    decision_power_score: 80,
+  },
+];
+
 const started = new Map<string, number>();
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -85,7 +155,7 @@ export const mockApi = {
       industry: "SaaS company",
       company_size: "small",
       companies: COMPANIES,
-      people: [],
+      people: PEOPLE,
       people_search_stats: {
         companies_searched: 20,
         companies_available: 50,

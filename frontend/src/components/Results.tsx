@@ -2,7 +2,8 @@ import { createMutation, createQuery } from "@tanstack/solid-query";
 import { createSignal, For, Show } from "solid-js";
 
 import { getSearch, searchMorePeople } from "../api";
-import type { JobStatus, Person, SearchInput } from "../types";
+import type { Company, JobStatus, Person, SearchInput } from "../types";
+import { InsightsPanel } from "./InsightsPanel";
 
 const STEPS: { key: JobStatus; label: string }[] = [
   { key: "finding_companies", label: "Finding companies" },
@@ -22,41 +23,97 @@ function stepIndex(status: JobStatus | undefined) {
   return 0;
 }
 
-function People({ people }: { people: Person[] }) {
+function People(props: {
+  people: Person[];
+  onSelect: (person: Person) => void;
+}) {
   return (
-    <div class="mt-5 border-t border-line pt-4">
-      <p class="font-mono text-xs text-dim uppercase">Key people</p>
-      <ul class="mt-3 space-y-3">
-        <For each={people}>
+    <div class="border-t border-line">
+      <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-4 bg-ink px-5 py-2 font-mono text-xs text-dim uppercase">
+        <span>Key people</span>
+        <span>Score</span>
+      </div>
+      <ul>
+        <For each={props.people}>
           {(person) => (
-            <li class="rounded-xl border border-line/80 bg-ink p-4">
-              <div class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                <div>
-                  <h3 class="font-medium">{person.name}</h3>
-                  <p class="text-sm text-dim">{person.title}</p>
-                </div>
-                <a
-                  href={person.profile_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  class="font-mono text-xs text-dim hover:text-star"
-                >
-                  profile ↗
-                </a>
-              </div>
-              <p class="mt-3 text-sm text-dim">{person.evidence_summary}</p>
-              <a
-                href={person.evidence_url}
-                target="_blank"
-                rel="noreferrer"
-                class="mt-2 inline-block font-mono text-xs text-dim hover:text-star"
+            <li class="border-t border-line/70 first:border-t-0">
+              <button
+                type="button"
+                aria-haspopup="dialog"
+                aria-label={`${person.name}, ${person.title}, score ${person.decision_power_score}`}
+                onClick={() => props.onSelect(person)}
+                class="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-5 py-3 text-left transition hover:bg-star/5"
               >
-                current-role evidence ↗
-              </a>
+                <span class="min-w-0 truncate">
+                  <span class="font-medium">{person.name}</span>
+                  <span class="text-dim"> — {person.title}</span>
+                </span>
+                <span class="font-mono text-sm font-semibold text-star">
+                  {person.decision_power_score}
+                </span>
+              </button>
             </li>
           )}
         </For>
       </ul>
+    </div>
+  );
+}
+
+function CompanyDetailsModal(props: { company: Company; onClose: () => void }) {
+  return (
+    <div class="fixed inset-0 z-50 grid place-items-center bg-paper/35 p-5">
+      <section
+        class="max-h-[calc(100vh-2.5rem)] w-full max-w-lg overflow-y-auto animate-rise rounded-2xl border border-star/50 bg-ink-2 p-6 shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${props.company.name} details`}
+      >
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-xs tracking-widest text-star uppercase">Company</p>
+            <h2 class="mt-1 text-2xl font-semibold">{props.company.name}</h2>
+          </div>
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={props.onClose}
+            class="text-dim hover:text-paper"
+          >
+            ✕
+          </button>
+        </div>
+        <p class="mt-5 text-sm text-dim">{props.company.summary}</p>
+        <a
+          href={props.company.url}
+          target="_blank"
+          rel="noreferrer"
+          class="mt-4 inline-block text-sm text-star hover:underline"
+        >
+          Visit company website ↗
+        </a>
+        <Show when={props.company.sources.length > 0}>
+          <div class="mt-6 border-t border-line pt-4">
+            <p class="font-mono text-xs text-dim uppercase">Sources</p>
+            <ul class="mt-2 space-y-2 text-sm">
+              <For each={props.company.sources}>
+                {(source) => (
+                  <li>
+                    <a
+                      href={source.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      class="text-dim hover:text-star"
+                    >
+                      {source.title ?? source.url} ↗
+                    </a>
+                  </li>
+                )}
+              </For>
+            </ul>
+          </div>
+        </Show>
+      </section>
     </div>
   );
 }
@@ -69,6 +126,10 @@ export function Results(props: {
   const [enteredCompanyIds, setEnteredCompanyIds] = createSignal<
     ReadonlySet<string>
   >(new Set());
+  const [selectedPerson, setSelectedPerson] = createSignal<Person | null>(null);
+  const [selectedCompany, setSelectedCompany] = createSignal<Company | null>(
+    null,
+  );
   const job = createQuery(() => ({
     queryKey: ["search", props.jobId],
     queryFn: () => getSearch(props.jobId),
@@ -236,7 +297,7 @@ export function Results(props: {
           <For each={job.data?.companies}>
             {(company, i) => (
               <article
-                class="rounded-2xl border border-line bg-ink-2/60 p-5"
+                class="overflow-hidden rounded-2xl border border-line bg-ink-2/60"
                 classList={{
                   "animate-rise": !enteredCompanyIds().has(company.id),
                 }}
@@ -247,8 +308,15 @@ export function Results(props: {
                 }
                 onAnimationEnd={() => markCompanyEntered(company.id)}
               >
-                <div class="flex items-baseline justify-between gap-4">
-                  <h2 class="text-xl font-semibold">{company.name}</h2>
+                <div class="flex items-center justify-between gap-4 px-5 py-4">
+                  <button
+                    type="button"
+                    aria-haspopup="dialog"
+                    onClick={() => setSelectedCompany(company)}
+                    class="text-left text-xl font-semibold hover:text-star"
+                  >
+                    {company.name}
+                  </button>
                   <a
                     href={company.url}
                     target="_blank"
@@ -257,26 +325,6 @@ export function Results(props: {
                   >
                     visit ↗
                   </a>
-                </div>
-                <p class="mt-1 text-sm text-dim">{company.summary}</p>
-                <div class="mt-4 border-l border-line pl-4">
-                  <p class="text-xs text-dim uppercase">Sources</p>
-                  <ul class="mt-2 space-y-1 text-sm">
-                    <For each={company.sources}>
-                      {(source) => (
-                        <li>
-                          <a
-                            href={source.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            class="text-dim hover:text-star"
-                          >
-                            {source.title ?? source.url} ↗
-                          </a>
-                        </li>
-                      )}
-                    </For>
-                  </ul>
                 </div>
                 <Show
                   when={
@@ -291,6 +339,7 @@ export function Results(props: {
                         (person) => person.company_id === company.id,
                       ) ?? []
                     }
+                    onSelect={setSelectedPerson}
                   />
                 </Show>
                 <Show
@@ -301,7 +350,7 @@ export function Results(props: {
                         job.data.people_search_stats.batch_size
                   }
                 >
-                  <p class="mt-5 animate-pulse font-mono text-xs text-dim">
+                  <p class="border-t border-line px-5 py-3 font-mono text-xs text-dim animate-pulse">
                     Researching key people…
                   </p>
                 </Show>
@@ -310,6 +359,33 @@ export function Results(props: {
           </For>
         </section>
       </div>
+
+      <Show when={selectedPerson()}>
+        {(person) => (
+          <div class="fixed inset-0 z-50 grid place-items-center bg-paper/35 p-5">
+            <div
+              class="max-h-[calc(100vh-2.5rem)] w-full max-w-2xl overflow-y-auto"
+              role="dialog"
+              aria-modal="true"
+              aria-label={`${person().name} details`}
+            >
+              <InsightsPanel
+                person={person()}
+                score={person().decision_power_score}
+                onClose={() => setSelectedPerson(null)}
+              />
+            </div>
+          </div>
+        )}
+      </Show>
+      <Show when={selectedCompany()}>
+        {(company) => (
+          <CompanyDetailsModal
+            company={company()}
+            onClose={() => setSelectedCompany(null)}
+          />
+        )}
+      </Show>
     </main>
   );
 }

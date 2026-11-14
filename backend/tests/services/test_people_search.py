@@ -62,7 +62,7 @@ class ConcurrentPeopleProvider:
     ) -> ProviderSearchResponse[ProviderPeopleSearchOutput]:
         assert company_domain.endswith(".example")
         assert job_titles
-        assert num_results == 10
+        assert num_results == 4
         self.active += 1
         self.max_active = max(self.max_active, self.active)
         await asyncio.sleep(0)

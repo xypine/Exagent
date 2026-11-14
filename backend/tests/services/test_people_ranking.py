@@ -1,6 +1,10 @@
 from dataclasses import dataclass
 
-from app.services.people_ranking import hiring_influence_score, rank_by_hiring_influence
+from app.services.people_ranking import (
+    decision_power_score,
+    hiring_influence_score,
+    rank_by_hiring_influence,
+)
 
 
 @dataclass
@@ -25,3 +29,11 @@ def test_hiring_influence_prioritizes_decision_makers() -> None:
         "Senior Software Engineer",
     ]
     assert hiring_influence_score("Chief Technology Officer") == 100
+
+
+def test_decision_power_score_uses_four_clear_bands() -> None:
+    assert decision_power_score("Chief Technology Officer") == 80
+    assert decision_power_score("VP Engineering") == 80
+    assert decision_power_score("Head of Product") == 60
+    assert decision_power_score("Engineering Manager") == 40
+    assert decision_power_score("Senior Software Engineer") == 20

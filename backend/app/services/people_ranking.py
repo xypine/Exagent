@@ -24,5 +24,17 @@ def hiring_influence_score(title: str) -> int:
     return 25
 
 
+def decision_power_score(title: str) -> int:
+    """Return a deliberately coarse, scan-friendly decision-power score."""
+    score = hiring_influence_score(title)
+    if score >= 90:
+        return 80
+    if score >= 80:
+        return 60
+    if score >= 60:
+        return 40
+    return 20
+
+
 def rank_by_hiring_influence[PersonT: PersonWithTitle](people: Iterable[PersonT]) -> list[PersonT]:
     return sorted(people, key=lambda person: hiring_influence_score(person.title), reverse=True)

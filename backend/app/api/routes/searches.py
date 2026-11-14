@@ -14,6 +14,7 @@ from app.core.client_identity import ClientContext, enforce_rate_limit
 from app.db.models import CompanySize, SearchJob
 from app.db.session import get_db_session
 from app.services.company_search import CompanySearchService, refresh_company_search
+from app.services.people_ranking import decision_power_score
 
 router = APIRouter()
 ClientDependency = Annotated[ClientContext, Depends(enforce_rate_limit)]
@@ -64,6 +65,7 @@ class PersonResponse(BaseModel):
     profile_url: str
     evidence_url: str
     evidence_summary: str
+    decision_power_score: int
 
 
 class PeopleSearchStatsResponse(BaseModel):
@@ -156,7 +158,13 @@ def _search_response(job: SearchJob, batch_size: int) -> SearchResponse:
             "company_size": job.company_size,
             "error": job.error,
             "companies": job.companies,
-            "people": job.people,
+            "people": [
+                {
+                    **person,
+                    "decision_power_score": decision_power_score(person["title"]),
+                }
+                for person in job.people
+            ],
             "people_error": job.people_error,
             "people_search_stats": {
                 "companies_searched": job.people_companies_searched,

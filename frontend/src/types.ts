@@ -30,6 +30,7 @@ export interface Person {
   profile_url: string;
   evidence_url: string;
   evidence_summary: string;
+  decision_power_score: number;
 }
 
 export interface PeopleSearchStats {
