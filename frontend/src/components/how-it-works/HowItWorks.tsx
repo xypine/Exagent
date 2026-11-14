@@ -8,6 +8,7 @@ import { ScoreSimulator } from "./ScoreSimulator";
 export function HowItWorks(props: { onTryIt?: () => void }) {
   const [step, setStep] = createSignal(0);
   const stepEls: HTMLElement[] = [];
+  let visualEl: HTMLDivElement | undefined;
 
   onMount(() => {
     if (typeof IntersectionObserver === "undefined") return;
@@ -26,8 +27,24 @@ export function HowItWorks(props: { onTryIt?: () => void }) {
     onCleanup(() => io.disconnect());
   });
 
-  const jump = (i: number) =>
-    stepEls[i]?.scrollIntoView({ behavior: "smooth", block: "center" });
+  const jump = (i: number) => {
+    const target = stepEls[i];
+    if (!target) return;
+    if (window.innerWidth >= 1024) {
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+
+    // The visualization covers the top half of the single-column layout.
+    // Place the card below it rather than centering the card underneath it.
+    const card = target.querySelector<HTMLElement>(".step-card") ?? target;
+    const top =
+      window.scrollY +
+      card.getBoundingClientRect().top -
+      (visualEl?.offsetHeight ?? 0) -
+      24;
+    window.scrollTo({ top, behavior: "smooth" });
+  };
 
   const tryIt = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -56,7 +73,10 @@ export function HowItWorks(props: { onTryIt?: () => void }) {
 
         {/* Scrollytelling: sticky visual + scrolling steps */}
         <div class="mt-16 grid gap-8 lg:grid-cols-[1.15fr_1fr] lg:gap-14">
-          <div class="sticky top-2 z-20 h-[min(54vh,460px)] bg-ink/90 py-2 backdrop-blur lg:top-[12vh] lg:h-[min(76vh,640px)] lg:bg-transparent lg:py-0 lg:backdrop-blur-none">
+          <div
+            ref={visualEl}
+            class="sticky top-2 z-20 h-[min(54vh,460px)] bg-ink/90 py-2 backdrop-blur lg:top-[12vh] lg:h-[min(76vh,640px)] lg:bg-transparent lg:py-0 lg:backdrop-blur-none"
+          >
             <PipelineStage step={step()} onJump={jump} />
           </div>
 
