@@ -7,6 +7,7 @@ from app.services.company_search import (
     JOB_DONE,
     CompanySearchService,
     cache_key_for,
+    company_query,
     normalize_companies,
 )
 from app.services.exa_provider import (
@@ -40,6 +41,14 @@ class CacheHitSession:
 
 def test_cache_key_ignores_casing_and_repeated_whitespace() -> None:
     assert cache_key_for(" Helsinki ", "AI   / ML") == cache_key_for("helsinki", "ai / ml")
+
+
+def test_company_query_requires_local_presence() -> None:
+    query = company_query("Helsinki", "Fintech")
+
+    assert "Official websites of Fintech companies" in query
+    assert "headquarters, office, or other substantial business operations in Helsinki" in query
+    assert "only connection to Helsinki is selling products or services" in query
 
 
 def test_fresh_cache_creates_completed_job_without_scheduling_refresh() -> None:

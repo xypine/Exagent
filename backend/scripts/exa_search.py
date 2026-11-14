@@ -7,6 +7,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from app.core.config import Settings
+from app.services.company_search import company_query
 from app.services.exa_provider import (
     ExaProvider,
     ExaProviderError,
@@ -43,7 +44,7 @@ async def _search(industry: str, area: str, limit: int) -> int:
         _print_error("not_configured", "Set EXA_API_KEY in .env before running a live search.")
         return 2
 
-    query = f"Companies in {industry} industry in {area}. Prefer official company websites."
+    query = company_query(area, industry)
     provider = ExaProvider(settings)
     try:
         response = await provider.discover_companies(query, num_results=limit)

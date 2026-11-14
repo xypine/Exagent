@@ -38,7 +38,11 @@ def cache_key_for(area: str, industry: str) -> str:
 
 
 def company_query(area: str, industry: str) -> str:
-    return f"Companies operating in {area} in the {industry} industry"
+    return (
+        f"Official websites of {industry} companies with a headquarters, office, or other "
+        f"substantial business operations in {area}. Exclude companies whose only connection "
+        f"to {area} is selling products or services to customers there."
+    )
 
 
 class CompanySearchService:
