@@ -1,6 +1,10 @@
 .env
 .DS_Store
 
+# Local Jujutsu working copies. Keep these inside the repository sandbox,
+# but never include a workspace's files in the primary working copy.
+/.jj-workspaces/
+
 # JavaScript
 node_modules/
 dist/

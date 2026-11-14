@@ -24,6 +24,9 @@ The frontend proxies `/api` requests to the backend. Do not expose API keys to b
 - SQLAlchemy and Alembic are configured, but no models or migration revisions exist yet. Add a model and migration together once a persistence feature is agreed.
 - Exa and Gemini credentials are configuration placeholders. Add integrations behind services, not directly in routers or UI components.
 - Keep bootstrap scope narrow: avoid adding product flows, accounts, or provider calls without an explicit request.
+- Create additional Jujutsu working copies under `.jj-workspaces/<name>` with
+  `jj workspace add .jj-workspaces/<name> --name <name>`. This directory is
+  gitignored so workspace files do not enter the primary working copy.
 
 ## Verification
 
