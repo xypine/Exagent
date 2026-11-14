@@ -137,7 +137,7 @@ export function SearchForm(props: {
           disabled={!canSubmit()}
           class="w-full rounded-xl bg-signal px-5 py-3.5 font-semibold text-signal-ink transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          {mutation.isPending ? "Starting agent…" : "Search →"}
+          {mutation.isPending ? "Starting agent…" : "Search"}
         </button>
       </form>
     </main>

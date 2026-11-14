@@ -1,5 +1,5 @@
 import { createQuery } from "@tanstack/solid-query";
-import { createSignal, Match, Show, Switch } from "solid-js";
+import { createSignal, Match, Switch } from "solid-js";
 
 import { getClient } from "./api";
 import { HowItWorks, RecedingHero } from "./components/how-it-works";
@@ -8,7 +8,7 @@ import { SearchForm } from "./components/SearchForm";
 import type { SearchInput } from "./types";
 
 export default function App() {
-  const client = createQuery(() => ({
+  createQuery(() => ({
     queryKey: ["client"],
     queryFn: getClient,
     staleTime: Infinity,
@@ -39,20 +39,6 @@ export default function App() {
         >
           How it works
         </a>
-        <Show when={client.isPending || client.isError}>
-          <p class="text-xs text-dim" aria-live="polite">
-            <span
-              class="mr-2 inline-block size-2 rounded-full"
-              classList={{
-                "bg-signal animate-pulse": client.isPending,
-                "bg-bad": client.isError,
-              }}
-            />
-            {client.isPending
-              ? "Initializing anonymous workspace…"
-              : "The API is not available yet."}
-          </p>
-        </Show>
       </header>
 
       <Switch>
