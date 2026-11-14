@@ -36,6 +36,9 @@ export interface PeopleSearchStats {
   companies_searched: number;
   companies_available: number;
   request_count: number;
+  requests_completed: number;
+  requests_failed: number;
+  requests_in_flight: number;
   batch_size: number;
 }
 
@@ -50,6 +53,9 @@ export interface Company {
 export interface SearchJob {
   job_id: string;
   status: JobStatus;
+  area: string;
+  industry: string;
+  company_size: CompanySize | null;
   error?: string | null;
   companies: Company[];
   people: Person[];

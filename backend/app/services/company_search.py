@@ -235,6 +235,8 @@ class CompanySearchService:
                 waiting_job.people_error = None
                 waiting_job.people_companies_searched = 0
                 waiting_job.people_request_count = 0
+                waiting_job.people_requests_completed = 0
+                waiting_job.people_requests_failed = 0
                 waiting_job.status = JOB_FINDING_PEOPLE
                 waiting_job.error = None
                 waiting_job.completed_at = None
@@ -251,6 +253,8 @@ class CompanySearchService:
             people_cache.people_error = None
             people_cache.companies_searched = 0
             people_cache.request_count = 0
+            people_cache.requests_completed = 0
+            people_cache.requests_failed = 0
             people_cache.expires_at = cache.expires_at
             people_cache.refreshing_job_id = job.id
         self._session.commit()
@@ -319,9 +323,40 @@ class CompanySearchService:
             self._session.commit()
             return
 
-        provider = ExaProvider(self._settings)
+        request_starts_before = cache.request_count
+        requests_completed_before = cache.requests_completed
+        requests_failed_before = cache.requests_failed
+
+        def persist_request_progress(metrics: Any) -> None:
+            cache.request_count = request_starts_before + metrics.request_starts
+            cache.requests_completed = requests_completed_before + metrics.requests_completed
+            cache.requests_failed = requests_failed_before + metrics.requests_failed
+            self._sync_people_progress(job.cache_key, cache)
+            self._session.commit()
+
+        provider = ExaProvider(self._settings, on_request_progress=persist_request_progress)
+        failed_companies = 0
+
+        async def persist_company_progress(people: list[dict[str, Any]], failed: bool) -> None:
+            nonlocal failed_companies
+            cache.people = [*cache.people, *people]
+            cache.companies_searched += 1
+            if failed:
+                failed_companies += 1
+            self._sync_people_progress(job.cache_key, cache)
+            self._session.commit()
+
         try:
-            people = await discover_key_people(provider, companies=companies, industry=job.industry)
+            await discover_key_people(
+                provider,
+                companies=companies,
+                industry=job.industry,
+                concurrency=min(
+                    self._settings.people_search_concurrency,
+                    self._settings.exa_max_concurrency,
+                ),
+                on_company_complete=persist_company_progress,
+            )
         except Exception:
             self._complete_people(
                 job.cache_key,
@@ -329,12 +364,11 @@ class CompanySearchService:
                 error="The key people search failed. You can try searching more again.",
             )
         else:
-            cache.people = [*cache.people, *people]
-            cache.people_error = None
-            cache.companies_searched += len(companies)
-            self._complete_people(job.cache_key, cache)
+            error = None
+            if failed_companies == len(companies):
+                error = "The key people search failed. You can try searching more again."
+            self._complete_people(job.cache_key, cache, error=error)
         finally:
-            cache.request_count += provider.metrics.request_starts
             await provider.close()
         self._session.commit()
 
@@ -348,6 +382,16 @@ class CompanySearchService:
             if waiting_job.status == JOB_FINDING_PEOPLE:
                 self._apply_people_cache(waiting_job, cache, status=JOB_DONE, completed_at=now)
 
+    def _sync_people_progress(self, cache_key: str, cache: PeopleSearchCache) -> None:
+        for waiting_job in self._jobs_for_cache(cache_key):
+            if waiting_job.status == JOB_FINDING_PEOPLE:
+                self._apply_people_cache(
+                    waiting_job,
+                    cache,
+                    status=JOB_FINDING_PEOPLE,
+                    completed_at=None,
+                )
+
     @staticmethod
     def _apply_people_cache(
         job: SearchJob,
@@ -360,6 +404,8 @@ class CompanySearchService:
         job.people_error = cache.people_error
         job.people_companies_searched = cache.companies_searched
         job.people_request_count = cache.request_count
+        job.people_requests_completed = cache.requests_completed
+        job.people_requests_failed = cache.requests_failed
         job.status = status
         job.completed_at = completed_at
 

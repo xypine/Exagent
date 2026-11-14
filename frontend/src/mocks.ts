@@ -63,24 +63,36 @@ export const mockApi = {
       return {
         job_id: jobId,
         status: "finding_companies",
+        area: "Helsinki, Finland",
+        industry: "SaaS company",
+        company_size: "small",
         companies: [],
         people: [],
         people_search_stats: {
           companies_searched: 0,
           companies_available: 0,
           request_count: 0,
+          requests_completed: 0,
+          requests_failed: 0,
+          requests_in_flight: 0,
           batch_size: 20,
         },
       };
     return {
       job_id: jobId,
       status: "done",
+      area: "Helsinki, Finland",
+      industry: "SaaS company",
+      company_size: "small",
       companies: COMPANIES,
       people: [],
       people_search_stats: {
         companies_searched: 20,
         companies_available: 50,
         request_count: 80,
+        requests_completed: 80,
+        requests_failed: 0,
+        requests_in_flight: 0,
         batch_size: 20,
       },
     };

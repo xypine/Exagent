@@ -18,6 +18,11 @@ const CX = [14, 38, 62, 86];
 const COMPANY_Y = 15;
 const YOU_Y = 90;
 const personY = (slot: number) => 34 + slot * 16;
+const companyY = (step: number) => {
+  if (step <= 1) return COMPANY_Y + 30;
+  if (step >= 5) return -5;
+  return COMPANY_Y;
+};
 
 /** Deterministic "web noise" dots that converge into companies in step 2. */
 const DOTS = Array.from({ length: 40 }, (_, i) => {
@@ -81,7 +86,7 @@ export function PipelineStage(props: {
       };
     }
     const shown = s >= 2;
-    const y = shown ? personY(p.slot) : COMPANY_Y;
+    const y = shown ? personY(p.slot) : companyY(s);
     return {
       left: `calc(${CX[p.company]}% - var(--node) / 2)`,
       top: `calc(${y}% - var(--node) / 2)`,
@@ -156,27 +161,35 @@ export function PipelineStage(props: {
           aria-hidden="true"
         >
           <For each={CX}>
-            {(x) => (
-              <line
-                x1={50}
-                y1={YOU_Y}
-                x2={x}
-                y2={props.step === 1 ? COMPANY_Y + 30 : COMPANY_Y}
+            {(x, i) => (
+              <path
+                d={`M 50 ${YOU_Y} L ${x} ${companyY(props.step)}`}
                 class="stage-line beam"
-                style={{ opacity: props.step === 1 ? "0.7" : "0" }}
+                style={{
+                  d: `path("M 50 ${YOU_Y} L ${x} ${companyY(props.step)}")`,
+                  opacity: props.step === 1 ? "0.7" : "0",
+                  "transition-delay": `${i() * 90}ms`,
+                }}
               />
             )}
           </For>
           <For each={CX}>
-            {(x) => (
-              <line
-                x1={x}
-                y1={COMPANY_Y + 3}
-                x2={x}
-                y2={personY(2)}
+            {(x, i) => (
+              <path
+                d={`M ${x} ${companyY(props.step) + 3} L ${x} ${
+                  props.step >= 2 && props.step < 5
+                    ? personY(2)
+                    : companyY(props.step) + 3
+                }`}
                 class="stage-line"
                 style={{
+                  d: `path("M ${x} ${companyY(props.step) + 3} L ${x} ${
+                    props.step >= 2 && props.step < 5
+                      ? personY(2)
+                      : companyY(props.step) + 3
+                  }")`,
                   opacity: props.step >= 2 && props.step <= 3 ? "0.6" : "0",
+                  "transition-delay": `${i() * 90}ms`,
                 }}
               />
             )}
@@ -205,7 +218,7 @@ export function PipelineStage(props: {
               class="stage-node absolute z-10 flex items-center gap-1.5 rounded-full border border-signal/60 bg-ink-2 px-2.5 py-1 text-[10px] font-semibold whitespace-nowrap shadow-lg sm:text-xs"
               style={{
                 left: `${CX[i()]}%`,
-                top: `${props.step === 1 ? COMPANY_Y + 30 : props.step >= 5 ? -5 : COMPANY_Y}%`,
+                top: `${companyY(props.step)}%`,
                 opacity: props.step >= 1 && props.step <= 4 ? "1" : "0",
                 transform: `translate(-50%, -50%) scale(${props.step >= 1 ? 1 : 0.6})`,
                 "transition-delay": `${i() * 90}ms`,

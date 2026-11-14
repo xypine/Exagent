@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import re
-from collections.abc import Sequence
+from collections.abc import Awaitable, Callable, Sequence
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -65,6 +66,8 @@ async def discover_key_people(
     *,
     companies: Sequence[dict[str, Any]],
     industry: str,
+    concurrency: int = 1,
+    on_company_complete: Callable[[list[dict[str, Any]], bool], Awaitable[None]] | None = None,
 ) -> list[dict[str, Any]]:
     """Discover lightweight, role-matched people for each company.
 
@@ -74,7 +77,9 @@ async def discover_key_people(
     people: list[dict[str, Any]] = []
     seen_profiles: set[str] = set()
 
-    for company in companies:
+    semaphore = asyncio.Semaphore(concurrency)
+
+    async def discover_for_company(company: dict[str, Any]) -> list[dict[str, Any]]:
         company_id = company.get("id")
         company_name = company.get("name")
         company_url = company.get("url")
@@ -86,24 +91,46 @@ async def discover_key_people(
             or not isinstance(company_url, str)
             or not company_url
         ):
-            continue
+            if on_company_complete is not None:
+                await on_company_complete([], True)
+            return []
         domain = normalize_domain(company_url)
         if domain is None:
-            continue
+            if on_company_complete is not None:
+                await on_company_complete([], True)
+            return []
 
-        discovery = await provider.discover_people(
-            company_name,
-            company_domain=domain,
-            job_titles=titles,
-            num_results=10,
-        )
+        try:
+            async with semaphore:
+                discovery = await provider.discover_people(
+                    company_name,
+                    company_domain=domain,
+                    job_titles=titles,
+                    num_results=10,
+                )
+        except Exception:
+            if on_company_complete is None:
+                raise
+            await on_company_complete([], True)
+            return []
+
+        discovered_people: list[dict[str, Any]] = []
         for candidate in rank_by_hiring_influence(discovery.output.people):
             normalized = normalize_person(
                 candidate, company_id=company_id, company_name=company_name
             )
             if normalized is not None and normalized["profile_url"] not in seen_profiles:
-                people.append(normalized)
+                discovered_people.append(normalized)
                 seen_profiles.add(normalized["profile_url"])
+        if on_company_complete is not None:
+            await on_company_complete(discovered_people, False)
+        return discovered_people
+
+    discovered_by_company = await asyncio.gather(
+        *(discover_for_company(company) for company in companies)
+    )
+    for discovered_people in discovered_by_company:
+        people.extend(discovered_people)
     return people
 
 

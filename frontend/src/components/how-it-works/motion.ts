@@ -34,7 +34,15 @@ export function createRecede(el: () => HTMLElement | undefined) {
       const node = el();
       if (!node) return;
       const h = Math.max(node.offsetHeight, 1);
-      const p = Math.min(1, Math.max(0, window.scrollY / (h * 0.85)));
+      const isMobile = window.innerWidth < 640;
+      // Keep the tall mobile hero readable until the user has scrolled through
+      // part of it, then let the effect finish as the next section takes over.
+      const start = isMobile ? h * 0.4 : 0;
+      const end = h * (isMobile ? 1.15 : 0.85);
+      const p = Math.min(
+        1,
+        Math.max(0, (window.scrollY - start) / (end - start)),
+      );
       node.style.setProperty("--recede", p.toFixed(3));
     };
     const onScroll = () => {

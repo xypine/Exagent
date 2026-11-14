@@ -63,7 +63,7 @@ function People({ people }: { people: Person[] }) {
 
 export function Results(props: {
   jobId: string;
-  input: SearchInput;
+  input?: SearchInput;
   onReset: () => void;
 }) {
   const [enteredCompanyIds, setEnteredCompanyIds] = createSignal<
@@ -88,6 +88,16 @@ export function Results(props: {
   const running = () =>
     job.data?.status !== "done" && job.data?.status !== "failed";
 
+  const input = (): SearchInput | undefined => {
+    if (props.input) return props.input;
+    if (!job.data || job.data.company_size === null) return undefined;
+    return {
+      area: job.data.area,
+      industry: job.data.industry,
+      company_size: job.data.company_size,
+    };
+  };
+
   const markCompanyEntered = (companyId: string) => {
     setEnteredCompanyIds((entered) => new Set(entered).add(companyId));
   };
@@ -95,19 +105,25 @@ export function Results(props: {
   return (
     <main class="mx-auto max-w-6xl px-6 pt-6 pb-16">
       <div class="flex flex-wrap items-center gap-2">
-        <Show when={props.input.area}>
-          <span class="rounded-full border border-line px-3 py-1 text-sm">
-            📍 {props.input.area}
-          </span>
+        <Show when={input()}>
+          {(searchInput) => (
+            <>
+              <Show when={searchInput().area}>
+                <span class="rounded-full border border-line px-3 py-1 text-sm">
+                  📍 {searchInput().area}
+                </span>
+              </Show>
+              <Show when={searchInput().industry}>
+                <span class="rounded-full border border-line px-3 py-1 text-sm">
+                  🏷 {searchInput().industry}
+                </span>
+              </Show>
+              <span class="rounded-full border border-line px-3 py-1 text-sm">
+                🏢 {COMPANY_SIZE_LABELS[searchInput().company_size]}
+              </span>
+            </>
+          )}
         </Show>
-        <Show when={props.input.industry}>
-          <span class="rounded-full border border-line px-3 py-1 text-sm">
-            🏷 {props.input.industry}
-          </span>
-        </Show>
-        <span class="rounded-full border border-line px-3 py-1 text-sm">
-          🏢 {COMPANY_SIZE_LABELS[props.input.company_size]}
-        </span>
         <button
           type="button"
           onClick={props.onReset}
@@ -144,11 +160,25 @@ export function Results(props: {
 
       <Show when={job.data?.people_search_stats}>
         {(stats) => (
-          <p class="mt-4 font-mono text-xs text-dim">
-            Key people search: {stats().companies_searched}/
-            {stats().companies_available} companies · {stats().request_count}{" "}
-            Exa requests
-          </p>
+          <div
+            class="mt-4 space-y-1 font-mono text-xs text-dim"
+            aria-live="polite"
+          >
+            <Show
+              when={
+                job.data?.status === "finding_people" &&
+                (job.data?.companies.length ?? 0) > 0
+              }
+            >
+              <p>Companies found — researching key people in the background.</p>
+            </Show>
+            <p>
+              Key people: {stats().companies_searched}/
+              {stats().companies_available} companies researched ·{" "}
+              {stats().requests_in_flight} Exa requests in flight ·{" "}
+              {stats().requests_completed} completed
+            </p>
+          </div>
         )}
       </Show>
 
