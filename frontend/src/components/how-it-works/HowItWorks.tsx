@@ -97,22 +97,11 @@ export function HowItWorks(props: { onTryIt?: () => void }) {
                       "border-line/60 bg-ink-2/30 opacity-40": step() !== i(),
                     }}
                   >
-                    <p class="text-base text-star">
-                      {s.n} <span class="text-dim">· {s.label}</span>
-                    </p>
+                    <p class="text-base text-star">{s.n}</p>
                     <h3 class="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
                       {s.title}
                     </h3>
                     <p class="mt-3 leading-7 text-dim">{s.body}</p>
-                    <div class="mt-4 flex flex-wrap gap-2">
-                      <For each={s.tags}>
-                        {(t) => (
-                          <span class="rounded-full border border-line px-2.5 py-1 text-[11px] text-paper/80">
-                            {t}
-                          </span>
-                        )}
-                      </For>
-                    </div>
                     {i() === 4 && (
                       <p class="mt-4 border-l-2 border-star pl-3 text-sm text-dim">
                         They don't need to know your field. A CFO at a software

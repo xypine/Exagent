@@ -12,6 +12,7 @@ import {
   STEPS,
   WEIGHTS,
 } from "../../howItWorks";
+import { UserRoundIcon } from "./UserRoundIcon";
 
 /** Column centres (%) for the four demo companies. */
 const CX = [14, 38, 62, 86];
@@ -62,7 +63,6 @@ export function PipelineStage(props: {
       });
     return withScore;
   })();
-  const totalSources = DEMO_PEOPLE.reduce((n, p) => n + p.sources, 0);
 
   const [selected, setSelected] = createSignal<string | null>(null);
   createEffect(() => {
@@ -99,13 +99,6 @@ export function PipelineStage(props: {
       "transition-delay": `${(p.company * 3 + p.slot) * 45}ms`,
     };
   };
-
-  const counters = () => [
-    { label: "companies", value: props.step >= 1 ? DEMO_COMPANIES.length : 0 },
-    { label: "people", value: props.step >= 2 ? DEMO_PEOPLE.length : 0 },
-    { label: "sources", value: props.step >= 3 ? totalSources : 0 },
-    { label: "scored", value: props.step >= 4 ? DEMO_PEOPLE.length : 0 },
-  ];
 
   return (
     <div class="flex h-full flex-col gap-3">
@@ -297,10 +290,7 @@ export function PipelineStage(props: {
                         props.step === 3 && p.sources <= 1,
                     }}
                   >
-                    {p.name
-                      .split(" ")
-                      .map((w) => w[0])
-                      .join("")}
+                    <UserRoundIcon class="size-4 sm:size-[18px]" />
                   </span>
                   {/* Sources orbiting during research */}
                   <span
@@ -454,27 +444,6 @@ export function PipelineStage(props: {
             );
           }}
         </Show>
-      </div>
-
-      <div class="flex items-center justify-between gap-3 text-[10px] text-dim">
-        <div class="flex gap-3 sm:gap-4">
-          <For each={counters()}>
-            {(c) => (
-              <span>
-                <span
-                  class="text-paper transition-colors"
-                  classList={{ "text-star": c.value > 0 }}
-                >
-                  {String(c.value).padStart(2, "0")}
-                </span>{" "}
-                {c.label}
-              </span>
-            )}
-          </For>
-        </div>
-        <span class="hidden sm:inline">
-          {props.step === 5 ? "Tap a person ↑" : "Example data"}
-        </span>
       </div>
     </div>
   );

@@ -85,49 +85,42 @@ export const STEPS: {
   label: string;
   title: string;
   body: string;
-  tags: string[];
 }[] = [
   {
     n: "01",
     label: "Your input",
     title: "Tell us what you're after",
     body: "Pick a city and an industry. Add a few lines about your background, skills and wishes if you like. It's optional, but the more you share, the sharper the match.",
-    tags: ["City", "Industry", "About you · optional"],
   },
   {
     n: "02",
     label: "Layer 1 · Companies",
     title: "We find the companies",
     body: "The first search layer scans the web for companies in your industry, in your city. Only companies at this stage, nothing else.",
-    tags: ["Web search", "Industry × city"],
   },
   {
     n: "03",
     label: "Layer 2 · People",
     title: "We find the people inside",
     body: "The second layer surfaces the people in those companies: name, role, industry and a way to reach them, like LinkedIn or email. The location already matches.",
-    tags: ["Name", "Role", "Contact"],
   },
   {
     n: "04",
     label: "Layer 3 · Research",
     title: "We learn who they are",
     body: "The third layer researches each person in public sources: work history, education, publications, talks, interviews and company info. Not everyone has everything, and you'll see that.",
-    tags: ["Public sources only", "Gaps stay visible"],
   },
   {
     n: "05",
     label: "Scoring",
     title: "We score who's worth a message",
     body: "AI compares every person with your profile, using only what was found. No new searching, no guessing. Three factors, fixed weights.",
-    tags: ["Decision power 40 %", "Background fit 40 %", "Common ground 20 %"],
   },
   {
     n: "06",
     label: "Shortlist",
     title: "You get a ranked shortlist",
     body: "Best match first. For each person: a 0–100 score, a confidence level, reasoning with sources, an angle to open with, and what's still missing.",
-    tags: ["Score", "Confidence", "Sources", "Opening angle"],
   },
 ];
 
