@@ -1,7 +1,7 @@
 name: Deploy
 
-# Continuous deployment of unifood.fi (CNAME -> söis.fi, served by the primergy
-# homelab): every push to main pushes fresh :latest images to GHCR. The quadlets
+# Continuous deployment of exa.söis.fi (served by the primergy homelab):
+# every push to main pushes fresh :latest images to GHCR. The quadlets
 # in xypine/primergy stack/unifood/ use AutoUpdate=registry, so primergy pulls
 # new digests on its own -- no GitHub-to-host access is involved.
 #
@@ -23,7 +23,7 @@ permissions:
   packages: write
 
 concurrency:
-  group: deploy-unifood
+  group: deploy-exa
   cancel-in-progress: true
 
 env:
