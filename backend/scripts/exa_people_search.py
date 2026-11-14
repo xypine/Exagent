@@ -14,6 +14,7 @@ from app.services.exa_provider import (
     normalize_domain,
     normalize_website_url,
 )
+from app.services.people_ranking import rank_by_hiring_influence
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 PROJECT_DIR = BACKEND_DIR.parent
@@ -87,7 +88,7 @@ async def _search(
             company, company_domain=domain, job_titles=job_titles, num_results=limit
         )
         enriched_people = []
-        for person in discovery.output.people:
+        for person in rank_by_hiring_influence(discovery.output.people)[:3]:
             enriched = await provider.research_person(
                 person.name, company_name=company, profile_url=person.profile_url
             )
