@@ -2,15 +2,10 @@ import { createMutation } from "@tanstack/solid-query";
 import { createSignal, For, Show } from "solid-js";
 
 import { createSearch } from "../api";
+import { INDUSTRIES, searchIndustries } from "../industries";
+import { searchLocations } from "../locations";
 import type { SearchInput } from "../types";
-
-const INDUSTRY_SUGGESTIONS = [
-  "AI / ML",
-  "Fintech",
-  "Health tech",
-  "Climate",
-  "Gaming",
-];
+import { Autocomplete } from "./Autocomplete";
 
 export function SearchForm(props: {
   onStarted: (jobId: string, input: SearchInput) => void;
@@ -70,27 +65,31 @@ export function SearchForm(props: {
         class="animate-rise space-y-4 rounded-2xl border border-line bg-ink-2/60 p-6 shadow-2xl backdrop-blur [animation-delay:120ms]"
       >
         <div class="grid gap-4 sm:grid-cols-2">
-          <label class="space-y-1.5">
+          <label for="location" class="space-y-1.5">
             <span class="font-mono text-xs text-dim uppercase">Location</span>
-            <input
-              class="field"
-              placeholder="Helsinki, remote…"
+            <Autocomplete
+              inputId="location"
               value={location()}
-              onInput={(e) => setLocation(e.currentTarget.value)}
+              onChange={setLocation}
+              search={searchLocations}
+              placeholder="Helsinki, remote…"
+              listId="location-suggestions"
             />
           </label>
-          <label class="space-y-1.5">
+          <label for="industry" class="space-y-1.5">
             <span class="font-mono text-xs text-dim uppercase">Industry</span>
-            <input
-              class="field"
-              placeholder="Fintech, climate…"
+            <Autocomplete
+              inputId="industry"
               value={industry()}
-              onInput={(e) => setIndustry(e.currentTarget.value)}
+              onChange={setIndustry}
+              search={searchIndustries}
+              placeholder="SaaS, Marketing…"
+              listId="industry-suggestions"
             />
           </label>
         </div>
         <div class="flex flex-wrap gap-2">
-          <For each={INDUSTRY_SUGGESTIONS}>
+          <For each={INDUSTRIES}>
             {(s) => (
               <button
                 type="button"
