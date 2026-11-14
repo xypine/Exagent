@@ -2,6 +2,7 @@ import { createQuery } from "@tanstack/solid-query";
 import { createSignal, Match, Switch } from "solid-js";
 
 import { getClient } from "./api";
+import { HowItWorks, RecedingHero } from "./components/how-it-works";
 import { Results } from "./components/Results";
 import { SearchForm } from "./components/SearchForm";
 import type { SearchInput } from "./types";
@@ -30,6 +31,13 @@ export default function App() {
           </span>
           Exagent
         </button>
+        <a
+          href="#how-it-works"
+          class="ml-auto mr-6 hidden font-mono text-xs text-dim transition hover:text-signal sm:inline"
+          classList={{ "sm:hidden": job() !== null }}
+        >
+          How it works
+        </a>
         <p class="font-mono text-xs text-dim" aria-live="polite">
           <span
             class="mr-2 inline-block size-2 rounded-full"
@@ -49,7 +57,20 @@ export default function App() {
 
       <Switch>
         <Match when={job() === null}>
-          <SearchForm onStarted={(id, input) => setJob({ id, input })} />
+          <RecedingHero>
+            <SearchForm onStarted={(id, input) => setJob({ id, input })} />
+          </RecedingHero>
+          <HowItWorks
+            onTryIt={() =>
+              setTimeout(
+                () =>
+                  document
+                    .querySelector<HTMLTextAreaElement>("textarea")
+                    ?.focus({ preventScroll: true }),
+                700,
+              )
+            }
+          />
         </Match>
         <Match when={job()}>
           {(j) => (
