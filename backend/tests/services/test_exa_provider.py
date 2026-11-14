@@ -90,6 +90,33 @@ def _people_response() -> SimpleNamespace:
                     "profile_url": "https://linkedin.com/in/aino-example",
                     "evidence_url": "https://example.fi/team/aino",
                     "evidence_summary": "The company team page lists Aino as Portfolio Manager.",
+                    "background_entries": [
+                        [
+                            "previous_experience",
+                            "Nordic Capital",
+                            "Investment Analyst",
+                            "https://example.com/aino-work",
+                        ],
+                        ["education", "Aalto University", "Finance", "https://example.com/aino"],
+                        [
+                            "education",
+                            "Hanken School of Economics",
+                            "",
+                            "https://example.com/aino",
+                        ],
+                        [
+                            "volunteer_experience",
+                            "Startup Refugees",
+                            "Mentor",
+                            "https://example.com/aino-volunteer",
+                        ],
+                        [
+                            "volunteer_experience",
+                            "Local Food Bank",
+                            "",
+                            "https://example.com/aino-volunteer",
+                        ],
+                    ],
                 }
             ]
         }
@@ -150,6 +177,12 @@ async def test_provider_returns_structured_people_from_single_bounded_search() -
     assert person.matched_job_title == "Portfolio Manager"
     assert person.profile_url == "https://linkedin.com/in/aino-example"
     assert person.evidence_url == "https://example.fi/team/aino"
+    assert person.previous_experience[0].company_name == "Nordic Capital"
+    assert person.previous_experience[0].source_url == "https://example.com/aino-work"
+    assert person.education[0].school == "Aalto University"
+    assert person.education[0].source_url == "https://example.com/aino"
+    assert person.volunteer_experience[0].organization == "Startup Refugees"
+    assert person.volunteer_experience[0].source_url == "https://example.com/aino-volunteer"
     assert response.results[0].url == "https://linkedin.com/in/aino-example"
 
     query, kwargs = client.calls[0]
@@ -161,6 +194,7 @@ async def test_provider_returns_structured_people_from_single_bounded_search() -
     assert "not another company or division in its corporate group" in query
     assert "exclude former employees" in query
     assert "Set matched_job_title to the target role" in query
+    assert len(client.calls) == 1
     assert kwargs["category"] == "people"
     assert kwargs["type"] == "auto"
     assert kwargs["num_results"] == 12
@@ -177,6 +211,7 @@ async def test_provider_returns_structured_people_from_single_bounded_search() -
         "evidence_url",
         "evidence_summary",
     }
+    assert len(kwargs["output_schema"]["properties"]) + len(person_schema["properties"]) <= 10
 
 
 async def test_people_search_accepts_valid_empty_structured_output() -> None:
@@ -193,6 +228,57 @@ async def test_people_search_accepts_valid_empty_structured_output() -> None:
     )
 
     assert response.output.people == ()
+
+
+async def test_people_search_returns_empty_background_categories() -> None:
+    raw_response = _people_response()
+    raw_response.output.content["people"][0]["background_entries"] = []
+    client = FakeClient([raw_response])
+    provider = ExaProvider(_settings(), client=client)
+
+    response = await provider.discover_people(
+        "Example Wealth",
+        company_domain="example.fi",
+        job_titles=["Portfolio Manager"],
+        num_results=5,
+    )
+
+    person = response.output.people[0]
+    assert person.previous_experience == ()
+    assert person.education == ()
+    assert person.volunteer_experience == ()
+
+
+@pytest.mark.parametrize(
+    "background_entries",
+    [
+        "not an array",
+        [["previous_experience", "Missing role"]],
+        [["previous_experience", "Former Company", "", "https://example.com"]],
+        [["education", "", "Finance", "https://example.com"]],
+        [["unknown_category", "Organization", "Role", "https://example.com"]],
+        [["education", "Aalto University", 42, "https://example.com"]],
+        [["education", "Aalto University", "Finance", "not-a-url"]],
+    ],
+)
+async def test_invalid_background_entries_are_rejected_without_retrying(
+    background_entries: object,
+) -> None:
+    raw_response = _people_response()
+    raw_response.output.content["people"][0]["background_entries"] = background_entries
+    client = FakeClient([raw_response])
+    provider = ExaProvider(_settings(exa_max_retries=3), client=client)
+
+    with pytest.raises(ExaProviderInvalidResponse):
+        await provider.discover_people(
+            "Example Wealth",
+            company_domain="example.fi",
+            job_titles=["Portfolio Manager"],
+            num_results=5,
+        )
+
+    assert len(client.calls) == 1
+    assert provider.metrics.retries == 0
 
 
 @pytest.mark.parametrize(

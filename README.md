@@ -1,6 +1,6 @@
 # Prospecting workspace
 
-A lightweight job-search research tool. Exa company and people discovery are available through local CLIs; the browser product workflow remains mocked, and Gemini synthesis is not implemented yet.
+A lightweight job-search research tool. The browser can create and poll cached company-search jobs; Exa people discovery and research are also available through local CLIs. Gemini synthesis is not implemented yet.
 
 ## Stack
 
@@ -26,6 +26,7 @@ A lightweight job-search research tool. Exa company and people discovery are ava
 3. Open http://localhost:5173. The API health endpoint is at http://localhost:8000/api/health.
 
 The Compose services bind mount the source directories. Changes to the frontend use Vite HMR; changes to the backend trigger Uvicorn reload.
+The backend service applies Alembic migrations before it starts, so the company-search job and cache tables are available locally.
 
 
 ## Local commands
@@ -55,7 +56,7 @@ bin/exa-people-search \
   --limit 10
 ```
 
-Available preset keys are `investment_banking`, `saas_company`, `wealth_management`, `marketing_agency`, and `recruiters`. The people command performs one Exa `people` search for all titles in the selected preset and emits validated structured JSON with profile and current-role evidence fields. Equivalent specialized or compound titles are accepted, but current employment must be at the selected company rather than another division in its corporate group. No API keys are exposed to browser code.
+Available preset keys are `investment_banking`, `saas_company`, `wealth_management`, `marketing_agency`, and `recruiters`. The people command finds current employees for the selected titles, then researches their public background. Previous roles, education, and volunteering are emitted only with a source URL for that specific entry. Equivalent specialized or compound titles are accepted, but current employment must be at the selected company rather than another division in its corporate group. No API keys are exposed to browser code.
 
 ## Anonymous clients and rate limits
 
@@ -65,7 +66,7 @@ The in-memory limiter is suitable only for one local process. Before deploying m
 
 ## Database and migrations
 
-SQLAlchemy, database sessions, and Alembic are wired in, but there are intentionally no models or migration revisions. When the first persistence feature is agreed, add its model and generate the first revision with:
+SQLAlchemy, database sessions, and Alembic persist company-search jobs and their cache. Create future persistence features with a model and migration together:
 
 ```bash
 cd backend

@@ -14,9 +14,11 @@ from app.services.exa_provider import (
     normalize_domain,
     normalize_website_url,
 )
+from app.services.people_ranking import rank_by_hiring_influence
 
-ROOT_DIR = Path(__file__).resolve().parents[2]
-JOB_TITLES_PATH = ROOT_DIR / "job_titles.json"
+BACKEND_DIR = Path(__file__).resolve().parents[1]
+PROJECT_DIR = BACKEND_DIR.parent
+JOB_TITLES_PATH = BACKEND_DIR / "job_titles.json"
 
 
 def _text_argument(value: str) -> str:
@@ -74,7 +76,7 @@ async def _search(
         _print_error("invalid_company_url", "Company URL must contain a valid hostname.")
         return 2
 
-    load_dotenv(ROOT_DIR / ".env")
+    load_dotenv(PROJECT_DIR / ".env")
     settings = Settings()
     if not settings.exa_api_key:
         _print_error("not_configured", "Set EXA_API_KEY in .env before running a live search.")
@@ -82,12 +84,15 @@ async def _search(
 
     provider = ExaProvider(settings)
     try:
-        response = await provider.discover_people(
-            company,
-            company_domain=domain,
-            job_titles=job_titles,
-            num_results=limit,
+        discovery = await provider.discover_people(
+            company, company_domain=domain, job_titles=job_titles, num_results=limit
         )
+        enriched_people = []
+        for person in rank_by_hiring_influence(discovery.output.people)[:3]:
+            enriched = await provider.research_person(
+                person.name, company_name=company, profile_url=person.profile_url
+            )
+            enriched_people.extend(enriched.output.people[:1])
     except ExaProviderError as error:
         _print_error(error.code, str(error))
         return 1
@@ -104,8 +109,15 @@ async def _search(
             "profile_url": person.profile_url,
             "evidence_url": person.evidence_url,
             "evidence_summary": person.evidence_summary,
+            "previous_experience": [
+                experience.model_dump() for experience in person.previous_experience
+            ],
+            "education": [education.model_dump() for education in person.education],
+            "volunteer_experience": [
+                experience.model_dump() for experience in person.volunteer_experience
+            ],
         }
-        for rank, person in enumerate(response.output.people, start=1)
+        for rank, person in enumerate(enriched_people, start=1)
     ]
     payload = {
         "company": {
