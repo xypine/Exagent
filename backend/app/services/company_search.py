@@ -27,9 +27,9 @@ JOB_FAILED = "failed"
 JOB_TERMINAL_STATUSES = (JOB_DONE, JOB_FAILED)
 COMPANY_NAMESPACE = UUID("2fb99d3a-73b9-4b46-89f0-85d6a450850d")
 COMPANY_SIZE_QUERY: dict[CompanySize, str] = {
-    "small": "companies with fewer than 50 employees",
-    "medium": "companies with 50–249 employees",
-    "large": "companies with 250 or more employees",
+    "small": "companies with fewer than 25 employees",
+    "medium": "companies with 25–150 employees",
+    "large": "companies with 150 or more employees",
 }
 
 
@@ -38,7 +38,10 @@ def normalize_criteria(value: str) -> str:
 
 
 def cache_key_for(area: str, industry: str, company_size: CompanySize) -> str:
-    criteria = f"{normalize_criteria(area)}\n{normalize_criteria(industry)}\n{company_size}"
+    criteria = (
+        f"{normalize_criteria(area)}\n{normalize_criteria(industry)}\n"
+        f"{company_size}\n{COMPANY_SIZE_QUERY[company_size]}"
+    )
     return hashlib.sha256(criteria.encode()).hexdigest()
 
 
@@ -77,8 +80,8 @@ async def discover_companies_with_fallback(
         query = company_query(area, industry, attempted_size)
         if company_size == "large" and attempted_size == "medium":
             query += (
-                " Within the 50–249 employee results, prioritize firms closest to the "
-                "250-employee threshold over smaller firms. Treat employee count as a ranking "
+                " Within the 25–150 employee results, prioritize firms closest to the "
+                "150-employee threshold over smaller firms. Treat employee count as a ranking "
                 "signal, not a hard requirement, and include otherwise relevant firms whose "
                 "headcount is unpublished."
             )

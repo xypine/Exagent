@@ -100,10 +100,10 @@ def test_company_query_includes_selected_headcount_range() -> None:
     medium_query = company_query("Helsinki", "Fintech", "medium")
     large_query = company_query("Helsinki", "Fintech", "large")
 
-    assert "fewer than 50 employees" in small_query
-    assert "50–249 employees" in medium_query
+    assert "fewer than 25 employees" in small_query
+    assert "25–150 employees" in medium_query
     assert "prioritize firms closest" not in medium_query
-    assert "250 or more employees" in large_query
+    assert "150 or more employees" in large_query
     assert "startup" not in small_query.casefold()
 
 
@@ -120,7 +120,7 @@ async def test_company_search_does_not_fall_back_when_matches_exist() -> None:
 
     assert len(companies) == 1
     assert len(provider.queries) == 1
-    assert "250 or more employees" in provider.queries[0]
+    assert "150 or more employees" in provider.queries[0]
 
 
 async def test_company_search_falls_down_to_medium_after_no_large_company_matches() -> None:
@@ -136,9 +136,9 @@ async def test_company_search_falls_down_to_medium_after_no_large_company_matche
 
     assert len(companies) == 1
     assert len(provider.queries) == 2
-    assert "250 or more employees" in provider.queries[0]
-    assert "50–249 employees" in provider.queries[1]
-    assert "prioritize firms closest to the 250-employee" in provider.queries[1]
+    assert "150 or more employees" in provider.queries[0]
+    assert "25–150 employees" in provider.queries[1]
+    assert "prioritize firms closest to the 150-employee" in provider.queries[1]
     assert "not a hard requirement" in provider.queries[1]
 
 
@@ -155,9 +155,9 @@ async def test_company_search_tries_small_after_all_larger_sizes_return_no_match
 
     assert companies == []
     assert len(provider.queries) == 3
-    assert "250 or more employees" in provider.queries[0]
-    assert "50–249 employees" in provider.queries[1]
-    assert "fewer than 50 employees" in provider.queries[2]
+    assert "150 or more employees" in provider.queries[0]
+    assert "25–150 employees" in provider.queries[1]
+    assert "fewer than 25 employees" in provider.queries[2]
 
 
 def test_fresh_cache_creates_completed_job_without_scheduling_refresh() -> None:

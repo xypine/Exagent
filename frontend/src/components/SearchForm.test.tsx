@@ -27,15 +27,9 @@ describe("SearchForm", () => {
     const submit = screen.getByRole("button", {
       name: /Search/,
     }) as HTMLButtonElement;
-    expect(
-      screen.getByRole("radio", { name: "Under 50 employees" }),
-    ).not.toBeNull();
-    expect(
-      screen.getByRole("radio", { name: "50–249 employees" }),
-    ).not.toBeNull();
-    expect(
-      screen.getByRole("radio", { name: "250+ employees" }),
-    ).not.toBeNull();
+    expect(screen.getByRole("radio", { name: "Startup" })).not.toBeNull();
+    expect(screen.getByRole("radio", { name: "Mid-size" })).not.toBeNull();
+    expect(screen.getByRole("radio", { name: "Enterprise" })).not.toBeNull();
     expect(submit.disabled).toBe(true);
 
     fireEvent.input(screen.getByRole("combobox", { name: "Area" }), {
@@ -46,7 +40,7 @@ describe("SearchForm", () => {
     });
     expect(submit.disabled).toBe(true);
 
-    fireEvent.click(screen.getByRole("radio", { name: "50–249 employees" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Mid-size" }));
     expect(submit.disabled).toBe(false);
     fireEvent.click(submit);
 
