@@ -27,6 +27,7 @@ A lightweight starting point for a job-search research tool. The eventual produc
 
 The Compose services bind mount the source directories. Changes to the frontend use Vite HMR; changes to the backend trigger Uvicorn reload.
 
+
 ## Local commands
 
 Running the apps outside Docker is optional. Install dependencies first with `pnpm install` in `frontend/` and `uv sync --all-groups` in `backend/`.

@@ -50,7 +50,10 @@ async def enforce_rate_limit(
     x_client_id: str | None = Header(default=None, alias=CLIENT_ID_HEADER),
 ) -> ClientContext:
     if x_client_id is None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Missing X-Client-Id header.")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Missing X-Client-Id header.",
+        )
 
     try:
         client_id = UUID(x_client_id)
