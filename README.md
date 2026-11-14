@@ -55,7 +55,7 @@ bin/exa-people-search \
   --limit 10
 ```
 
-Available preset keys are `investment_banking`, `saas_company`, `wealth_management`, `marketing_agency`, and `recruiters`. The people command performs one Exa `people` search for all titles in the selected preset and emits validated structured JSON with profile and current-role evidence fields. Equivalent specialized or compound titles are accepted, but current employment must be at the selected company rather than another division in its corporate group. No API keys are exposed to browser code.
+Available preset keys are `investment_banking`, `saas_company`, `wealth_management`, `marketing_agency`, and `recruiters`. The people command performs one Exa `people` search for all titles in the selected preset and emits validated structured JSON with profile and current-role evidence fields. The same request also returns publicly evidenced `previous_experience` (former companies and roles), `education` (schools and majors), and `volunteer_experience`; no per-person follow-up searches are made. Unavailable background categories are empty arrays, and unknown majors or volunteer roles are `null`. Equivalent specialized or compound titles are accepted, but current employment must be at the selected company rather than another division in its corporate group. No API keys are exposed to browser code.
 
 ## Anonymous clients and rate limits
 

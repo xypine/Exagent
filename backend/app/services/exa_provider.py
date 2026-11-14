@@ -14,7 +14,7 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 import httpx
 from exa_py import AsyncExa, ExaTimeoutError
 from exa_py.api import DeepObjectOutputSchema
-from pydantic import BaseModel, ConfigDict, ValidationError
+from pydantic import BaseModel, ConfigDict, ValidationError, model_validator
 
 from app.core.config import Settings
 from app.services.exa_rate_limiter import ExaRateLimiter, ExaRateLimiterQueueError
@@ -35,6 +35,27 @@ class ProviderSearchOutput(BaseModel):
     companies: tuple[ProviderCompany, ...]
 
 
+class ProviderPreviousExperience(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    company_name: str
+    role: str
+
+
+class ProviderEducation(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    school: str
+    major: str | None
+
+
+class ProviderVolunteerExperience(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    organization: str
+    role: str | None
+
+
 class ProviderPerson(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -45,6 +66,55 @@ class ProviderPerson(BaseModel):
     profile_url: str
     evidence_url: str
     evidence_summary: str
+    previous_experience: tuple[ProviderPreviousExperience, ...]
+    education: tuple[ProviderEducation, ...]
+    volunteer_experience: tuple[ProviderVolunteerExperience, ...]
+
+    @model_validator(mode="before")
+    @classmethod
+    def parse_background_entries(cls, value: Any) -> Any:
+        if not isinstance(value, Mapping) or "background_entries" not in value:
+            return value
+
+        data = dict(value)
+        entries = data.pop("background_entries")
+        if not isinstance(entries, (list, tuple)):
+            raise ValueError("background_entries must be an array")
+
+        previous_experience: list[dict[str, str]] = []
+        education: list[dict[str, str | None]] = []
+        volunteer_experience: list[dict[str, str | None]] = []
+        for entry in entries:
+            if (
+                not isinstance(entry, (list, tuple))
+                or len(entry) != 3
+                or any(not isinstance(item, str) for item in entry)
+            ):
+                raise ValueError("Each background entry must contain three strings")
+            category = str(entry[0]).strip()
+            organization = str(entry[1]).strip()
+            detail = str(entry[2]).strip()
+            if not organization:
+                raise ValueError("Background entries must name an organization or school")
+
+            match category:
+                case "previous_experience":
+                    if not detail:
+                        raise ValueError("Previous experience entries must include a role")
+                    previous_experience.append({"company_name": organization, "role": detail})
+                case "education":
+                    education.append({"school": organization, "major": detail or None})
+                case "volunteer_experience":
+                    volunteer_experience.append(
+                        {"organization": organization, "role": detail or None}
+                    )
+                case _:
+                    raise ValueError("Unknown background entry category")
+
+        data["previous_experience"] = previous_experience
+        data["education"] = education
+        data["volunteer_experience"] = volunteer_experience
+        return data
 
 
 class ProviderPeopleSearchOutput(BaseModel):
@@ -88,6 +158,26 @@ _PEOPLE_OUTPUT_SCHEMA: DeepObjectOutputSchema = {
                     "profile_url": {"type": "string"},
                     "evidence_url": {"type": "string"},
                     "evidence_summary": {"type": "string"},
+                    "background_entries": {
+                        "type": "array",
+                        "description": (
+                            "Verified public background for this person. Each item must be exactly "
+                            "three strings: [category, organization_or_school, role_or_major]. "
+                            "Use category previous_experience for a former company and role at "
+                            "another employer, education for a school and its major or field of "
+                            "study, or volunteer_experience for a volunteer organization and role. "
+                            "Do not include the person's current role at the selected company in "
+                            "previous_experience. Use an empty third string for an unreported "
+                            "major or volunteer role. Return an empty array when no background is "
+                            "verified. Never guess or mix details from same-named people."
+                        ),
+                        "items": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "minItems": 3,
+                            "maxItems": 3,
+                        },
+                    },
                 },
                 "required": [
                     "name",
@@ -97,6 +187,7 @@ _PEOPLE_OUTPUT_SCHEMA: DeepObjectOutputSchema = {
                     "profile_url",
                     "evidence_url",
                     "evidence_summary",
+                    "background_entries",
                 ],
             },
         }
@@ -436,7 +527,9 @@ class ExaProvider:
             f"Verify current employment at {company} specifically, not another company or "
             "division in its corporate group. Return one row per person with public evidence and "
             "exclude former employees. Set matched_job_title to the target role that best matches "
-            "the current title."
+            "the current title. Also extract publicly evidenced previous roles at other companies, "
+            "schools and majors, and volunteer experience. Omit unverified background details and "
+            "never combine profiles belonging to different people with the same name."
         )
         return await self._request(
             lambda output_schema: self._client.search(

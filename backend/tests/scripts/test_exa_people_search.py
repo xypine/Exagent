@@ -5,7 +5,13 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.services.exa_provider import ProviderPeopleSearchOutput, ProviderPerson
+from app.services.exa_provider import (
+    ProviderEducation,
+    ProviderPeopleSearchOutput,
+    ProviderPerson,
+    ProviderPreviousExperience,
+    ProviderVolunteerExperience,
+)
 from scripts import exa_people_search as cli
 
 
@@ -102,6 +108,19 @@ async def test_search_serializes_validated_structured_people_output(
                 profile_url="https://linkedin.com/in/aino-example",
                 evidence_url="https://example.fi/team/aino",
                 evidence_summary="The company team page lists Aino as Portfolio Manager.",
+                previous_experience=(
+                    ProviderPreviousExperience(
+                        company_name="Nordic Capital",
+                        role="Investment Analyst",
+                    ),
+                ),
+                education=(ProviderEducation(school="Aalto University", major="Finance"),),
+                volunteer_experience=(
+                    ProviderVolunteerExperience(
+                        organization="Startup Refugees",
+                        role="Mentor",
+                    ),
+                ),
             )
             return SimpleNamespace(output=ProviderPeopleSearchOutput(people=(person,)))
 
@@ -157,6 +176,14 @@ async def test_search_serializes_validated_structured_people_output(
             "profile_url": "https://linkedin.com/in/aino-example",
             "evidence_url": "https://example.fi/team/aino",
             "evidence_summary": "The company team page lists Aino as Portfolio Manager.",
+            "previous_experience": [
+                {
+                    "company_name": "Nordic Capital",
+                    "role": "Investment Analyst",
+                }
+            ],
+            "education": [{"school": "Aalto University", "major": "Finance"}],
+            "volunteer_experience": [{"organization": "Startup Refugees", "role": "Mentor"}],
         }
     ]
     assert payload["meta"] == {
