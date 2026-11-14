@@ -1,0 +1,104 @@
+name: Deploy
+
+# Continuous deployment of unifood.fi (CNAME -> söis.fi, served by the primergy
+# homelab): every push to main pushes fresh :latest images to GHCR. The quadlets
+# in xypine/primergy stack/unifood/ use AutoUpdate=registry, so primergy pulls
+# new digests on its own -- no GitHub-to-host access is involved.
+#
+# Secrets:
+#   AIVEN_DATABASE_URL  Managed Aiven PostgreSQL DSN
+#                       (postgresql+psycopg://user:pass@host:port/db?sslmode=require).
+#                       Used to run Alembic migrations before images are pushed.
+#                       The Aiven service must allow connections from GitHub
+#                       Actions egress IPs. Optional until the first migration
+#                       exists (the step skips when the secret is unset).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy-unifood
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_BACKEND: ghcr.io/${{ github.repository_owner }}/projectx-backend
+  IMAGE_FRONTEND: ghcr.io/${{ github.repository_owner }}/projectx-frontend
+
+jobs:
+  migrate:
+    name: Migrate Aiven database
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          cache-dependency-glob: backend/uv.lock
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: alembic upgrade head
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ secrets.AIVEN_DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "AIVEN_DATABASE_URL not set; skipping migrations"
+            exit 0
+          fi
+          uv sync --frozen
+          uv run alembic upgrade head
+
+  images:
+    name: Build and push images
+    runs-on: ubuntu-latest
+    needs: migrate
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/metadata-action@v5
+        id: meta-backend
+        with:
+          images: ${{ env.IMAGE_BACKEND }}
+          tags: type=raw,value=latest
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: backend
+          push: true
+          tags: ${{ steps.meta-backend.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - uses: docker/metadata-action@v5
+        id: meta-frontend
+        with:
+          images: ${{ env.IMAGE_FRONTEND }}
+          tags: type=raw,value=latest
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          file: frontend/Dockerfile.prod
+          push: true
+          tags: ${{ steps.meta-frontend.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
