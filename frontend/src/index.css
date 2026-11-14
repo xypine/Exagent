@@ -1,10 +1,54 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --color-ink: oklch(0.16 0.02 260);
+  --color-ink-2: oklch(0.21 0.025 260);
+  --color-line: oklch(0.32 0.03 260);
+  --color-paper: oklch(0.97 0.01 90);
+  --color-dim: oklch(0.7 0.02 260);
+  --color-signal: oklch(0.82 0.17 85);
+  --color-signal-ink: oklch(0.2 0.04 85);
+  --color-ok: oklch(0.78 0.15 155);
+  --color-bad: oklch(0.7 0.18 25);
+
+  --animate-rise: rise 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  --animate-scan: scan 1.6s linear infinite;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes scan {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(300%); }
 }
 
 body {
   margin: 0;
-  background: #f8fafc;
+  background:
+    radial-gradient(60rem 30rem at 85% -10%, oklch(0.82 0.17 85 / 0.12), transparent 60%),
+    var(--color-ink);
+  color: var(--color-paper);
+  min-height: 100vh;
+}
+
+.field {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-line);
+  background: var(--color-ink-2);
+  padding: 0.75rem 1rem;
+  color: var(--color-paper);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.field::placeholder { color: var(--color-dim); }
+.field:focus {
+  border-color: var(--color-signal);
+  box-shadow: 0 0 0 3px oklch(0.82 0.17 85 / 0.2);
 }

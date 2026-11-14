@@ -5,6 +5,11 @@ import App from "./App";
 import "./index.css";
 
 const queryClient = new QueryClient();
+const root = document.getElementById("root");
+
+if (!root) {
+  throw new Error("Root element not found");
+}
 
 render(
   () => (
@@ -12,5 +17,5 @@ render(
       <App />
     </QueryClientProvider>
   ),
-  document.getElementById("root")!,
+  root,
 );
