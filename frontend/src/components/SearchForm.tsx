@@ -35,7 +35,7 @@ export function SearchForm(props: {
   return (
     <main class="mx-auto grid max-w-6xl gap-12 px-6 pt-10 pb-16 lg:grid-cols-[1.1fr_1fr] lg:pt-20">
       <section class="animate-rise space-y-6">
-        <p class="font-mono text-xs tracking-[0.25em] text-signal uppercase">
+        <p class="font-mono text-s tracking-[0.25em] text-signal uppercase">
           The hidden job market — unlocked
         </p>
         <h1 class="text-5xl leading-[1.02] font-bold tracking-tight sm:text-6xl">
@@ -44,14 +44,8 @@ export function SearchForm(props: {
           <span class="text-signal">Say what works.</span>
         </h1>
         <p class="max-w-lg text-lg leading-8 text-dim">
-          Tell us where you want to work. We will find relevant companies and
-          show the public sources behind every result.
+          Tell us where you want to work. We will find the most relevant people and companies for you.
         </p>
-        <ol class="grid max-w-lg gap-3 font-mono text-sm text-dim">
-          <li class="rounded-lg border border-line p-3">
-            <span class="text-signal">01</span> Companies
-          </li>
-        </ol>
       </section>
 
       <form
@@ -66,7 +60,7 @@ export function SearchForm(props: {
               value={area()}
               onChange={setArea}
               search={searchLocations}
-              placeholder="Helsinki, remote…"
+              placeholder="Helsinki, Finland…"
               listId="area-suggestions"
             />
           </label>
