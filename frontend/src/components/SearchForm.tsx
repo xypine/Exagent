@@ -2,7 +2,7 @@ import { createMutation } from "@tanstack/solid-query";
 import { createSignal, For, Show } from "solid-js";
 
 import { createSearch } from "../api";
-import { INDUSTRIES, searchIndustries } from "../industries";
+import { searchIndustries } from "../industries";
 import { searchLocations } from "../locations";
 import type { CompanySize, SearchInput } from "../types";
 import { Autocomplete } from "./Autocomplete";
@@ -115,20 +115,6 @@ export function SearchForm(props: {
             </For>
           </div>
         </fieldset>
-        <div class="flex flex-wrap gap-2">
-          <For each={INDUSTRIES}>
-            {(s) => (
-              <button
-                type="button"
-                class="rounded-full border border-line px-3 py-1 text-xs text-dim transition hover:border-signal hover:text-signal"
-                classList={{ "border-signal text-signal": industry() === s }}
-                onClick={() => setIndustry(s)}
-              >
-                {s}
-              </button>
-            )}
-          </For>
-        </div>
         <Show when={mutation.isError}>
           <p class="text-sm text-bad">{mutation.error?.message}</p>
         </Show>
