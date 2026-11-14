@@ -104,6 +104,13 @@ async def _search(
             "profile_url": person.profile_url,
             "evidence_url": person.evidence_url,
             "evidence_summary": person.evidence_summary,
+            "previous_experience": [
+                experience.model_dump() for experience in person.previous_experience
+            ],
+            "education": [education.model_dump() for education in person.education],
+            "volunteer_experience": [
+                experience.model_dump() for experience in person.volunteer_experience
+            ],
         }
         for rank, person in enumerate(response.output.people, start=1)
     ]
