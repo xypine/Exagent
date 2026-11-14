@@ -1,5 +1,5 @@
 import { createQuery } from "@tanstack/solid-query";
-import { createSignal, Match, Switch } from "solid-js";
+import { createSignal, Match, Show, Switch } from "solid-js";
 
 import { getClient } from "./api";
 import { HowItWorks, RecedingHero } from "./components/how-it-works";
@@ -31,6 +31,7 @@ export default function App() {
           </span>
           Exagent
         </button>
+
         <a
           href="#how-it-works"
           class="ml-auto mr-6 hidden font-mono text-xs text-dim transition hover:text-signal sm:inline"
@@ -38,21 +39,20 @@ export default function App() {
         >
           How it works
         </a>
-        <p class="font-mono text-xs text-dim" aria-live="polite">
-          <span
-            class="mr-2 inline-block size-2 rounded-full"
-            classList={{
-              "bg-signal animate-pulse": client.isPending,
-              "bg-bad": client.isError,
-              "bg-ok": client.isSuccess,
-            }}
-          />
-          {client.isPending
-            ? "Initializing anonymous workspace…"
-            : client.isError
-              ? "The API is not available yet."
-              : "Anonymous workspace ready."}
-        </p>
+        <Show when={client.isPending || client.isError}>
+          <p class="font-mono text-xs text-dim" aria-live="polite">
+            <span
+              class="mr-2 inline-block size-2 rounded-full"
+              classList={{
+                "bg-signal animate-pulse": client.isPending,
+                "bg-bad": client.isError,
+              }}
+            />
+            {client.isPending
+              ? "Initializing anonymous workspace…"
+              : "The API is not available yet."}
+          </p>
+        </Show>
       </header>
 
       <Switch>
