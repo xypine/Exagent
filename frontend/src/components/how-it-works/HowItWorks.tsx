@@ -57,9 +57,7 @@ export function HowItWorks(props: { onTryIt?: () => void }) {
 
       <div class="mx-auto max-w-6xl px-6 pt-24">
         <div ref={reveal} class="max-w-3xl">
-          <p class="text-xs tracking-[0.25em] text-star uppercase">
-            How it works
-          </p>
+          <p class="font-accent text-2xl text-star">How it works</p>
           <h2 class="mt-3 text-4xl leading-[1.05] font-bold tracking-tight sm:text-5xl">
             From a city and a hunch to{" "}
             <span class="text-star">people worth messaging.</span>
@@ -124,9 +122,7 @@ export function HowItWorks(props: { onTryIt?: () => void }) {
         {/* Trust + limits */}
         <div class="mt-28 grid gap-12 lg:grid-cols-[1.4fr_1fr]">
           <div ref={reveal}>
-            <p class="text-xs tracking-[0.25em] text-star uppercase">
-              Why you can trust it
-            </p>
+            <p class="font-accent text-2xl text-star">Why you can trust it</p>
             <h3 class="mt-2 text-3xl font-bold tracking-tight">
               Transparent by design.
             </h3>
@@ -147,9 +143,7 @@ export function HowItWorks(props: { onTryIt?: () => void }) {
           </div>
           <div ref={reveal} class="lg:pt-16">
             <div class="rounded-2xl border border-dashed border-line p-6">
-              <p class="text-xs tracking-[0.25em] text-dim uppercase">
-                Limits, said out loud
-              </p>
+              <p class="font-accent text-2xl text-dim">Limits, said out loud</p>
               <ul class="mt-4 space-y-3">
                 <For each={LIMITS}>
                   {(l) => (

@@ -1,10 +1,12 @@
 /* FONTS: change the font in this one place (import + --font-sans below). */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&family=Inter:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-sans);
+  /* Italic serif accent for small kicker labels: editorial, still professional. */
+  --font-accent: "Instrument Serif", Georgia, "Times New Roman", serif;
 
   /* Palette: Pohja #FFFFFF, Pinta #F4F6FB, Teksti #0B1B3F, Pääväri #1E3A8A, Tähti #4338CA.
      Light theme: ink = Pinta page, ink-2 = Pohja cards (they lift off the page),
@@ -126,6 +128,9 @@ button.bg-signal:hover:not(:disabled) {
     0 14px 26px -8px rgb(30 58 138 / 0.6);
 }
 button.bg-signal:active:not(:disabled) { transform: translateY(0); }
+
+/* Kicker labels: italic serif, regular weight (the face has only one), no sans tracking. */
+.font-accent { font-style: italic; font-weight: 400; letter-spacing: 0.005em; line-height: 1.1; }
 
 /* ───────────── How it works ───────────── */
 

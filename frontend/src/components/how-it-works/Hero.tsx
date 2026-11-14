@@ -13,7 +13,7 @@ export function RecedingHero(props: { children: JSX.Element }) {
       <div class="flex justify-center pb-10">
         <a
           href="#how-it-works"
-          class="group flex flex-col items-center gap-2 text-s tracking-[0.25em] text-dim uppercase transition hover:text-star"
+          class="group flex flex-col items-center gap-2 font-accent text-2xl text-dim transition hover:text-star"
         >
           How it works
           <span class="grid size-9 place-items-center rounded-full border border-line transition group-hover:border-star">

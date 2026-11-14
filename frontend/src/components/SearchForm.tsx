@@ -45,7 +45,7 @@ export function SearchForm(props: {
   return (
     <main class="mx-auto grid max-w-6xl gap-12 px-6 pt-10 pb-16 lg:grid-cols-[1.1fr_1fr] lg:pt-20">
       <section class="animate-rise space-y-6">
-        <p class="text-s tracking-[0.25em] text-star uppercase">
+        <p class="font-accent text-3xl text-star sm:text-4xl">
           The hidden job market — unlocked
         </p>
         <h1 class="text-5xl leading-[1.02] font-bold tracking-tight sm:text-6xl">

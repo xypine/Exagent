@@ -25,9 +25,7 @@ export function InsightsPanel(props: { person: Person; onClose: () => void }) {
     <div class="animate-rise rounded-2xl border border-star/50 bg-ink-2 p-5">
       <div class="flex items-start justify-between gap-3">
         <div>
-          <p class="text-xs tracking-widest text-star uppercase">
-            Key insights
-          </p>
+          <p class="font-accent text-2xl text-star">Key insights</p>
           <h3 class="mt-1 text-xl font-semibold">{props.person.name}</h3>
           <p class="text-sm text-dim">{props.person.title}</p>
         </div>

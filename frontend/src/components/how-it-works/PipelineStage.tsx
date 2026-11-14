@@ -135,7 +135,7 @@ export function PipelineStage(props: {
       <div class="stage relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-line">
         <div class="stage-grid pointer-events-none absolute inset-0" />
 
-        <p class="absolute top-3 left-4 z-10 text-[13px] tracking-[0.1em] text-star uppercase text font-extrabold">
+        <p class="absolute top-3 left-4 z-10 font-accent text-xl text-star">
           {STEPS[props.step]?.label}
         </p>
 

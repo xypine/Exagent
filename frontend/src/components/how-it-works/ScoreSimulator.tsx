@@ -56,9 +56,7 @@ export function ScoreSimulator() {
     >
       <div class="space-y-6">
         <div>
-          <p class="text-l tracking-[0.1em] text-star uppercase font-extrabold">
-            Try the scoring
-          </p>
+          <p class="font-accent text-2xl text-star">Try the scoring</p>
           <h3 class="mt-2 text-3xl font-bold tracking-tight">
             Move the dials. Watch the maths.
           </h3>
