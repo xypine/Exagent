@@ -34,11 +34,14 @@ to the internet.
 - The current rate limiter is in-memory. Keep one backend instance, or replace
   it with a shared limiter (such as Redis) before scaling horizontally.
 
-## Continuous deployment (unifood.fi on primergy)
+## Continuous deployment (exa.söis.fi on primergy)
 
-`unifood.fi` is a CNAME to `söis.fi` and is served by the primergy homelab
+The app is served at `https://exa.söis.fi` by the primergy homelab
 (github.com/xypine/primergy, `stack/unifood/`): the edge Caddy routes `/api` to
 the backend container and everything else to the static frontend container.
+(The original unifood.fi domain lives in another Cloudflare account, so its cert
+can't be DNS-01-issued on primergy; exa is a subdomain of söis.fi and is covered
+by the existing token.)
 
 - `.github/workflows/deploy.yml` runs on every push to `main`. It applies
   Alembic migrations to the managed Aiven PostgreSQL (repo secret
@@ -47,7 +50,7 @@ the backend container and everything else to the static frontend container.
   from `frontend/Dockerfile.prod`).
 - The quadlets on primergy use `AutoUpdate=registry`, so podman pulls new image
   digests by itself; no GitHub-to-host access is involved.
-- Runtime configuration (the Aiven `DATABASE_URL`, `FRONTEND_ORIGIN=https://unifood.fi`)
+- Runtime configuration (the Aiven `DATABASE_URL`, `FRONTEND_ORIGIN=https://exa.söis.fi`)
   lives in `stack/unifood/.env` on primergy and never in this repo.
 
 The application has no authentication by design. Limit access at the network or

@@ -12,6 +12,14 @@ class Settings(BaseSettings):
     rate_limit_requests: int = 30
     rate_limit_window_seconds: int = 60
     exa_api_key: str | None = None
+    exa_qps: float = 10
+    exa_max_concurrency: int = 5
+    exa_timeout_seconds: float = 30
+    exa_max_retries: int = 3
+    exa_retry_base_seconds: float = 0.5
+    exa_retry_max_seconds: float = 10
+    exa_max_queue_wait_seconds: float = 30
+    exa_max_pending_requests: int = 25
     gemini_api_key: str | None = None
 
     @field_validator("database_url", mode="before")
