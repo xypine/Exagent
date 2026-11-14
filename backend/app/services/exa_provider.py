@@ -617,7 +617,8 @@ class ExaProvider:
             "role with public evidence, plus only publicly evidenced previous roles at other "
             "companies, education, and volunteer experience. Every background entry must include "
             "the URL supporting that specific claim. Omit unverified details and never combine "
-            "same-named people."
+            "same-named people. Prefer the most recent or relevant facts, with no more than five "
+            "previous roles, three education entries, and three volunteer entries."
         )
         return await self._request(
             lambda output_schema: self._client.search(

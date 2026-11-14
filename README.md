@@ -1,6 +1,6 @@
 # Prospecting workspace
 
-A lightweight job-search research tool. The browser can create and poll cached company-search jobs; Exa people discovery and research are also available through local CLIs. Gemini synthesis is not implemented yet.
+A lightweight job-search research tool. The browser can create and poll cached company-search jobs, then automatically research and score the top five people with Exa and Gemini.
 
 ## Stack
 
@@ -89,4 +89,10 @@ uv run alembic upgrade head
 
 ## Provider integrations
 
-`EXA_API_KEY` enables the local company and people search CLIs. `GEMINI_API_KEY` remains a configuration placeholder. Keep calls to external providers behind services in `backend/app/services/` so routes and persistence do not depend directly on a provider SDK.
+`EXA_API_KEY` enables company and people research. `GEMINI_API_KEY` enables stateless,
+structured match scoring with the fixed free-tier `gemini-3.5-flash-lite` model. The
+results page keeps an optional seeker profile in browser local storage, attaches its
+snapshot to a bounded top-five background run, and clears the server-side task payload
+when the run finishes. Matching results are never reused for a profile. Keep calls to
+external providers behind services in `backend/app/services/` so routes and persistence
+do not depend directly on a provider SDK.

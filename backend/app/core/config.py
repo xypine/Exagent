@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Literal
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -24,7 +25,11 @@ class Settings(BaseSettings):
     company_search_cache_ttl_seconds: int = Field(default=86400, gt=0)
     people_search_batch_size: int = Field(default=20, ge=1, le=50)
     people_search_concurrency: int = Field(default=4, ge=1, le=10)
+    people_research_cache_ttl_seconds: int = Field(default=604800, gt=0)
     gemini_api_key: str | None = None
+    # Intentionally fixed to a current free-tier model: never fall back to paid inference.
+    gemini_model: Literal["gemini-3.5-flash-lite"] = "gemini-3.5-flash-lite"
+    matching_top_n: int = Field(default=5, ge=3, le=5)
 
     @field_validator("database_url", mode="before")
     @classmethod

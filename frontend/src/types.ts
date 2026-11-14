@@ -64,11 +64,69 @@ export interface SearchJob {
   people_search_stats: PeopleSearchStats;
 }
 
-export interface PersonInsights {
+export type PersonResearchStatus =
+  | "not_started"
+  | "queued"
+  | "researching"
+  | "done"
+  | "failed";
+
+export interface WorkHistory {
+  company_name: string;
+  role: string;
+  source_url: string;
+}
+
+export interface Education {
+  school: string;
+  major: string | null;
+  source_url: string;
+}
+
+export interface VolunteerExperience {
+  organization: string;
+  role: string | null;
+  source_url: string;
+}
+
+export interface PersonResearch {
   person_id: string;
-  key_insights: string[];
-  work_history: string[];
-  connections: string[];
-  hobbies: string[];
-  education: string[];
+  status: PersonResearchStatus;
+  work_history: WorkHistory[];
+  education: Education[];
+  volunteer_experience: VolunteerExperience[];
+  error?: string | null;
+}
+
+export interface MatchBreakdown {
+  decision_power: number;
+  background_fit: number | null;
+  shared_ground: number | null;
+}
+
+export interface PersonMatch {
+  id: string;
+  score: number;
+  confidence: "high" | "medium" | "low";
+  breakdown: MatchBreakdown;
+  reasoning: string;
+  outreach_angle: string;
+  missing_info: string[];
+}
+
+export type MatchRunStatus =
+  | "queued"
+  | "researching"
+  | "matching"
+  | "done"
+  | "failed";
+
+export interface MatchRun {
+  id: string;
+  status: MatchRunStatus;
+  candidate_count: number;
+  completed_count: number;
+  results: PersonMatch[];
+  error?: string | null;
+  completed_at?: string | null;
 }

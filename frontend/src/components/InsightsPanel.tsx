@@ -1,16 +1,15 @@
-import { createQuery } from "@tanstack/solid-query";
-import { createSignal, For, Show } from "solid-js";
+import { createMutation, createQuery } from "@tanstack/solid-query";
+import { createEffect, createSignal, For, Show } from "solid-js";
 
-import { getPersonInsights } from "../api";
-import type { Person, PersonInsights } from "../types";
+import { getPersonResearch, startPersonResearch } from "../api";
+import type { Person } from "../types";
 
-type Tab = keyof Omit<PersonInsights, "person_id" | "key_insights">;
+type Tab = "work_history" | "education" | "volunteer_experience";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "work_history", label: "Work history" },
-  { key: "connections", label: "Connections" },
-  { key: "hobbies", label: "Hobbies" },
   { key: "education", label: "Education" },
+  { key: "volunteer_experience", label: "Community" },
 ];
 
 function decisionPowerLabel(score: number) {
@@ -21,22 +20,38 @@ function decisionPowerLabel(score: number) {
 }
 
 export function InsightsPanel(props: {
+  jobId: string;
   person: Person;
   score: number;
   onClose: () => void;
 }) {
   const [tab, setTab] = createSignal<Tab>("work_history");
-  const insights = createQuery(() => ({
-    queryKey: ["insights", props.person.id],
-    queryFn: () => getPersonInsights(props.person.id),
-    staleTime: Infinity,
+  const [requested, setRequested] = createSignal(false);
+  const research = createQuery(() => ({
+    queryKey: ["person-research", props.jobId, props.person.id],
+    queryFn: () => getPersonResearch(props.jobId, props.person.id),
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      return status === "queued" || status === "researching" ? 1500 : false;
+    },
   }));
+  const startResearch = createMutation(() => ({
+    mutationFn: () => startPersonResearch(props.jobId, props.person.id),
+    onSuccess: (data) => research.setData(data),
+  }));
+
+  createEffect(() => {
+    if (research.data?.status === "not_started" && !requested()) {
+      setRequested(true);
+      startResearch.mutate();
+    }
+  });
 
   return (
     <div class="animate-rise rounded-2xl border border-star/50 bg-ink-2 p-5">
       <div class="flex items-start justify-between gap-3">
         <div>
-          <p class="font-accent text-2xl text-star">Key insights</p>
+          <p class="font-accent text-2xl text-star">Public background</p>
           <h3 class="mt-1 text-xl font-semibold">{props.person.name}</h3>
           <p class="text-sm text-dim">{props.person.title}</p>
         </div>
@@ -82,59 +97,99 @@ export function InsightsPanel(props: {
       </a>
 
       <Show
-        when={!insights.isPending}
+        when={research.data?.status === "done"}
         fallback={
-          <p class="mt-6 animate-pulse text-sm text-dim">Researching…</p>
+          <p class="mt-6 text-sm text-dim">
+            {startResearch.isError || research.data?.status === "failed"
+              ? (research.data?.error ??
+                "Background research failed. Try again.")
+              : "Researching public background…"}
+          </p>
         }
       >
-        <Show
-          when={insights.data}
-          fallback={
-            <p class="mt-6 text-sm text-bad">{insights.error?.message}</p>
-          }
-        >
-          {(data) => (
-            <>
-              <ul class="mt-5 space-y-2">
-                <For each={data().key_insights}>
-                  {(k) => (
-                    <li class="rounded-lg bg-star/10 px-3 py-2 text-sm">
-                      <span class="mr-2 text-star">✦</span>
-                      {k}
-                    </li>
-                  )}
-                </For>
-              </ul>
-              <div class="mt-5 grid grid-cols-2 gap-2">
-                <For each={TABS}>
-                  {(t) => (
-                    <button
-                      type="button"
-                      onClick={() => setTab(t.key)}
-                      class="rounded-lg border px-3 py-2 text-sm transition"
-                      classList={{
-                        "border-star text-star": tab() === t.key,
-                        "border-line text-dim hover:border-star/60":
-                          tab() !== t.key,
-                      }}
-                    >
-                      {t.label}
-                    </button>
-                  )}
-                </For>
-              </div>
-              <ul class="mt-4 space-y-2 text-sm">
-                <For
-                  each={data()[tab()]}
-                  fallback={<li class="text-dim">Nothing found.</li>}
-                >
-                  {(item) => (
-                    <li class="border-l-2 border-line pl-3">{item}</li>
-                  )}
-                </For>
-              </ul>
-            </>
-          )}
+        <div class="mt-5 grid grid-cols-3 gap-2">
+          <For each={TABS}>
+            {(item) => (
+              <button
+                type="button"
+                onClick={() => setTab(item.key)}
+                class="rounded-lg border px-3 py-2 text-sm transition"
+                classList={{
+                  "border-star text-star": tab() === item.key,
+                  "border-line text-dim hover:border-star/60":
+                    tab() !== item.key,
+                }}
+              >
+                {item.label}
+              </button>
+            )}
+          </For>
+        </div>
+
+        <Show when={tab() === "work_history"}>
+          <ul class="mt-4 space-y-2 text-sm">
+            <For
+              each={research.data?.work_history}
+              fallback={<li class="text-dim">Nothing found.</li>}
+            >
+              {(item) => (
+                <li class="border-l-2 border-line pl-3">
+                  <a
+                    href={item.source_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    class="hover:text-star"
+                  >
+                    {item.role} · {item.company_name} ↗
+                  </a>
+                </li>
+              )}
+            </For>
+          </ul>
+        </Show>
+        <Show when={tab() === "education"}>
+          <ul class="mt-4 space-y-2 text-sm">
+            <For
+              each={research.data?.education}
+              fallback={<li class="text-dim">Nothing found.</li>}
+            >
+              {(item) => (
+                <li class="border-l-2 border-line pl-3">
+                  <a
+                    href={item.source_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    class="hover:text-star"
+                  >
+                    {item.school}
+                    {item.major ? ` · ${item.major}` : ""} ↗
+                  </a>
+                </li>
+              )}
+            </For>
+          </ul>
+        </Show>
+        <Show when={tab() === "volunteer_experience"}>
+          <ul class="mt-4 space-y-2 text-sm">
+            <For
+              each={research.data?.volunteer_experience}
+              fallback={<li class="text-dim">Nothing found.</li>}
+            >
+              {(item) => (
+                <li class="border-l-2 border-line pl-3">
+                  <a
+                    href={item.source_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    class="hover:text-star"
+                  >
+                    {item.organization}
+                    {item.role ? ` · ${item.role}` : ""} ↗
+                  </a>
+                </li>
+              )}
+            </For>
+          </ul>
         </Show>
       </Show>
     </div>

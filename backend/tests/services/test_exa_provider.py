@@ -249,6 +249,30 @@ async def test_people_search_returns_empty_background_categories() -> None:
     assert person.volunteer_experience == ()
 
 
+async def test_person_research_is_one_bounded_query_with_capped_fact_categories() -> None:
+    client = FakeClient([_people_response()])
+    provider = ExaProvider(_settings(), client=client)
+
+    await provider.research_person(
+        "Aino Example",
+        company_name="Example Wealth",
+        profile_url="https://linkedin.com/in/aino-example",
+    )
+
+    query, kwargs = client.calls[0]
+    assert "identified by https://linkedin.com/in/aino-example" in query
+    assert (
+        "no more than five previous roles, three education entries, and three volunteer entries"
+        in query
+    )
+    assert kwargs["category"] == "people"
+    assert kwargs["num_results"] == 1
+    assert (
+        "background_entries"
+        in kwargs["output_schema"]["properties"]["people"]["items"]["properties"]
+    )
+
+
 @pytest.mark.parametrize(
     "background_entries",
     [

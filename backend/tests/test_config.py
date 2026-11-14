@@ -21,3 +21,15 @@ def test_explicit_psycopg_url_is_unchanged() -> None:
 def test_company_search_result_cap_cannot_exceed_fifty() -> None:
     with pytest.raises(ValidationError):
         Settings(company_search_max_results=51)
+
+
+def test_matching_top_n_stays_between_three_and_five() -> None:
+    with pytest.raises(ValidationError):
+        Settings(matching_top_n=2)
+    with pytest.raises(ValidationError):
+        Settings(matching_top_n=6)
+
+
+def test_matching_model_cannot_be_changed_to_a_paid_model() -> None:
+    with pytest.raises(ValidationError):
+        Settings(gemini_model="gemini-4-carbon")  # type: ignore[arg-type]

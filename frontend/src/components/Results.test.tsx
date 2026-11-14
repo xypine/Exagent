@@ -2,14 +2,27 @@ import { fireEvent, render, screen } from "@solidjs/testing-library";
 import { QueryClient, QueryClientProvider } from "@tanstack/solid-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { getPersonInsights, getSearch } from "../api";
+import {
+  getMatchRun,
+  getPersonResearch,
+  getSearch,
+  getStoredProfile,
+  startMatchRun,
+  startPersonResearch,
+  storeProfile,
+} from "../api";
 import type { SearchJob } from "../types";
 import { Results } from "./Results";
 
 vi.mock("../api", () => ({
   getSearch: vi.fn(),
-  getPersonInsights: vi.fn(),
+  getPersonResearch: vi.fn(),
+  startPersonResearch: vi.fn(),
   searchMorePeople: vi.fn(),
+  getStoredProfile: vi.fn(),
+  storeProfile: vi.fn(),
+  startMatchRun: vi.fn(),
+  getMatchRun: vi.fn(),
 }));
 
 const JOB: SearchJob = {
@@ -55,14 +68,36 @@ const JOB: SearchJob = {
 describe("Results", () => {
   beforeEach(() => {
     vi.mocked(getSearch).mockResolvedValue(JOB);
-    vi.mocked(getPersonInsights).mockResolvedValue({
+    vi.mocked(getPersonResearch).mockResolvedValue({
       person_id: "person-1",
-      key_insights: [],
+      status: "done",
       work_history: [],
-      connections: [],
-      hobbies: [],
       education: [],
+      volunteer_experience: [],
     });
+    vi.mocked(startPersonResearch).mockResolvedValue({
+      person_id: "person-1",
+      status: "queued",
+      work_history: [],
+      education: [],
+      volunteer_experience: [],
+    });
+    vi.mocked(getStoredProfile).mockReturnValue("");
+    vi.mocked(startMatchRun).mockResolvedValue({
+      id: "match-1",
+      status: "done",
+      candidate_count: 1,
+      completed_count: 1,
+      results: [],
+    });
+    vi.mocked(getMatchRun).mockResolvedValue({
+      id: "match-1",
+      status: "done",
+      candidate_count: 1,
+      completed_count: 1,
+      results: [],
+    });
+    vi.mocked(storeProfile).mockReset();
   });
 
   it("shows a compact person row and explains its score in the detail dialog", async () => {

@@ -11,10 +11,18 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.client_identity import ClientContext, enforce_rate_limit
-from app.db.models import CompanySize, SearchJob
+from app.db.models import CompanySize, MatchRun, PersonResearchCache, SearchJob
 from app.db.session import get_db_session
 from app.services.company_search import CompanySearchService, refresh_company_search
+from app.services.match_runs import create_match_run, refresh_match_run
+from app.services.matching import ScoredMatch
 from app.services.people_ranking import decision_power_score
+from app.services.person_research import (
+    PersonResearchSubject,
+    ResearchStatus,
+    queue_person_research,
+    refresh_person_research,
+)
 
 router = APIRouter()
 ClientDependency = Annotated[ClientContext, Depends(enforce_rate_limit)]
@@ -66,6 +74,51 @@ class PersonResponse(BaseModel):
     evidence_url: str
     evidence_summary: str
     decision_power_score: int
+
+
+class WorkHistoryResponse(BaseModel):
+    company_name: str
+    role: str
+    source_url: str
+
+
+class EducationResponse(BaseModel):
+    school: str
+    major: str | None
+    source_url: str
+
+
+class VolunteerExperienceResponse(BaseModel):
+    organization: str
+    role: str | None
+    source_url: str
+
+
+class PersonResearchResponse(BaseModel):
+    person_id: UUID
+    status: ResearchStatus
+    work_history: list[WorkHistoryResponse] = Field(default_factory=list)
+    education: list[EducationResponse] = Field(default_factory=list)
+    volunteer_experience: list[VolunteerExperienceResponse] = Field(default_factory=list)
+    error: str | None = None
+    fetched_at: datetime | None = None
+
+
+Profile = Annotated[str, StringConstraints(strip_whitespace=True, max_length=4000)]
+
+
+class StartMatchRunRequest(BaseModel):
+    profile: Profile = ""
+
+
+class MatchRunResponse(BaseModel):
+    id: UUID
+    status: Literal["queued", "researching", "matching", "done", "failed"]
+    candidate_count: int
+    completed_count: int
+    results: list[ScoredMatch] = Field(default_factory=list)
+    error: str | None = None
+    completed_at: datetime | None = None
 
 
 class PeopleSearchStatsResponse(BaseModel):
@@ -148,6 +201,82 @@ async def search_more_people(
     return _search_response(job, service.settings.people_search_batch_size)
 
 
+@router.get("/searches/{job_id}/people/{person_id}/research", response_model=PersonResearchResponse)
+async def get_person_research(
+    job_id: UUID, person_id: UUID, context: ClientDependency, db: DbDependency
+) -> PersonResearchResponse:
+    _authorized_person(db, job_id=job_id, client_id=context.client_id, person_id=person_id)
+    return _person_research_response(person_id, db.get(PersonResearchCache, person_id))
+
+
+@router.post(
+    "/searches/{job_id}/people/{person_id}/research",
+    response_model=PersonResearchResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def start_person_research(
+    job_id: UUID,
+    person_id: UUID,
+    background_tasks: BackgroundTasks,
+    context: ClientDependency,
+    db: DbDependency,
+) -> PersonResearchResponse:
+    person = _authorized_person(db, job_id=job_id, client_id=context.client_id, person_id=person_id)
+    cache, should_start = queue_person_research(
+        db,
+        PersonResearchSubject(
+            person_id=person_id,
+            name=person.name,
+            company_name=person.company_name,
+            profile_url=person.profile_url,
+        ),
+    )
+    if should_start:
+        background_tasks.add_task(refresh_person_research, person_id)
+    return _person_research_response(person_id, cache)
+
+
+@router.post(
+    "/searches/{job_id}/matches",
+    response_model=MatchRunResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def start_match_run(
+    job_id: UUID,
+    request: StartMatchRunRequest,
+    background_tasks: BackgroundTasks,
+    context: ClientDependency,
+    db: DbDependency,
+) -> MatchRunResponse:
+    job = db.scalar(
+        select(SearchJob).where(SearchJob.id == job_id, SearchJob.client_id == context.client_id)
+    )
+    if job is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Search job not found.")
+    run, should_start = create_match_run(
+        db, job=job, client_id=context.client_id, profile=request.profile
+    )
+    if should_start:
+        background_tasks.add_task(refresh_match_run, run.id)
+    return _match_run_response(run)
+
+
+@router.get("/searches/{job_id}/matches/{run_id}", response_model=MatchRunResponse)
+async def get_match_run(
+    job_id: UUID, run_id: UUID, context: ClientDependency, db: DbDependency
+) -> MatchRunResponse:
+    run = db.scalar(
+        select(MatchRun).where(
+            MatchRun.id == run_id,
+            MatchRun.job_id == job_id,
+            MatchRun.client_id == context.client_id,
+        )
+    )
+    if run is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Match run not found.")
+    return _match_run_response(run)
+
+
 def _search_response(job: SearchJob, batch_size: int) -> SearchResponse:
     return SearchResponse.model_validate(
         {
@@ -177,5 +306,53 @@ def _search_response(job: SearchJob, batch_size: int) -> SearchResponse:
                 ),
                 "batch_size": batch_size,
             },
+        }
+    )
+
+
+def _authorized_person(
+    db: Session, *, job_id: UUID, client_id: UUID, person_id: UUID
+) -> PersonResponse:
+    job = db.scalar(
+        select(SearchJob).where(SearchJob.id == job_id, SearchJob.client_id == client_id)
+    )
+    if job is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Search job not found.")
+    for candidate in job.people:
+        if candidate.get("id") == str(person_id):
+            return PersonResponse.model_validate(candidate)
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND, detail="Person not found in search job."
+    )
+
+
+def _person_research_response(
+    person_id: UUID, cache: PersonResearchCache | None
+) -> PersonResearchResponse:
+    if cache is None:
+        return PersonResearchResponse(person_id=person_id, status="not_started")
+    return PersonResearchResponse.model_validate(
+        {
+            "person_id": person_id,
+            "status": cast(ResearchStatus, cache.status),
+            "work_history": cache.work_history,
+            "education": cache.education,
+            "volunteer_experience": cache.volunteer_experience,
+            "error": cache.error,
+            "fetched_at": cache.fetched_at,
+        }
+    )
+
+
+def _match_run_response(run: MatchRun) -> MatchRunResponse:
+    return MatchRunResponse.model_validate(
+        {
+            "id": run.id,
+            "status": run.status,
+            "candidate_count": len(run.candidate_ids),
+            "completed_count": run.completed_count,
+            "results": run.results,
+            "error": run.error,
+            "completed_at": run.completed_at,
         }
     )

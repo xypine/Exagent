@@ -1,7 +1,8 @@
 import type {
   Company,
+  MatchRun,
   Person,
-  PersonInsights,
+  PersonResearch,
   SearchInput,
   SearchJob,
 } from "./types";
@@ -117,6 +118,7 @@ const PEOPLE: Person[] = [
 ];
 
 const started = new Map<string, number>();
+const matchRuns = new Map<string, MatchRun>();
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export const mockApi = {
@@ -167,26 +169,61 @@ export const mockApi = {
       },
     };
   },
-  async getPersonInsights(personId: string): Promise<PersonInsights> {
+  async getPersonResearch(
+    _jobId: string,
+    personId: string,
+  ): Promise<PersonResearch> {
     await wait(600);
     return {
       person_id: personId,
-      key_insights: [
-        "Writes regularly about building small, senior teams",
-        "Values open-source contributions over CVs",
-        "Mention a concrete project — they reply to specifics",
-      ],
+      status: "done",
       work_history: [
-        "2021– Current role",
-        "2017–2021 Senior Engineer, Supercell",
-        "2014–2017 Developer, Reaktor",
+        {
+          company_name: "Supercell",
+          role: "Senior Engineer",
+          source_url: "https://example.com/work",
+        },
       ],
-      connections: [
-        "Shared alumni network: Aalto University",
-        "Both attended Slush 2025",
+      education: [
+        {
+          school: "Aalto University",
+          major: "M.Sc. Computer Science",
+          source_url: "https://example.com/education",
+        },
       ],
-      hobbies: ["Trail running", "Sauna podcasts", "Board games"],
-      education: ["M.Sc. Computer Science, Aalto University"],
+      volunteer_experience: [],
     };
+  },
+  async startPersonResearch(
+    jobId: string,
+    personId: string,
+  ): Promise<PersonResearch> {
+    return this.getPersonResearch(jobId, personId);
+  },
+  async startMatchRun(_jobId: string, _profile: string): Promise<MatchRun> {
+    await wait(250);
+    const id = crypto.randomUUID();
+    const run: MatchRun = {
+      id,
+      status: "done",
+      candidate_count: 0,
+      completed_count: 0,
+      results: [],
+    };
+    matchRuns.set(id, run);
+    return run;
+  },
+  async getMatchRun(_jobId: string, runId: string): Promise<MatchRun> {
+    await wait(120);
+    return (
+      matchRuns.get(runId) ?? {
+        id: runId,
+        status: "failed",
+        candidate_count: 0,
+        completed_count: 0,
+        results: [],
+        error: "Match run not found.",
+      }
+    );
   },
 };

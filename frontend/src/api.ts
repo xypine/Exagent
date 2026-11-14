@@ -1,7 +1,8 @@
 import { mockApi } from "./mocks";
-import type { PersonInsights, SearchInput, SearchJob } from "./types";
+import type { MatchRun, PersonResearch, SearchInput, SearchJob } from "./types";
 
 const CLIENT_ID_STORAGE_KEY = "prospecting.client-id";
+const PROFILE_STORAGE_KEY = "prospecting.profile";
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -17,6 +18,14 @@ export function getClientId(): string {
   const clientId = crypto.randomUUID();
   window.localStorage.setItem(CLIENT_ID_STORAGE_KEY, clientId);
   return clientId;
+}
+
+export function getStoredProfile(): string {
+  return window.localStorage.getItem(PROFILE_STORAGE_KEY) ?? "";
+}
+
+export function storeProfile(profile: string): void {
+  window.localStorage.setItem(PROFILE_STORAGE_KEY, profile);
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -66,10 +75,44 @@ export async function searchMorePeople(jobId: string): Promise<SearchJob> {
   });
 }
 
-/** Key insights for one person (work history, connections, hobbies, education). */
-export async function getPersonInsights(
+export async function getPersonResearch(
+  jobId: string,
   personId: string,
-): Promise<PersonInsights> {
-  if (USE_MOCKS) return mockApi.getPersonInsights(personId);
-  return request(`/api/v1/people/${encodeURIComponent(personId)}/insights`);
+): Promise<PersonResearch> {
+  if (USE_MOCKS) return mockApi.getPersonResearch(jobId, personId);
+  return request(
+    `/api/v1/searches/${encodeURIComponent(jobId)}/people/${encodeURIComponent(personId)}/research`,
+  );
+}
+
+export async function startPersonResearch(
+  jobId: string,
+  personId: string,
+): Promise<PersonResearch> {
+  if (USE_MOCKS) return mockApi.startPersonResearch(jobId, personId);
+  return request(
+    `/api/v1/searches/${encodeURIComponent(jobId)}/people/${encodeURIComponent(personId)}/research`,
+    { method: "POST" },
+  );
+}
+
+export async function startMatchRun(
+  jobId: string,
+  profile: string,
+): Promise<MatchRun> {
+  if (USE_MOCKS) return mockApi.startMatchRun(jobId, profile);
+  return request(`/api/v1/searches/${encodeURIComponent(jobId)}/matches`, {
+    method: "POST",
+    body: JSON.stringify({ profile }),
+  });
+}
+
+export async function getMatchRun(
+  jobId: string,
+  runId: string,
+): Promise<MatchRun> {
+  if (USE_MOCKS) return mockApi.getMatchRun(jobId, runId);
+  return request(
+    `/api/v1/searches/${encodeURIComponent(jobId)}/matches/${encodeURIComponent(runId)}`,
+  );
 }

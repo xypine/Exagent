@@ -1,8 +1,21 @@
 import { createMutation, createQuery } from "@tanstack/solid-query";
-import { createSignal, For, Show } from "solid-js";
+import { createEffect, createSignal, For, Show } from "solid-js";
 
-import { getSearch, searchMorePeople } from "../api";
-import type { Company, JobStatus, Person, SearchInput } from "../types";
+import {
+  getMatchRun,
+  getSearch,
+  getStoredProfile,
+  searchMorePeople,
+  startMatchRun,
+  storeProfile,
+} from "../api";
+import type {
+  Company,
+  JobStatus,
+  Person,
+  PersonMatch,
+  SearchInput,
+} from "../types";
 import { InsightsPanel } from "./InsightsPanel";
 
 const STEPS: { key: JobStatus; label: string }[] = [
@@ -26,6 +39,7 @@ function stepIndex(status: JobStatus | undefined) {
 function People(props: {
   people: Person[];
   onSelect: (person: Person) => void;
+  matches: PersonMatch[];
 }) {
   return (
     <div class="border-t border-line">
@@ -52,6 +66,26 @@ function People(props: {
                   {person.decision_power_score}
                 </span>
               </button>
+              <Show
+                when={props.matches.find((match) => match.id === person.id)}
+              >
+                {(match) => (
+                  <div class="mt-4 rounded-lg border border-star/30 bg-star/5 p-3 text-sm">
+                    <div class="flex items-baseline justify-between gap-3">
+                      <p class="font-medium text-star">
+                        {match().score}/100 match
+                      </p>
+                      <p class="font-mono text-xs text-dim">
+                        {match().confidence} confidence
+                      </p>
+                    </div>
+                    <p class="mt-2 text-dim">{match().reasoning}</p>
+                    <p class="mt-2 text-xs text-star">
+                      Try: {match().outreach_angle}
+                    </p>
+                  </div>
+                )}
+              </Show>
             </li>
           )}
         </For>
@@ -130,6 +164,9 @@ export function Results(props: {
   const [selectedCompany, setSelectedCompany] = createSignal<Company | null>(
     null,
   );
+  const [profile, setProfile] = createSignal(getStoredProfile());
+  const [matchRunId, setMatchRunId] = createSignal<string | null>(null);
+  const [matchStarted, setMatchStarted] = createSignal(false);
   const job = createQuery(() => ({
     queryKey: ["search", props.jobId],
     queryFn: () => getSearch(props.jobId),
@@ -145,6 +182,36 @@ export function Results(props: {
       job.setData(data);
     },
   }));
+
+  const matchRun = createQuery(() => ({
+    queryKey: ["match-run", props.jobId, matchRunId()],
+    queryFn: () => getMatchRun(props.jobId, matchRunId() ?? ""),
+    enabled: matchRunId() !== null,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      return status === "done" || status === "failed" ? false : 1500;
+    },
+  }));
+
+  const startMatching = createMutation(() => ({
+    mutationFn: (nextProfile: string) =>
+      startMatchRun(props.jobId, nextProfile),
+    onSuccess: (run) => {
+      setMatchRunId(run.id);
+      setMatchStarted(true);
+    },
+  }));
+
+  createEffect(() => {
+    if (
+      job.data?.status === "done" &&
+      !matchStarted() &&
+      !startMatching.isPending
+    ) {
+      setMatchStarted(true);
+      startMatching.mutate(profile());
+    }
+  });
 
   const running = () =>
     job.data?.status !== "done" && job.data?.status !== "failed";
@@ -276,6 +343,60 @@ export function Results(props: {
         </p>
       </Show>
 
+      <section class="mt-6 rounded-2xl border border-line bg-ink-2/60 p-5">
+        <div class="flex flex-wrap items-baseline justify-between gap-3">
+          <div>
+            <h2 class="font-semibold">Sharpen your matches</h2>
+            <p class="mt-1 max-w-2xl text-sm text-dim">
+              We automatically research and score the top 5 people. Add a little
+              about yourself for background fit and shared context; otherwise
+              scores reflect decision power only.
+            </p>
+          </div>
+          <Show when={matchRun.data}>
+            {(run) => (
+              <p class="font-mono text-xs text-star">
+                {run().completed_count}/{run().candidate_count} scored ·{" "}
+                {run().status}
+              </p>
+            )}
+          </Show>
+        </div>
+        <label for="profile" class="mt-4 block">
+          <span class="text-xs font-semibold tracking-wider text-star uppercase">
+            About you (optional)
+          </span>
+          <textarea
+            id="profile"
+            value={profile()}
+            onInput={(event) => {
+              const next = event.currentTarget.value;
+              setProfile(next);
+              storeProfile(next);
+            }}
+            maxlength="4000"
+            rows="3"
+            placeholder="Your role, experience, strengths, and the work you want to do…"
+            class="mt-2 w-full rounded-xl border border-line bg-ink px-3 py-2 text-sm outline-none placeholder:text-dim focus:border-star"
+          />
+        </label>
+        <button
+          type="button"
+          disabled={startMatching.isPending}
+          onClick={() => startMatching.mutate(profile())}
+          class="mt-3 rounded-lg border border-star px-3 py-2 text-sm text-star hover:bg-star/10 disabled:opacity-50"
+        >
+          {startMatching.isPending
+            ? "Starting research…"
+            : "Refresh scores with this profile"}
+        </button>
+        <Show when={startMatching.isError || matchRun.data?.error}>
+          <p class="mt-3 text-sm text-bad">
+            {matchRun.data?.error ?? startMatching.error?.message}
+          </p>
+        </Show>
+      </section>
+
       <div class="mt-8">
         <section class="space-y-4">
           <Show when={(job.data?.companies.length ?? 0) === 0 && running()}>
@@ -340,6 +461,7 @@ export function Results(props: {
                       ) ?? []
                     }
                     onSelect={setSelectedPerson}
+                    matches={matchRun.data?.results ?? []}
                   />
                 </Show>
                 <Show
@@ -370,6 +492,7 @@ export function Results(props: {
               aria-label={`${person().name} details`}
             >
               <InsightsPanel
+                jobId={props.jobId}
                 person={person()}
                 score={person().decision_power_score}
                 onClose={() => setSelectedPerson(null)}

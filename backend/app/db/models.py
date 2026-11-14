@@ -72,3 +72,56 @@ class PeopleSearchCache(Base):
     requests_failed: Mapped[int] = mapped_column(default=0)
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     refreshing_job_id: Mapped[UUID | None] = mapped_column(Uuid, nullable=True)
+
+
+class PersonResearchCache(Base):
+    """Cached, source-backed public background for one discovered person."""
+
+    __tablename__ = "person_research_cache"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('queued', 'researching', 'done', 'failed')",
+            name="ck_person_research_cache_status",
+        ),
+    )
+
+    # The discovery ID is UUIDv5(profile_url), so it is stable across searches
+    # and lets cached research be reused without exposing it outside an owned job.
+    person_id: Mapped[UUID] = mapped_column(Uuid, primary_key=True)
+    person_name: Mapped[str] = mapped_column(String(256))
+    company_name: Mapped[str] = mapped_column(String(256))
+    profile_url: Mapped[str] = mapped_column(String(2048))
+    status: Mapped[str] = mapped_column(String(32), default="queued")
+    work_history: Mapped[list[dict[str, str]]] = mapped_column(JSON, default=list)
+    education: Mapped[list[dict[str, str | None]]] = mapped_column(JSON, default=list)
+    volunteer_experience: Mapped[list[dict[str, str | None]]] = mapped_column(JSON, default=list)
+    error: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    fetched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class MatchRun(Base):
+    """One non-reusable, profile-specific matching run for an owned search."""
+
+    __tablename__ = "match_runs"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('queued', 'researching', 'matching', 'done', 'failed')",
+            name="ck_match_runs_status",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
+    job_id: Mapped[UUID] = mapped_column(Uuid, index=True)
+    client_id: Mapped[UUID] = mapped_column(Uuid, index=True)
+    # This is a task payload, not a cache key. It is cleared at completion.
+    profile: Mapped[str | None] = mapped_column(String(4000), nullable=True)
+    status: Mapped[str] = mapped_column(String(32), default="queued")
+    candidate_ids: Mapped[list[str]] = mapped_column(JSON, default=list)
+    results: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)
+    completed_count: Mapped[int] = mapped_column(default=0)
+    error: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
