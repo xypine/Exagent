@@ -1,3 +1,4 @@
+import type { Suggestion } from "./components/Autocomplete";
 import capitals from "./data/capitals.json";
 
 export type Capital = { city: string; country: string };
@@ -25,3 +26,10 @@ export function searchCapitals(query: string, limit = 8): Capital[] {
   }
   return [...byCity, ...byCountry].slice(0, limit);
 }
+
+export const searchLocations = (query: string): Suggestion[] =>
+  searchCapitals(query).map((c) => ({
+    value: formatLocation(c),
+    label: c.city,
+    hint: c.country,
+  }));

@@ -1,21 +1,30 @@
 import { createMemo, createSignal, For, Show } from "solid-js";
 
-import { formatLocation, searchCapitals } from "../locations";
+export type Suggestion = {
+  /** Text put into the input when picked. */
+  value: string;
+  label: string;
+  /** Dimmed text shown after the label, e.g. the country. */
+  hint?: string;
+};
 
-export function LocationInput(props: {
+export function Autocomplete(props: {
   value: string;
   onChange: (value: string) => void;
+  search: (query: string) => Suggestion[];
+  placeholder?: string;
+  listId: string;
 }) {
   const [open, setOpen] = createSignal(false);
   const [active, setActive] = createSignal(0);
 
-  const suggestions = createMemo(() => searchCapitals(props.value));
+  const suggestions = createMemo(() => props.search(props.value));
   const visible = () => open() && suggestions().length > 0;
 
   const pick = (index: number) => {
     const match = suggestions()[index];
     if (!match) return;
-    props.onChange(formatLocation(match));
+    props.onChange(match.value);
     setOpen(false);
   };
 
@@ -40,11 +49,11 @@ export function LocationInput(props: {
     <div class="relative">
       <input
         class="field"
-        placeholder="Helsinki, remote…"
+        placeholder={props.placeholder}
         role="combobox"
         aria-expanded={visible()}
         aria-autocomplete="list"
-        aria-controls="location-suggestions"
+        aria-controls={props.listId}
         autocomplete="off"
         value={props.value}
         onInput={(e) => {
@@ -57,7 +66,7 @@ export function LocationInput(props: {
       />
       <Show when={visible()}>
         <ul
-          id="location-suggestions"
+          id={props.listId}
           role="listbox"
           class="absolute z-10 mt-1 w-full overflow-hidden rounded-xl border border-line bg-ink-2 shadow-2xl"
         >
@@ -75,8 +84,10 @@ export function LocationInput(props: {
                   pick(i());
                 }}
               >
-                {c.city}
-                <span class="text-dim">, {c.country}</span>
+                {c.label}
+                <Show when={c.hint}>
+                  <span class="text-dim">, {c.hint}</span>
+                </Show>
               </li>
             )}
           </For>

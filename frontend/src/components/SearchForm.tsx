@@ -3,15 +3,9 @@ import { createSignal, For, Show } from "solid-js";
 
 import { createSearch } from "../api";
 import type { SearchInput } from "../types";
-import { LocationInput } from "./LocationInput";
-
-const INDUSTRY_SUGGESTIONS = [
-  "AI / ML",
-  "Fintech",
-  "Health tech",
-  "Climate",
-  "Gaming",
-];
+import { INDUSTRIES, searchIndustries } from "../industries";
+import { searchLocations } from "../locations";
+import { Autocomplete } from "./Autocomplete";
 
 export function SearchForm(props: {
   onStarted: (jobId: string, input: SearchInput) => void;
@@ -73,20 +67,27 @@ export function SearchForm(props: {
         <div class="grid gap-4 sm:grid-cols-2">
           <label class="space-y-1.5">
             <span class="font-mono text-xs text-dim uppercase">Location</span>
-            <LocationInput value={location()} onChange={setLocation} />
+            <Autocomplete
+              value={location()}
+              onChange={setLocation}
+              search={searchLocations}
+              placeholder="Helsinki, remote…"
+              listId="location-suggestions"
+            />
           </label>
           <label class="space-y-1.5">
             <span class="font-mono text-xs text-dim uppercase">Industry</span>
-            <input
-              class="field"
-              placeholder="Fintech, climate…"
+            <Autocomplete
               value={industry()}
-              onInput={(e) => setIndustry(e.currentTarget.value)}
+              onChange={setIndustry}
+              search={searchIndustries}
+              placeholder="SaaS company, wealth management…"
+              listId="industry-suggestions"
             />
           </label>
         </div>
         <div class="flex flex-wrap gap-2">
-          <For each={INDUSTRY_SUGGESTIONS}>
+          <For each={INDUSTRIES}>
             {(s) => (
               <button
                 type="button"
