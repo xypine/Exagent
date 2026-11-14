@@ -138,8 +138,7 @@ export function HowItWorks(props: { onTryIt?: () => void }) {
                     class="rounded-2xl border border-line bg-ink-2/50 p-5 sm:last:col-span-2"
                     style={{ "transition-delay": `${i() * 70}ms` }}
                   >
-                    <p class="text-xs text-star">0{i() + 1}</p>
-                    <p class="mt-2 font-semibold">{t.title}</p>
+                    <p class="font-semibold">{t.title}</p>
                     <p class="mt-1 text-sm leading-6 text-dim">{t.body}</p>
                   </li>
                 )}
