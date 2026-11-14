@@ -81,7 +81,7 @@ export function SearchForm(props: {
               value={industry()}
               onChange={setIndustry}
               search={searchIndustries}
-              placeholder="SaaS company, wealth management…"
+              placeholder="SaaS, Marketing…"
               listId="industry-suggestions"
             />
           </label>
