@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID, uuid4
 
 from sqlalchemy import JSON, CheckConstraint, DateTime, String, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
+
+CompanySize = Literal["startup", "sme", "large"]
 
 
 class SearchJob(Base):
@@ -17,6 +19,10 @@ class SearchJob(Base):
             "status IN ('queued', 'finding_companies', 'done', 'failed')",
             name="ck_search_jobs_status",
         ),
+        CheckConstraint(
+            "company_size IN ('startup', 'sme', 'large')",
+            name="ck_search_jobs_company_size",
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid4)
@@ -24,6 +30,8 @@ class SearchJob(Base):
     cache_key: Mapped[str] = mapped_column(String(64), index=True)
     area: Mapped[str] = mapped_column(String(120))
     industry: Mapped[str] = mapped_column(String(120))
+    # Nullable only for jobs created before company-size filtering was introduced.
+    company_size: Mapped[CompanySize | None] = mapped_column(String(32), nullable=True)
     status: Mapped[str] = mapped_column(String(32), index=True)
     companies: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)
     error: Mapped[str | None] = mapped_column(String(500), nullable=True)

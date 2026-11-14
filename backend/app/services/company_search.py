@@ -5,11 +5,11 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID, uuid5
 
-from sqlalchemy import select, text
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
-from app.db.models import CompanySearchCache, SearchJob
+from app.db.models import CompanySearchCache, CompanySize, SearchJob
 from app.db.session import SessionLocal
 from app.services.exa_provider import (
     ExaProvider,
@@ -26,23 +26,67 @@ JOB_DONE = "done"
 JOB_FAILED = "failed"
 JOB_TERMINAL_STATUSES = (JOB_DONE, JOB_FAILED)
 COMPANY_NAMESPACE = UUID("2fb99d3a-73b9-4b46-89f0-85d6a450850d")
+COMPANY_SIZE_QUERY: dict[CompanySize, str] = {
+    "startup": "early-stage startup companies (typically under 50 employees)",
+    "sme": "small and medium-sized enterprises (SMEs, typically 10–249 employees)",
+    "large": "large companies and enterprises (250 or more employees)",
+}
 
 
 def normalize_criteria(value: str) -> str:
     return " ".join(value.casefold().split())
 
 
-def cache_key_for(area: str, industry: str) -> str:
-    criteria = f"{normalize_criteria(area)}\n{normalize_criteria(industry)}"
+def cache_key_for(area: str, industry: str, company_size: CompanySize) -> str:
+    criteria = f"{normalize_criteria(area)}\n{normalize_criteria(industry)}\n{company_size}"
     return hashlib.sha256(criteria.encode()).hexdigest()
 
 
-def company_query(area: str, industry: str) -> str:
-    return (
+def company_query(area: str, industry: str, company_size: CompanySize | None = None) -> str:
+    query = (
         f"Official websites of {industry} companies with a headquarters, office, or other "
-        f"substantial business operations in {area}. Exclude companies whose only connection "
-        f"to {area} is selling products or services to customers there."
+        f"substantial business operations in {area}."
     )
+    if company_size is not None:
+        query += f" Only include {COMPANY_SIZE_QUERY[company_size]}."
+    return query + (
+        f" Exclude companies whose only connection to {area} is selling products or services "
+        "to customers there."
+    )
+
+
+def company_size_attempts(company_size: CompanySize | None) -> tuple[CompanySize | None, ...]:
+    """Return the selected size followed by progressively broader fallback sizes."""
+    if company_size is None:
+        return (None,)
+    sizes: tuple[CompanySize, ...] = ("startup", "sme", "large")
+    selected_index = sizes.index(company_size)
+    return tuple(reversed(sizes[: selected_index + 1]))
+
+
+async def discover_companies_with_fallback(
+    provider: ExaProvider,
+    *,
+    area: str,
+    industry: str,
+    company_size: CompanySize | None,
+    max_results: int,
+) -> list[dict[str, Any]]:
+    """Try smaller company categories only when a search yields no usable companies."""
+    for attempted_size in company_size_attempts(company_size):
+        query = company_query(area, industry, attempted_size)
+        if company_size == "large" and attempted_size == "sme":
+            query += (
+                " Within the SME results, prioritize firms closest to the 250-employee "
+                "large-company threshold over smaller SMEs. Treat employee count as a ranking "
+                "signal, not a hard requirement, and include otherwise relevant firms whose "
+                "headcount is unpublished."
+            )
+        response = await provider.discover_companies(query, num_results=max_results)
+        companies = normalize_companies(response, max_results=max_results)
+        if companies:
+            return companies
+    return []
 
 
 class CompanySearchService:
@@ -50,13 +94,15 @@ class CompanySearchService:
         self._session = session
         self._settings = settings or get_settings()
 
-    def create_job(self, *, client_id: UUID, area: str, industry: str) -> tuple[SearchJob, bool]:
+    def create_job(
+        self, *, client_id: UUID, area: str, industry: str, company_size: CompanySize
+    ) -> tuple[SearchJob, bool]:
         """Create a job and return whether this request must start a refresh."""
         now = datetime.now(UTC)
-        key = cache_key_for(area, industry)
+        key = cache_key_for(area, industry, company_size)
         cache = self._session.get(CompanySearchCache, key)
         if cache is not None and cache.expires_at is not None and cache.expires_at > now:
-            job = self._new_job(client_id, area, industry, key, status=JOB_DONE)
+            job = self._new_job(client_id, area, industry, company_size, key, status=JOB_DONE)
             job.companies = cache.companies
             job.completed_at = now
             self._session.add(job)
@@ -66,12 +112,10 @@ class CompanySearchService:
 
         # Cache misses are serialized in PostgreSQL. It prevents an expired key
         # from launching multiple identical provider searches concurrently.
-        self._session.execute(
-            text("SELECT pg_advisory_xact_lock(hashtext(:cache_key))"), {"cache_key": key}
-        )
+        self._session.execute(select(func.pg_advisory_xact_lock(func.hashtext(key))))
         cache = self._session.get(CompanySearchCache, key)
         if cache is not None and cache.expires_at is not None and cache.expires_at > now:
-            job = self._new_job(client_id, area, industry, key, status=JOB_DONE)
+            job = self._new_job(client_id, area, industry, company_size, key, status=JOB_DONE)
             job.companies = cache.companies
             job.completed_at = now
             self._session.add(job)
@@ -79,7 +123,7 @@ class CompanySearchService:
             self._session.refresh(job)
             return job, False
 
-        job = self._new_job(client_id, area, industry, key, status=JOB_QUEUED)
+        job = self._new_job(client_id, area, industry, company_size, key, status=JOB_QUEUED)
         self._session.add(job)
         self._session.flush()
         if cache is None:
@@ -95,13 +139,21 @@ class CompanySearchService:
         return job, should_start_refresh
 
     def _new_job(
-        self, client_id: UUID, area: str, industry: str, cache_key: str, *, status: str
+        self,
+        client_id: UUID,
+        area: str,
+        industry: str,
+        company_size: CompanySize,
+        cache_key: str,
+        *,
+        status: str,
     ) -> SearchJob:
         return SearchJob(
             client_id=client_id,
             cache_key=cache_key,
             area=area,
             industry=industry,
+            company_size=company_size,
             status=status,
             companies=[],
         )
@@ -117,15 +169,15 @@ class CompanySearchService:
         try:
             provider = ExaProvider(self._settings)
             try:
-                response = await provider.discover_companies(
-                    company_query(job.area, job.industry),
-                    num_results=self._settings.company_search_max_results,
+                companies = await discover_companies_with_fallback(
+                    provider,
+                    area=job.area,
+                    industry=job.industry,
+                    company_size=job.company_size,
+                    max_results=self._settings.company_search_max_results,
                 )
             finally:
                 await provider.close()
-            companies = normalize_companies(
-                response, max_results=self._settings.company_search_max_results
-            )
         except Exception:
             self._mark_failed(job.cache_key)
             self._session.commit()

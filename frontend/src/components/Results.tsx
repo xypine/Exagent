@@ -9,6 +9,12 @@ const STEPS: { key: JobStatus; label: string }[] = [
   { key: "done", label: "Done" },
 ];
 
+const COMPANY_SIZE_LABELS: Record<SearchInput["company_size"], string> = {
+  startup: "Startup",
+  sme: "SME",
+  large: "Large companies",
+};
+
 function stepIndex(status: JobStatus | undefined) {
   if (status === "done") return 1;
   return 0;
@@ -44,6 +50,9 @@ export function Results(props: {
             🏷 {props.input.industry}
           </span>
         </Show>
+        <span class="rounded-full border border-line px-3 py-1 text-sm">
+          🏢 {COMPANY_SIZE_LABELS[props.input.company_size]}
+        </span>
         <button
           type="button"
           onClick={props.onReset}

@@ -4,14 +4,21 @@ import { createSignal, For, Show } from "solid-js";
 import { createSearch } from "../api";
 import { INDUSTRIES, searchIndustries } from "../industries";
 import { searchLocations } from "../locations";
-import type { SearchInput } from "../types";
+import type { CompanySize, SearchInput } from "../types";
 import { Autocomplete } from "./Autocomplete";
+
+const COMPANY_SIZES = [
+  { value: "startup", label: "Startup" },
+  { value: "sme", label: "SME" },
+  { value: "large", label: "Large companies" },
+] as const;
 
 export function SearchForm(props: {
   onStarted: (jobId: string, input: SearchInput) => void;
 }) {
   const [area, setArea] = createSignal("");
   const [industry, setIndustry] = createSignal("");
+  const [companySize, setCompanySize] = createSignal<CompanySize>();
 
   const mutation = createMutation(() => ({
     mutationFn: createSearch,
@@ -21,14 +28,17 @@ export function SearchForm(props: {
   const canSubmit = () =>
     area().trim().length > 0 &&
     industry().trim().length > 0 &&
+    companySize() !== undefined &&
     !mutation.isPending;
 
   const submit = (e: SubmitEvent) => {
     e.preventDefault();
-    if (!canSubmit()) return;
+    const size = companySize();
+    if (!canSubmit() || size === undefined) return;
     mutation.mutate({
       area: area().trim(),
       industry: industry().trim(),
+      company_size: size,
     });
   };
 
@@ -44,7 +54,8 @@ export function SearchForm(props: {
           <span class="text-signal">Say what works.</span>
         </h1>
         <p class="max-w-lg text-lg leading-8 text-dim">
-          Tell us where you want to work. We will find the most relevant people and companies for you.
+          Tell us where you want to work. We will find the most relevant people
+          and companies for you.
         </p>
       </section>
 
@@ -76,6 +87,34 @@ export function SearchForm(props: {
             />
           </label>
         </div>
+        <fieldset>
+          <legend class="mb-1.5 font-mono text-xs text-dim uppercase">
+            Company size
+          </legend>
+          <div class="grid grid-cols-3 gap-2">
+            <For each={COMPANY_SIZES}>
+              {(size) => (
+                <label
+                  class="cursor-pointer rounded-xl border border-line bg-ink-2 px-3 py-3 text-center text-sm text-dim transition hover:border-signal hover:text-signal has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-signal"
+                  classList={{
+                    "border-signal bg-signal/10 text-signal":
+                      companySize() === size.value,
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="company-size"
+                    value={size.value}
+                    checked={companySize() === size.value}
+                    onChange={() => setCompanySize(size.value)}
+                    class="sr-only"
+                  />
+                  {size.label}
+                </label>
+              )}
+            </For>
+          </div>
+        </fieldset>
         <div class="flex flex-wrap gap-2">
           <For each={INDUSTRIES}>
             {(s) => (

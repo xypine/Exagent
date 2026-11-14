@@ -1,16 +1,17 @@
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from typing import Annotated, Literal, cast
 from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, StringConstraints
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.client_identity import ClientContext, enforce_rate_limit
-from app.db.models import SearchJob
+from app.db.models import CompanySize, SearchJob
 from app.db.session import get_db_session
 from app.services.company_search import CompanySearchService, refresh_company_search
 
@@ -19,11 +20,23 @@ ClientDependency = Annotated[ClientContext, Depends(enforce_rate_limit)]
 DbDependency = Annotated[Session, Depends(get_db_session)]
 Criteria = Annotated[str, StringConstraints(strip_whitespace=True, min_length=2, max_length=120)]
 JobStatus = Literal["queued", "finding_companies", "done", "failed"]
+_NUMERIC_CITATION = re.compile(r"\s*\[\d{1,3}(?:\s*(?:,|[-–—])\s*\d{1,3})*\]")
+
+
+def _strip_numeric_citations(value: str) -> str:
+    return _NUMERIC_CITATION.sub("", value).strip()
+
+
+CleanSummary = Annotated[str, AfterValidator(_strip_numeric_citations)]
 
 
 class SearchRequest(BaseModel):
     area: Criteria
     industry: Criteria
+    company_size: CompanySize = Field(
+        description="Company-size category used to filter Exa results.",
+        examples=["startup"],
+    )
 
 
 class SourceResponse(BaseModel):
@@ -37,7 +50,7 @@ class CompanyResponse(BaseModel):
     id: str
     name: str
     url: str
-    summary: str
+    summary: CleanSummary
     sources: list[SourceResponse]
 
 
@@ -66,6 +79,7 @@ async def create_search(
         client_id=context.client_id,
         area=request.area,
         industry=request.industry,
+        company_size=request.company_size,
     )
     if should_start_refresh:
         background_tasks.add_task(refresh_company_search, job.id)

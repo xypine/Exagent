@@ -1,8 +1,11 @@
 export type JobStatus = "queued" | "finding_companies" | "done" | "failed";
 
+export type CompanySize = "startup" | "sme" | "large";
+
 export interface SearchInput {
   area: string;
   industry: string;
+  company_size: CompanySize;
 }
 
 export interface Source {
