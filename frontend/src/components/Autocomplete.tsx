@@ -14,12 +14,15 @@ export function Autocomplete(props: {
   search: (query: string) => Suggestion[];
   placeholder?: string;
   listId: string;
+  inputId?: string;
 }) {
   const [open, setOpen] = createSignal(false);
   const [active, setActive] = createSignal(0);
 
   const suggestions = createMemo(() => props.search(props.value));
   const visible = () => open() && suggestions().length > 0;
+  const activeOptionId = () =>
+    visible() ? `${props.listId}-option-${active()}` : undefined;
 
   const pick = (index: number) => {
     const match = suggestions()[index];
@@ -49,11 +52,13 @@ export function Autocomplete(props: {
     <div class="relative">
       <input
         class="field"
+        id={props.inputId}
         placeholder={props.placeholder}
         role="combobox"
         aria-expanded={visible()}
         aria-autocomplete="list"
         aria-controls={props.listId}
+        aria-activedescendant={activeOptionId()}
         autocomplete="off"
         value={props.value}
         onInput={(e) => {
@@ -65,17 +70,20 @@ export function Autocomplete(props: {
         onBlur={() => setOpen(false)}
       />
       <Show when={visible()}>
-        <ul
+        <div
           id={props.listId}
           role="listbox"
           class="absolute z-10 mt-1 w-full overflow-hidden rounded-xl border border-line bg-ink-2 shadow-2xl"
         >
           <For each={suggestions()}>
             {(c, i) => (
-              <li
+              <button
+                id={`${props.listId}-option-${i()}`}
+                type="button"
                 role="option"
                 aria-selected={i() === active()}
-                class="cursor-pointer px-4 py-2 text-sm"
+                tabIndex={-1}
+                class="block w-full cursor-pointer px-4 py-2 text-left text-sm"
                 classList={{ "bg-line text-signal": i() === active() }}
                 onMouseEnter={() => setActive(i())}
                 // mousedown fires before the input's blur, which would close the list.
@@ -88,10 +96,10 @@ export function Autocomplete(props: {
                 <Show when={c.hint}>
                   <span class="text-dim">, {c.hint}</span>
                 </Show>
-              </li>
+              </button>
             )}
           </For>
-        </ul>
+        </div>
       </Show>
     </div>
   );
