@@ -76,13 +76,13 @@ class CacheHitSession:
 
 
 def test_cache_key_ignores_casing_and_repeated_whitespace() -> None:
-    assert cache_key_for(" Helsinki ", "AI   / ML", "startup") == cache_key_for(
-        "helsinki", "ai / ml", "startup"
+    assert cache_key_for(" Helsinki ", "AI   / ML", "small") == cache_key_for(
+        "helsinki", "ai / ml", "small"
     )
 
 
 def test_cache_key_separates_company_sizes() -> None:
-    assert cache_key_for("Helsinki", "Fintech", "startup") != cache_key_for(
+    assert cache_key_for("Helsinki", "Fintech", "small") != cache_key_for(
         "Helsinki", "Fintech", "large"
     )
 
@@ -95,13 +95,16 @@ def test_company_query_requires_local_presence() -> None:
     assert "only connection to Helsinki is selling products or services" in query
 
 
-def test_company_query_includes_selected_company_size() -> None:
-    sme_query = company_query("Helsinki", "Fintech", "sme")
+def test_company_query_includes_selected_headcount_range() -> None:
+    small_query = company_query("Helsinki", "Fintech", "small")
+    medium_query = company_query("Helsinki", "Fintech", "medium")
+    large_query = company_query("Helsinki", "Fintech", "large")
 
-    assert "early-stage startup companies" in company_query("Helsinki", "Fintech", "startup")
-    assert "small and medium-sized enterprises" in sme_query
-    assert "prioritize firms closest" not in sme_query
-    assert "large companies and enterprises" in company_query("Helsinki", "Fintech", "large")
+    assert "fewer than 50 employees" in small_query
+    assert "50–249 employees" in medium_query
+    assert "prioritize firms closest" not in medium_query
+    assert "250 or more employees" in large_query
+    assert "startup" not in small_query.casefold()
 
 
 async def test_company_search_does_not_fall_back_when_matches_exist() -> None:
@@ -117,10 +120,10 @@ async def test_company_search_does_not_fall_back_when_matches_exist() -> None:
 
     assert len(companies) == 1
     assert len(provider.queries) == 1
-    assert "large companies and enterprises" in provider.queries[0]
+    assert "250 or more employees" in provider.queries[0]
 
 
-async def test_company_search_falls_down_to_sme_after_no_large_company_matches() -> None:
+async def test_company_search_falls_down_to_medium_after_no_large_company_matches() -> None:
     provider = FallbackProvider([empty_company_response(), populated_company_response()])
 
     companies = await discover_companies_with_fallback(
@@ -133,13 +136,13 @@ async def test_company_search_falls_down_to_sme_after_no_large_company_matches()
 
     assert len(companies) == 1
     assert len(provider.queries) == 2
-    assert "large companies and enterprises" in provider.queries[0]
-    assert "small and medium-sized enterprises" in provider.queries[1]
+    assert "250 or more employees" in provider.queries[0]
+    assert "50–249 employees" in provider.queries[1]
     assert "prioritize firms closest to the 250-employee" in provider.queries[1]
     assert "not a hard requirement" in provider.queries[1]
 
 
-async def test_company_search_tries_startup_after_all_larger_sizes_return_no_matches() -> None:
+async def test_company_search_tries_small_after_all_larger_sizes_return_no_matches() -> None:
     provider = FallbackProvider([empty_company_response()] * 3)
 
     companies = await discover_companies_with_fallback(
@@ -152,13 +155,13 @@ async def test_company_search_tries_startup_after_all_larger_sizes_return_no_mat
 
     assert companies == []
     assert len(provider.queries) == 3
-    assert "large companies and enterprises" in provider.queries[0]
-    assert "small and medium-sized enterprises" in provider.queries[1]
-    assert "early-stage startup companies" in provider.queries[2]
+    assert "250 or more employees" in provider.queries[0]
+    assert "50–249 employees" in provider.queries[1]
+    assert "fewer than 50 employees" in provider.queries[2]
 
 
 def test_fresh_cache_creates_completed_job_without_scheduling_refresh() -> None:
-    key = cache_key_for("Helsinki", "Fintech", "startup")
+    key = cache_key_for("Helsinki", "Fintech", "small")
     companies = [{"id": "company-1", "name": "Example", "sources": []}]
     cache = CompanySearchCache(
         cache_key=key,
@@ -169,12 +172,12 @@ def test_fresh_cache_creates_completed_job_without_scheduling_refresh() -> None:
     service = CompanySearchService(session, Settings())  # type: ignore[arg-type]
 
     job, should_start_refresh = service.create_job(
-        client_id=uuid4(), area="Helsinki", industry="Fintech", company_size="startup"
+        client_id=uuid4(), area="Helsinki", industry="Fintech", company_size="small"
     )
 
     assert should_start_refresh is False
     assert job.status == JOB_DONE
-    assert job.company_size == "startup"
+    assert job.company_size == "small"
     assert job.companies == companies
     assert len(session.added) == 1
     assert session.commits == 1

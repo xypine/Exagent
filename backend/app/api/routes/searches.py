@@ -34,8 +34,8 @@ class SearchRequest(BaseModel):
     area: Criteria
     industry: Criteria
     company_size: CompanySize = Field(
-        description="Company-size category used to filter Exa results.",
-        examples=["startup"],
+        description="Headcount range used to filter Exa results.",
+        examples=["small"],
     )
 
 

@@ -9,7 +9,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
 
-CompanySize = Literal["startup", "sme", "large"]
+CompanySize = Literal["small", "medium", "large"]
 
 
 class SearchJob(Base):
@@ -20,7 +20,7 @@ class SearchJob(Base):
             name="ck_search_jobs_status",
         ),
         CheckConstraint(
-            "company_size IN ('startup', 'sme', 'large')",
+            "company_size IN ('small', 'medium', 'large')",
             name="ck_search_jobs_company_size",
         ),
     )

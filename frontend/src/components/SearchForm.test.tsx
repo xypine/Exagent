@@ -27,10 +27,14 @@ describe("SearchForm", () => {
     const submit = screen.getByRole("button", {
       name: /Search/,
     }) as HTMLButtonElement;
-    expect(screen.getByRole("radio", { name: "Startup" })).not.toBeNull();
-    expect(screen.getByRole("radio", { name: "SME" })).not.toBeNull();
     expect(
-      screen.getByRole("radio", { name: "Large companies" }),
+      screen.getByRole("radio", { name: "Under 50 employees" }),
+    ).not.toBeNull();
+    expect(
+      screen.getByRole("radio", { name: "50–249 employees" }),
+    ).not.toBeNull();
+    expect(
+      screen.getByRole("radio", { name: "250+ employees" }),
     ).not.toBeNull();
     expect(submit.disabled).toBe(true);
 
@@ -42,7 +46,7 @@ describe("SearchForm", () => {
     });
     expect(submit.disabled).toBe(true);
 
-    fireEvent.click(screen.getByRole("radio", { name: "SME" }));
+    fireEvent.click(screen.getByRole("radio", { name: "50–249 employees" }));
     expect(submit.disabled).toBe(false);
     fireEvent.click(submit);
 
@@ -50,13 +54,13 @@ describe("SearchForm", () => {
     expect(createSearchMock.mock.calls[0]?.[0]).toEqual({
       area: "Helsinki",
       industry: "Fintech",
-      company_size: "sme",
+      company_size: "medium",
     });
     await waitFor(() =>
       expect(onStarted).toHaveBeenCalledWith("job-1", {
         area: "Helsinki",
         industry: "Fintech",
-        company_size: "sme",
+        company_size: "medium",
       }),
     );
   });

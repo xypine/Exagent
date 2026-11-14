@@ -8,9 +8,9 @@ import type { CompanySize, SearchInput } from "../types";
 import { Autocomplete } from "./Autocomplete";
 
 const COMPANY_SIZES = [
-  { value: "startup", label: "Startup" },
-  { value: "sme", label: "SME" },
-  { value: "large", label: "Large companies" },
+  { value: "small", label: "Under 50 employees" },
+  { value: "medium", label: "50–249 employees" },
+  { value: "large", label: "250+ employees" },
 ] as const;
 
 export function SearchForm(props: {

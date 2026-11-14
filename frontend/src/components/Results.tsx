@@ -10,9 +10,9 @@ const STEPS: { key: JobStatus; label: string }[] = [
 ];
 
 const COMPANY_SIZE_LABELS: Record<SearchInput["company_size"], string> = {
-  startup: "Startup",
-  sme: "SME",
-  large: "Large companies",
+  small: "Under 50 employees",
+  medium: "50–249 employees",
+  large: "250+ employees",
 };
 
 function stepIndex(status: JobStatus | undefined) {

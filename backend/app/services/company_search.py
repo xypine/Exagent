@@ -27,9 +27,9 @@ JOB_FAILED = "failed"
 JOB_TERMINAL_STATUSES = (JOB_DONE, JOB_FAILED)
 COMPANY_NAMESPACE = UUID("2fb99d3a-73b9-4b46-89f0-85d6a450850d")
 COMPANY_SIZE_QUERY: dict[CompanySize, str] = {
-    "startup": "early-stage startup companies (typically under 50 employees)",
-    "sme": "small and medium-sized enterprises (SMEs, typically 10–249 employees)",
-    "large": "large companies and enterprises (250 or more employees)",
+    "small": "companies with fewer than 50 employees",
+    "medium": "companies with 50–249 employees",
+    "large": "companies with 250 or more employees",
 }
 
 
@@ -59,7 +59,7 @@ def company_size_attempts(company_size: CompanySize | None) -> tuple[CompanySize
     """Return the selected size followed by progressively broader fallback sizes."""
     if company_size is None:
         return (None,)
-    sizes: tuple[CompanySize, ...] = ("startup", "sme", "large")
+    sizes: tuple[CompanySize, ...] = ("small", "medium", "large")
     selected_index = sizes.index(company_size)
     return tuple(reversed(sizes[: selected_index + 1]))
 
@@ -75,10 +75,10 @@ async def discover_companies_with_fallback(
     """Try smaller company categories only when a search yields no usable companies."""
     for attempted_size in company_size_attempts(company_size):
         query = company_query(area, industry, attempted_size)
-        if company_size == "large" and attempted_size == "sme":
+        if company_size == "large" and attempted_size == "medium":
             query += (
-                " Within the SME results, prioritize firms closest to the 250-employee "
-                "large-company threshold over smaller SMEs. Treat employee count as a ranking "
+                " Within the 50–249 employee results, prioritize firms closest to the "
+                "250-employee threshold over smaller firms. Treat employee count as a ranking "
                 "signal, not a hard requirement, and include otherwise relevant firms whose "
                 "headcount is unpublished."
             )
