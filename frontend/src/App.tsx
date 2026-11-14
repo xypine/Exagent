@@ -84,7 +84,7 @@ export default function App() {
       </Switch>
 
       <footer class="mx-auto max-w-6xl px-6 py-10 text-xs text-dim">
-        Powered by Exa search · built at the hackathon
+        Powered by Exa search · built at Junction 2026
       </footer>
     </div>
   );
