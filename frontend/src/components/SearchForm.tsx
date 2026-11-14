@@ -3,6 +3,7 @@ import { createSignal, For, Show } from "solid-js";
 
 import { createSearch } from "../api";
 import type { SearchInput } from "../types";
+import { LocationInput } from "./LocationInput";
 
 const INDUSTRY_SUGGESTIONS = [
   "AI / ML",
@@ -72,12 +73,7 @@ export function SearchForm(props: {
         <div class="grid gap-4 sm:grid-cols-2">
           <label class="space-y-1.5">
             <span class="font-mono text-xs text-dim uppercase">Location</span>
-            <input
-              class="field"
-              placeholder="Helsinki, remote…"
-              value={location()}
-              onInput={(e) => setLocation(e.currentTarget.value)}
-            />
+            <LocationInput value={location()} onChange={setLocation} />
           </label>
           <label class="space-y-1.5">
             <span class="font-mono text-xs text-dim uppercase">Industry</span>
