@@ -7,18 +7,12 @@ const COMPANIES: Company[] = [
     url: "https://example.com/aurora",
     summary:
       "Warehouse automation startup, Series A, hiring across engineering.",
-    people: [
+    sources: [
       {
-        id: "p1",
-        name: "Alan Parson",
-        title: "CTO",
-        relevance: "Owns the engineering hiring plan",
-      },
-      {
-        id: "p2",
-        name: "Matti Meikäläinen",
-        title: "Product Owner",
-        relevance: "Posted about growing the platform team",
+        provider: "exa",
+        url: "https://example.com/aurora",
+        title: "Aurora Robotics",
+        retrieved_at: "2026-11-14T00:00:00Z",
       },
     ],
   },
@@ -27,18 +21,12 @@ const COMPANIES: Company[] = [
     name: "Northwind Health",
     url: "https://example.com/northwind",
     summary: "Digital health scale-up expanding into the Nordics.",
-    people: [
+    sources: [
       {
-        id: "p3",
-        name: "Sofia Lind",
-        title: "Head of Data",
-        relevance: "Recently spoke about ML in diagnostics",
-      },
-      {
-        id: "p4",
-        name: "Jari Korhonen",
-        title: "VP Engineering",
-        relevance: "Ex-founder, mentors junior devs",
+        provider: "exa",
+        url: "https://example.com/northwind",
+        title: "Northwind Health",
+        retrieved_at: "2026-11-14T00:00:00Z",
       },
     ],
   },
@@ -47,12 +35,12 @@ const COMPANIES: Company[] = [
     name: "Kide Energy",
     url: "https://example.com/kide",
     summary: "Grid-scale battery software, just raised a seed round.",
-    people: [
+    sources: [
       {
-        id: "p5",
-        name: "Emma Virtanen",
-        title: "CEO",
-        relevance: "Hires the first 10 people personally",
+        provider: "exa",
+        url: "https://example.com/kide",
+        title: "Kide Energy",
+        retrieved_at: "2026-11-14T00:00:00Z",
       },
     ],
   },
@@ -73,12 +61,6 @@ export const mockApi = {
     const elapsed = Date.now() - (started.get(jobId) ?? 0);
     if (elapsed < 1500)
       return { job_id: jobId, status: "finding_companies", companies: [] };
-    if (elapsed < 3500)
-      return {
-        job_id: jobId,
-        status: "finding_people",
-        companies: COMPANIES.map((c) => ({ ...c, people: [] })),
-      };
     return { job_id: jobId, status: "done", companies: COMPANIES };
   },
   async getPersonInsights(personId: string): Promise<PersonInsights> {

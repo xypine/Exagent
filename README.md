@@ -26,6 +26,7 @@ A lightweight job-search research tool. Exa company and people discovery are ava
 3. Open http://localhost:5173. The API health endpoint is at http://localhost:8000/api/health.
 
 The Compose services bind mount the source directories. Changes to the frontend use Vite HMR; changes to the backend trigger Uvicorn reload.
+The backend service applies Alembic migrations before it starts, so the company-search job and cache tables are available locally.
 
 
 ## Local commands

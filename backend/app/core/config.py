@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import field_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     exa_retry_max_seconds: float = 10
     exa_max_queue_wait_seconds: float = 30
     exa_max_pending_requests: int = 25
+    company_search_max_results: int = Field(default=50, ge=1, le=50)
+    company_search_cache_ttl_seconds: int = Field(default=86400, gt=0)
     gemini_api_key: str | None = None
 
     @field_validator("database_url", mode="before")

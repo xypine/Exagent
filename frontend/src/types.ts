@@ -1,14 +1,15 @@
-export type JobStatus =
-  | "queued"
-  | "finding_companies"
-  | "finding_people"
-  | "done"
-  | "failed";
+export type JobStatus = "queued" | "finding_companies" | "done" | "failed";
 
 export interface SearchInput {
-  location: string;
+  area: string;
   industry: string;
-  details: string;
+}
+
+export interface Source {
+  provider: "exa";
+  url: string;
+  title?: string | null;
+  retrieved_at: string;
 }
 
 export interface Person {
@@ -22,9 +23,9 @@ export interface Person {
 export interface Company {
   id: string;
   name: string;
-  url?: string;
-  summary?: string;
-  people: Person[];
+  url: string;
+  summary: string;
+  sources: Source[];
 }
 
 export interface SearchJob {

@@ -10,24 +10,25 @@ import { Autocomplete } from "./Autocomplete";
 export function SearchForm(props: {
   onStarted: (jobId: string, input: SearchInput) => void;
 }) {
-  const [location, setLocation] = createSignal("");
+  const [area, setArea] = createSignal("");
   const [industry, setIndustry] = createSignal("");
-  const [details, setDetails] = createSignal("");
 
   const mutation = createMutation(() => ({
     mutationFn: createSearch,
     onSuccess: (res, input) => props.onStarted(res.job_id, input),
   }));
 
-  const canSubmit = () => details().trim().length > 0 && !mutation.isPending;
+  const canSubmit = () =>
+    area().trim().length > 0 &&
+    industry().trim().length > 0 &&
+    !mutation.isPending;
 
   const submit = (e: SubmitEvent) => {
     e.preventDefault();
     if (!canSubmit()) return;
     mutation.mutate({
-      location: location().trim(),
+      area: area().trim(),
       industry: industry().trim(),
-      details: details().trim(),
     });
   };
 
@@ -43,19 +44,12 @@ export function SearchForm(props: {
           <span class="text-signal">Say what works.</span>
         </h1>
         <p class="max-w-lg text-lg leading-8 text-dim">
-          Tell us where you want to work and who you are. Our agent finds the
-          right companies, then the people inside them worth sending an open
-          application to.
+          Tell us where you want to work. We will find relevant companies and
+          show the public sources behind every result.
         </p>
-        <ol class="grid max-w-lg gap-3 font-mono text-sm text-dim sm:grid-cols-3">
+        <ol class="grid max-w-lg gap-3 font-mono text-sm text-dim">
           <li class="rounded-lg border border-line p-3">
             <span class="text-signal">01</span> Companies
-          </li>
-          <li class="rounded-lg border border-line p-3">
-            <span class="text-signal">02</span> People
-          </li>
-          <li class="rounded-lg border border-line p-3">
-            <span class="text-signal">03</span> Key insights
           </li>
         </ol>
       </section>
@@ -65,15 +59,15 @@ export function SearchForm(props: {
         class="animate-rise space-y-4 rounded-2xl border border-line bg-ink-2/60 p-6 shadow-2xl backdrop-blur [animation-delay:120ms]"
       >
         <div class="grid gap-4 sm:grid-cols-2">
-          <label for="location" class="space-y-1.5">
-            <span class="font-mono text-xs text-dim uppercase">Location</span>
+          <label for="area" class="space-y-1.5">
+            <span class="font-mono text-xs text-dim uppercase">Area</span>
             <Autocomplete
-              inputId="location"
-              value={location()}
-              onChange={setLocation}
+              inputId="area"
+              value={area()}
+              onChange={setArea}
               search={searchLocations}
               placeholder="Helsinki, remote…"
-              listId="location-suggestions"
+              listId="area-suggestions"
             />
           </label>
           <label for="industry" class="space-y-1.5">
@@ -102,17 +96,6 @@ export function SearchForm(props: {
             )}
           </For>
         </div>
-        <label class="block space-y-1.5">
-          <span class="font-mono text-xs text-dim uppercase">
-            Details about you
-          </span>
-          <textarea
-            class="field min-h-36 resize-y"
-            placeholder="Junior full-stack dev, TypeScript + Python, built a robotics side project, looking for a small product team…"
-            value={details()}
-            onInput={(e) => setDetails(e.currentTarget.value)}
-          />
-        </label>
         <Show when={mutation.isError}>
           <p class="text-sm text-bad">{mutation.error?.message}</p>
         </Show>

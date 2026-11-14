@@ -20,7 +20,9 @@ services:
   backend:
     build:
       context: ./backend
-    command: /opt/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: >-
+      sh -c '/opt/venv/bin/alembic upgrade head && exec /opt/venv/bin/uvicorn
+      app.main:app --host 0.0.0.0 --port 8000 --reload'
     environment:
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-prospecting}:${POSTGRES_PASSWORD:-prospecting}@db:5432/${POSTGRES_DB:-prospecting}
       FRONTEND_ORIGIN: http://localhost:${FRONTEND_PORT:-5173}
@@ -35,6 +37,8 @@ services:
       EXA_RETRY_MAX_SECONDS: ${EXA_RETRY_MAX_SECONDS:-10}
       EXA_MAX_QUEUE_WAIT_SECONDS: ${EXA_MAX_QUEUE_WAIT_SECONDS:-30}
       EXA_MAX_PENDING_REQUESTS: ${EXA_MAX_PENDING_REQUESTS:-25}
+      COMPANY_SEARCH_MAX_RESULTS: ${COMPANY_SEARCH_MAX_RESULTS:-50}
+      COMPANY_SEARCH_CACHE_TTL_SECONDS: ${COMPANY_SEARCH_CACHE_TTL_SECONDS:-86400}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
