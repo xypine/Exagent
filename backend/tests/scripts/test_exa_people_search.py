@@ -88,7 +88,7 @@ async def test_search_serializes_validated_structured_people_output(
                 retries=0,
                 throttled_responses=0,
             )
-            self.call: tuple[str, str, tuple[str, ...], int] | None = None
+            self.calls: list[tuple[str, str, tuple[str, ...], int]] = []
             self.closed = False
 
         async def discover_people(
@@ -99,7 +99,7 @@ async def test_search_serializes_validated_structured_people_output(
             job_titles: tuple[str, ...],
             num_results: int,
         ) -> SimpleNamespace:
-            self.call = (company_name, company_domain, job_titles, num_results)
+            self.calls.append((company_name, company_domain, job_titles, num_results))
             person = ProviderPerson(
                 name="Aino Example",
                 title="Portfolio Manager",
@@ -112,17 +112,37 @@ async def test_search_serializes_validated_structured_people_output(
                     ProviderPreviousExperience(
                         company_name="Nordic Capital",
                         role="Investment Analyst",
+                        source_url="https://example.com/aino-work",
                     ),
                 ),
-                education=(ProviderEducation(school="Aalto University", major="Finance"),),
+                education=(
+                    ProviderEducation(
+                        school="Aalto University",
+                        major="Finance",
+                        source_url="https://example.com/aino-education",
+                    ),
+                ),
                 volunteer_experience=(
                     ProviderVolunteerExperience(
                         organization="Startup Refugees",
                         role="Mentor",
+                        source_url="https://example.com/aino-volunteer",
                     ),
                 ),
             )
             return SimpleNamespace(output=ProviderPeopleSearchOutput(people=(person,)))
+
+        async def research_person(
+            self, _person_name: str, *, company_name: str, profile_url: str
+        ) -> SimpleNamespace:
+            assert company_name == "Example Wealth"
+            assert profile_url == "https://linkedin.com/in/aino-example"
+            return await self.discover_people(
+                "Example Wealth",
+                company_domain="example.fi",
+                job_titles=("Portfolio Manager",),
+                num_results=1,
+            )
 
         async def close(self) -> None:
             self.closed = True
@@ -149,12 +169,13 @@ async def test_search_serializes_validated_structured_people_output(
     assert exit_code == 0
     assert len(providers) == 1
     provider = providers[0]
-    assert provider.call == (
+    assert provider.calls[0] == (
         "Example Wealth",
         "example.fi",
         ("Portfolio Manager",),
         5,
     )
+    assert len(provider.calls) == 2
     assert provider.closed
 
     payload = json.loads(capsys.readouterr().out)
@@ -180,10 +201,23 @@ async def test_search_serializes_validated_structured_people_output(
                 {
                     "company_name": "Nordic Capital",
                     "role": "Investment Analyst",
+                    "source_url": "https://example.com/aino-work",
                 }
             ],
-            "education": [{"school": "Aalto University", "major": "Finance"}],
-            "volunteer_experience": [{"organization": "Startup Refugees", "role": "Mentor"}],
+            "education": [
+                {
+                    "school": "Aalto University",
+                    "major": "Finance",
+                    "source_url": "https://example.com/aino-education",
+                }
+            ],
+            "volunteer_experience": [
+                {
+                    "organization": "Startup Refugees",
+                    "role": "Mentor",
+                    "source_url": "https://example.com/aino-volunteer",
+                }
+            ],
         }
     ]
     assert payload["meta"] == {

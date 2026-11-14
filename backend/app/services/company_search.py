@@ -14,6 +14,7 @@ from app.db.session import SessionLocal
 from app.services.exa_provider import (
     ExaProvider,
     ProviderDocument,
+    ProviderSearchOutput,
     ProviderSearchResponse,
     normalize_domain,
     normalize_website_url,
@@ -178,7 +179,7 @@ async def refresh_company_search(job_id: UUID) -> None:
 
 
 def normalize_companies(
-    response: ProviderSearchResponse, *, max_results: int
+    response: ProviderSearchResponse[ProviderSearchOutput], *, max_results: int
 ) -> list[dict[str, Any]]:
     documents_by_domain: dict[str, list[ProviderDocument]] = {}
     for document in response.results:

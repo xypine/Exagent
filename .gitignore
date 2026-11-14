@@ -17,6 +17,3 @@ __pycache__/
 # Editors
 .idea/
 .vscode/
-
-# dont remove this
-.pi

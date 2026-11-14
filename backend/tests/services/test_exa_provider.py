@@ -91,11 +91,31 @@ def _people_response() -> SimpleNamespace:
                     "evidence_url": "https://example.fi/team/aino",
                     "evidence_summary": "The company team page lists Aino as Portfolio Manager.",
                     "background_entries": [
-                        ["previous_experience", "Nordic Capital", "Investment Analyst"],
-                        ["education", "Aalto University", "Finance"],
-                        ["education", "Hanken School of Economics", ""],
-                        ["volunteer_experience", "Startup Refugees", "Mentor"],
-                        ["volunteer_experience", "Local Food Bank", ""],
+                        [
+                            "previous_experience",
+                            "Nordic Capital",
+                            "Investment Analyst",
+                            "https://example.com/aino-work",
+                        ],
+                        ["education", "Aalto University", "Finance", "https://example.com/aino"],
+                        [
+                            "education",
+                            "Hanken School of Economics",
+                            "",
+                            "https://example.com/aino",
+                        ],
+                        [
+                            "volunteer_experience",
+                            "Startup Refugees",
+                            "Mentor",
+                            "https://example.com/aino-volunteer",
+                        ],
+                        [
+                            "volunteer_experience",
+                            "Local Food Bank",
+                            "",
+                            "https://example.com/aino-volunteer",
+                        ],
                     ],
                 }
             ]
@@ -158,15 +178,11 @@ async def test_provider_returns_structured_people_from_single_bounded_search() -
     assert person.profile_url == "https://linkedin.com/in/aino-example"
     assert person.evidence_url == "https://example.fi/team/aino"
     assert person.previous_experience[0].company_name == "Nordic Capital"
-    assert person.previous_experience[0].role == "Investment Analyst"
+    assert person.previous_experience[0].source_url == "https://example.com/aino-work"
     assert person.education[0].school == "Aalto University"
-    assert person.education[0].major == "Finance"
-    assert person.education[1].school == "Hanken School of Economics"
-    assert person.education[1].major is None
+    assert person.education[0].source_url == "https://example.com/aino"
     assert person.volunteer_experience[0].organization == "Startup Refugees"
-    assert person.volunteer_experience[0].role == "Mentor"
-    assert person.volunteer_experience[1].organization == "Local Food Bank"
-    assert person.volunteer_experience[1].role is None
+    assert person.volunteer_experience[0].source_url == "https://example.com/aino-volunteer"
     assert response.results[0].url == "https://linkedin.com/in/aino-example"
 
     query, kwargs = client.calls[0]
@@ -178,10 +194,6 @@ async def test_provider_returns_structured_people_from_single_bounded_search() -
     assert "not another company or division in its corporate group" in query
     assert "exclude former employees" in query
     assert "Set matched_job_title to the target role" in query
-    assert "previous roles at other companies" in query
-    assert "schools and majors" in query
-    assert "volunteer experience" in query
-    assert "never combine profiles belonging to different people" in query
     assert len(client.calls) == 1
     assert kwargs["category"] == "people"
     assert kwargs["type"] == "auto"
@@ -198,14 +210,8 @@ async def test_provider_returns_structured_people_from_single_bounded_search() -
         "profile_url",
         "evidence_url",
         "evidence_summary",
-        "background_entries",
     }
     assert len(kwargs["output_schema"]["properties"]) + len(person_schema["properties"]) <= 10
-    background_items = person_schema["properties"]["background_entries"]["items"]
-    assert background_items["type"] == "array"
-    assert background_items["items"] == {"type": "string"}
-    assert background_items["minItems"] == 3
-    assert background_items["maxItems"] == 3
 
 
 async def test_people_search_accepts_valid_empty_structured_output() -> None:
@@ -248,10 +254,11 @@ async def test_people_search_returns_empty_background_categories() -> None:
     [
         "not an array",
         [["previous_experience", "Missing role"]],
-        [["previous_experience", "Former Company", ""]],
-        [["education", "", "Finance"]],
-        [["unknown_category", "Organization", "Role"]],
-        [["education", "Aalto University", 42]],
+        [["previous_experience", "Former Company", "", "https://example.com"]],
+        [["education", "", "Finance", "https://example.com"]],
+        [["unknown_category", "Organization", "Role", "https://example.com"]],
+        [["education", "Aalto University", 42, "https://example.com"]],
+        [["education", "Aalto University", "Finance", "not-a-url"]],
     ],
 )
 async def test_invalid_background_entries_are_rejected_without_retrying(
