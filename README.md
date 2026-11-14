@@ -1,6 +1,6 @@
 # Prospecting workspace
 
-A lightweight starting point for a job-search research tool. The eventual product will use Exa to discover companies and relevant people, and Gemini to help synthesize results. Those integrations and product workflows are intentionally not implemented yet.
+A lightweight job-search research tool. Exa company and people discovery are available through local CLIs; the browser product workflow remains mocked, and Gemini synthesis is not implemented yet.
 
 ## Stack
 
@@ -37,6 +37,26 @@ make check   # formatting/lint/type checks
 make test    # frontend and backend tests
 ```
 
+## Exa company and people search
+
+Set `EXA_API_KEY` in `.env`, then discover companies by industry and area:
+
+```bash
+bin/exa-search --industry "wealth management" --area Helsinki --limit 5
+```
+
+Pick a company from the structured JSON results, then search for its current employees using an industry preset from `job_titles.json`:
+
+```bash
+bin/exa-people-search \
+  --company "Example Wealth" \
+  --company-url "https://example.fi" \
+  --industry-key wealth_management \
+  --limit 10
+```
+
+Available preset keys are `investment_banking`, `saas_company`, `wealth_management`, `marketing_agency`, and `recruiters`. The people command performs one Exa `people` search for all titles in the selected preset and emits validated structured JSON with profile and current-role evidence fields. Equivalent specialized or compound titles are accepted, but current employment must be at the selected company rather than another division in its corporate group. No API keys are exposed to browser code.
+
 ## Anonymous clients and rate limits
 
 The browser creates a UUID once and stores it in local storage. API calls include it as `X-Client-Id`. The backend validates that header and provides an in-memory, per-client and per-IP limiter for future application endpoints. It deliberately has no user accounts or sessions.
@@ -53,6 +73,6 @@ uv run alembic revision --autogenerate -m "describe change"
 uv run alembic upgrade head
 ```
 
-## Future integrations
+## Provider integrations
 
-`EXA_API_KEY` and `GEMINI_API_KEY` are configuration placeholders only. Keep calls to external providers behind services in `backend/app/services/` so routes and persistence do not depend directly on a provider SDK.
+`EXA_API_KEY` enables the local company and people search CLIs. `GEMINI_API_KEY` remains a configuration placeholder. Keep calls to external providers behind services in `backend/app/services/` so routes and persistence do not depend directly on a provider SDK.

@@ -64,6 +64,39 @@ def _response() -> SimpleNamespace:
     return SimpleNamespace(results=[result], output=output)
 
 
+def _people_response() -> SimpleNamespace:
+    entity = SimpleNamespace(type="person", properties=SimpleNamespace(name="Aino Example"))
+    result = SimpleNamespace(
+        url="https://linkedin.com/in/aino-example",
+        title="Aino Example - Example Wealth",
+        score=0.95,
+        published_date=None,
+        author=None,
+        favicon=None,
+        text="Aino Example is a Portfolio Manager at Example Wealth.",
+        summary="Portfolio Manager at Example Wealth.",
+        highlights=["Current Portfolio Manager at Example Wealth"],
+        entities=[entity],
+        subpages=[],
+    )
+    output = SimpleNamespace(
+        content={
+            "people": [
+                {
+                    "name": "Aino Example",
+                    "title": "Portfolio Manager",
+                    "company_name": "Example Wealth",
+                    "matched_job_title": "Portfolio Manager",
+                    "profile_url": "https://linkedin.com/in/aino-example",
+                    "evidence_url": "https://example.fi/team/aino",
+                    "evidence_summary": "The company team page lists Aino as Portfolio Manager.",
+                }
+            ]
+        }
+    )
+    return SimpleNamespace(results=[result], output=output)
+
+
 class FakeClient:
     def __init__(self, responses: list[Exception | SimpleNamespace]) -> None:
         self.responses = deque(responses)
@@ -97,6 +130,124 @@ async def test_provider_returns_neutral_dtos_and_bounded_company_search() -> Non
     assert kwargs["output_schema"]["type"] == "object"
     assert kwargs["output_schema"]["required"] == ["companies"]
     assert "user_location" not in kwargs
+
+
+async def test_provider_returns_structured_people_from_single_bounded_search() -> None:
+    client = FakeClient([_people_response()])
+    provider = ExaProvider(_settings(), client=client)
+
+    response = await provider.discover_people(
+        "Example Wealth",
+        company_domain="https://www.example.fi/",
+        job_titles=["Portfolio Manager", " Investment Analyst "],
+        num_results=12,
+    )
+
+    person = response.output.people[0]
+    assert person.name == "Aino Example"
+    assert person.title == "Portfolio Manager"
+    assert person.company_name == "Example Wealth"
+    assert person.matched_job_title == "Portfolio Manager"
+    assert person.profile_url == "https://linkedin.com/in/aino-example"
+    assert person.evidence_url == "https://example.fi/team/aino"
+    assert response.results[0].url == "https://linkedin.com/in/aino-example"
+
+    query, kwargs = client.calls[0]
+    assert "currently working at Example Wealth (example.fi)" in query
+    assert "Portfolio Manager; Investment Analyst" in query
+    assert "same as, or clearly equivalent to" in query
+    assert "specialized or compound current title qualifies" in query
+    assert "Verify current employment at Example Wealth specifically" in query
+    assert "not another company or division in its corporate group" in query
+    assert "exclude former employees" in query
+    assert "Set matched_job_title to the target role" in query
+    assert kwargs["category"] == "people"
+    assert kwargs["type"] == "auto"
+    assert kwargs["num_results"] == 12
+    assert kwargs["contents"] == {"highlights": {"query": query, "max_characters": 2000}}
+    assert "include_domains" not in kwargs
+    assert kwargs["output_schema"]["required"] == ["people"]
+    person_schema = kwargs["output_schema"]["properties"]["people"]["items"]
+    assert set(person_schema["required"]) == {
+        "name",
+        "title",
+        "company_name",
+        "matched_job_title",
+        "profile_url",
+        "evidence_url",
+        "evidence_summary",
+    }
+
+
+async def test_people_search_accepts_valid_empty_structured_output() -> None:
+    raw_response = _people_response()
+    raw_response.output = SimpleNamespace(content={"people": []})
+    client = FakeClient([raw_response])
+    provider = ExaProvider(_settings(), client=client)
+
+    response = await provider.discover_people(
+        "Example Wealth",
+        company_domain="example.fi",
+        job_titles=["Portfolio Manager"],
+        num_results=5,
+    )
+
+    assert response.output.people == ()
+
+
+@pytest.mark.parametrize(
+    "output",
+    [
+        None,
+        SimpleNamespace(content="not an object"),
+        SimpleNamespace(content={"people": "secret-token"}),
+        SimpleNamespace(content={"people": [{"name": "Missing fields"}]}),
+    ],
+)
+async def test_invalid_people_output_is_rejected_without_retrying(output: object) -> None:
+    raw_response = _people_response()
+    raw_response.output = output
+    client = FakeClient([raw_response])
+    provider = ExaProvider(_settings(exa_max_retries=3), client=client)
+
+    with pytest.raises(ExaProviderInvalidResponse) as caught:
+        await provider.discover_people(
+            "Example Wealth",
+            company_domain="example.fi",
+            job_titles=["Portfolio Manager"],
+            num_results=5,
+        )
+
+    assert str(caught.value) == "Exa returned an invalid structured response."
+    assert "secret-token" not in str(caught.value)
+    assert len(client.calls) == 1
+    assert provider.metrics.retries == 0
+
+
+@pytest.mark.parametrize(
+    ("company_name", "domain", "titles"),
+    [
+        ("", "example.fi", ["Portfolio Manager"]),
+        ("Example Wealth", "not a hostname", ["Portfolio Manager"]),
+        ("Example Wealth", "example.fi", []),
+        ("Example Wealth", "example.fi", [" "]),
+    ],
+)
+async def test_people_search_validates_company_and_titles_before_requesting(
+    company_name: str, domain: str, titles: list[str]
+) -> None:
+    client = FakeClient([])
+    provider = ExaProvider(_settings(), client=client)
+
+    with pytest.raises(ValueError):
+        await provider.discover_people(
+            company_name,
+            company_domain=domain,
+            job_titles=titles,
+            num_results=5,
+        )
+
+    assert client.calls == []
 
 
 async def test_resolve_and_enrich_also_require_structured_output() -> None:

@@ -4,7 +4,7 @@ import asyncio
 import random
 import re
 from collections import deque
-from collections.abc import Awaitable, Callable, Mapping
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
@@ -35,6 +35,24 @@ class ProviderSearchOutput(BaseModel):
     companies: tuple[ProviderCompany, ...]
 
 
+class ProviderPerson(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    name: str
+    title: str
+    company_name: str
+    matched_job_title: str
+    profile_url: str
+    evidence_url: str
+    evidence_summary: str
+
+
+class ProviderPeopleSearchOutput(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    people: tuple[ProviderPerson, ...]
+
+
 _COMPANY_OUTPUT_SCHEMA: DeepObjectOutputSchema = {
     "type": "object",
     "properties": {
@@ -53,6 +71,37 @@ _COMPANY_OUTPUT_SCHEMA: DeepObjectOutputSchema = {
         }
     },
     "required": ["companies"],
+}
+
+_PEOPLE_OUTPUT_SCHEMA: DeepObjectOutputSchema = {
+    "type": "object",
+    "properties": {
+        "people": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "title": {"type": "string"},
+                    "company_name": {"type": "string"},
+                    "matched_job_title": {"type": "string"},
+                    "profile_url": {"type": "string"},
+                    "evidence_url": {"type": "string"},
+                    "evidence_summary": {"type": "string"},
+                },
+                "required": [
+                    "name",
+                    "title",
+                    "company_name",
+                    "matched_job_title",
+                    "profile_url",
+                    "evidence_url",
+                    "evidence_summary",
+                ],
+            },
+        }
+    },
+    "required": ["people"],
 }
 
 
@@ -120,9 +169,9 @@ class ProviderDocument:
 
 
 @dataclass(frozen=True)
-class ProviderSearchResponse:
+class ProviderSearchResponse[OutputT: BaseModel]:
     results: tuple[ProviderDocument, ...]
-    output: ProviderSearchOutput
+    output: OutputT
 
 
 @dataclass
@@ -245,12 +294,12 @@ def _to_document(value: Any) -> ProviderDocument:
     )
 
 
-def _to_output(value: Any) -> ProviderSearchOutput:
+def _to_output[OutputT: BaseModel](value: Any, output_type: type[OutputT]) -> OutputT:
     content = _read(_read(value, "output"), "content")
     if not isinstance(content, Mapping):
         raise ExaProviderInvalidResponse()
     try:
-        return ProviderSearchOutput.model_validate(dict(content))
+        return output_type.model_validate(dict(content))
     except ValidationError:
         raise ExaProviderInvalidResponse() from None
 
@@ -290,7 +339,9 @@ class ExaProvider:
     def limiter(self) -> ExaRateLimiter:
         return self._limiter
 
-    async def discover_companies(self, query: str, *, num_results: int) -> ProviderSearchResponse:
+    async def discover_companies(
+        self, query: str, *, num_results: int
+    ) -> ProviderSearchResponse[ProviderSearchOutput]:
         return await self._request(
             lambda output_schema: self._client.search(
                 query,
@@ -302,9 +353,12 @@ class ExaProvider:
                 timeout=self._timeout_seconds,
             ),
             output_schema=_COMPANY_OUTPUT_SCHEMA,
+            output_type=ProviderSearchOutput,
         )
 
-    async def resolve_company(self, query: str, *, num_results: int = 3) -> ProviderSearchResponse:
+    async def resolve_company(
+        self, query: str, *, num_results: int = 3
+    ) -> ProviderSearchResponse[ProviderSearchOutput]:
         return await self._request(
             lambda output_schema: self._client.search(
                 query,
@@ -316,6 +370,7 @@ class ExaProvider:
                 timeout=self._timeout_seconds,
             ),
             output_schema=_COMPANY_OUTPUT_SCHEMA,
+            output_type=ProviderSearchOutput,
         )
 
     async def enrich_company(
@@ -325,7 +380,7 @@ class ExaProvider:
         domain: str,
         summary_query: str,
         num_results: int = 5,
-    ) -> ProviderSearchResponse:
+    ) -> ProviderSearchResponse[ProviderSearchOutput]:
         return await self._request(
             lambda output_schema: self._client.search(
                 query,
@@ -350,18 +405,64 @@ class ExaProvider:
                 timeout=self._timeout_seconds,
             ),
             output_schema=_COMPANY_OUTPUT_SCHEMA,
+            output_type=ProviderSearchOutput,
+        )
+
+    async def discover_people(
+        self,
+        company_name: str,
+        *,
+        company_domain: str,
+        job_titles: Sequence[str],
+        num_results: int,
+    ) -> ProviderSearchResponse[ProviderPeopleSearchOutput]:
+        company = company_name.strip()
+        if not company:
+            raise ValueError("company_name must not be empty")
+        domain = normalize_domain(company_domain)
+        if domain is None:
+            raise ValueError("company_domain must be a valid domain or website URL")
+        titles = tuple(title.strip() for title in job_titles)
+        if not titles or any(not title for title in titles):
+            raise ValueError("job_titles must contain at least one non-empty title")
+
+        title_text = "; ".join(titles)
+        query = (
+            f"Professional profiles of people currently working at {company} ({domain}). "
+            "Find current employees whose current role is the same as, or clearly equivalent to, "
+            f"one of these target roles: {title_text}. "
+            "A specialized or compound current title qualifies when it includes the target role "
+            "or its core responsibilities. "
+            f"Verify current employment at {company} specifically, not another company or "
+            "division in its corporate group. Return one row per person with public evidence and "
+            "exclude former employees. Set matched_job_title to the target role that best matches "
+            "the current title."
+        )
+        return await self._request(
+            lambda output_schema: self._client.search(
+                query,
+                type="auto",
+                category="people",
+                num_results=num_results,
+                contents={"highlights": {"query": query, "max_characters": 2000}},
+                output_schema=output_schema,
+                timeout=self._timeout_seconds,
+            ),
+            output_schema=_PEOPLE_OUTPUT_SCHEMA,
+            output_type=ProviderPeopleSearchOutput,
         )
 
     async def close(self) -> None:
         if isinstance(self._client, AsyncExa):
             await self._client.aclose()
 
-    async def _request(
+    async def _request[OutputT: BaseModel](
         self,
         call: Callable[[DeepObjectOutputSchema], Awaitable[Any]],
         *,
         output_schema: DeepObjectOutputSchema,
-    ) -> ProviderSearchResponse:
+        output_type: type[OutputT],
+    ) -> ProviderSearchResponse[OutputT]:
         for attempt in range(self._max_retries + 1):
             try:
                 wait = await self._limiter.acquire()
@@ -387,7 +488,7 @@ class ExaProvider:
                 delay = self._retry_delay(attempt, provider_error)
                 await self._sleep(delay)
             else:
-                output = _to_output(response)
+                output = _to_output(response, output_type)
                 return ProviderSearchResponse(
                     results=tuple(_to_document(result) for result in response.results),
                     output=output,
