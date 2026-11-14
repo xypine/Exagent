@@ -23,6 +23,7 @@
               gnumake
               docker
               docker-compose
+              codex
             ];
           };
         });
