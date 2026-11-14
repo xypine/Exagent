@@ -1,0 +1,8 @@
+# Static SPA server inside the frontend container (unifood-frontend:80 on the
+# internal proxy network). The edge Caddy on unifood.fi routes /api to the
+# backend and everything else here, so plain HTTP is fine in-stack.
+:80 {
+	root * /usr/share/caddy
+	try_files {path} /index.html
+	file_server
+}

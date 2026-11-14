@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -12,6 +13,14 @@ class Settings(BaseSettings):
     rate_limit_window_seconds: int = 60
     exa_api_key: str | None = None
     gemini_api_key: str | None = None
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def normalize_legacy_postgres_url(cls, value: object) -> object:
+        """Use the installed psycopg 3 dialect for legacy PostgreSQL URLs."""
+        if isinstance(value, str) and value.startswith("postgres://"):
+            return f"postgresql+psycopg://{value.removeprefix('postgres://')}"
+        return value
 
 
 @lru_cache
