@@ -5,6 +5,7 @@ description = "API for company and people research"
 requires-python = ">=3.13"
 dependencies = [
     "alembic>=1.16,<2",
+    "exa-py>=2,<3",
     "fastapi>=0.115,<1",
     "psycopg[binary]>=3.2,<4",
     "pydantic-settings>=2.10,<3",
@@ -17,12 +18,14 @@ dev = [
     "httpx>=0.28,<1",
     "mypy>=1.15,<2",
     "pytest>=9.0.3,<10",
+    "pytest-asyncio>=1,<2",
     "ruff>=0.11,<1",
 ]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+asyncio_mode = "auto"
 
 [tool.ruff]
 line-length = 100
