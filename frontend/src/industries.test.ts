@@ -17,7 +17,7 @@ describe("searchIndustries", () => {
     ]);
   });
 
-  it("returns nothing for an empty query", () => {
-    expect(searchIndustries("")).toEqual([]);
+  it("returns all industries for an empty query", () => {
+    expect(searchIndustries("").map((s) => s.value)).toEqual(INDUSTRIES);
   });
 });

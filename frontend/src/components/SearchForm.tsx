@@ -16,9 +16,9 @@ const COMPANY_SIZES = [
 export function SearchForm(props: {
   onStarted: (jobId: string, input: SearchInput) => void;
 }) {
-  const [area, setArea] = createSignal("");
+  const [area, setArea] = createSignal("Helsinki, Finland");
   const [industry, setIndustry] = createSignal("");
-  const [companySize, setCompanySize] = createSignal<CompanySize>();
+  const [companySize, setCompanySize] = createSignal<CompanySize>("small");
 
   const mutation = createMutation(() => ({
     mutationFn: createSearch,
@@ -71,7 +71,8 @@ export function SearchForm(props: {
               value={area()}
               onChange={setArea}
               search={searchLocations}
-              placeholder="Helsinki, Finland…"
+              placeholder="City"
+              clearLabel="Clear area"
               listId="area-suggestions"
             />
           </label>
@@ -83,6 +84,7 @@ export function SearchForm(props: {
               onChange={setIndustry}
               search={searchIndustries}
               placeholder="SaaS, Marketing…"
+              showAllOnFocus
               listId="industry-suggestions"
             />
           </label>

@@ -18,12 +18,13 @@ const normalize = (s: string) => s.toLowerCase().trim();
 /** Industries where any word starts with the query (so "company" finds "SaaS company"). */
 export function searchIndustries(query: string, limit = 8): Suggestion[] {
   const q = normalize(query);
-  if (q.length < 1) return [];
-  return INDUSTRIES.filter((label) =>
-    normalize(label)
-      .split(" ")
-      .some((word) => word.startsWith(q)),
-  )
-    .slice(0, limit)
-    .map((label) => ({ value: label, label }));
+  const matches =
+    q.length < 1
+      ? INDUSTRIES
+      : INDUSTRIES.filter((label) =>
+          normalize(label)
+            .split(" ")
+            .some((word) => word.startsWith(q)),
+        );
+  return matches.slice(0, limit).map((label) => ({ value: label, label }));
 }
