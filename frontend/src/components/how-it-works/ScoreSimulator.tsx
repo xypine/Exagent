@@ -153,7 +153,7 @@ export function ScoreSimulator() {
             I wrote about myself
           </button>
           <div class="rounded-xl border border-line p-3">
-            <p class="text-[10px] tracking-widest text-dim uppercase">
+            <p class="text-[13px] tracking-[0.08em] text-dim uppercase">
               Sources found
             </p>
             <div class="mt-2 flex flex-wrap gap-1.5">
@@ -214,7 +214,7 @@ export function ScoreSimulator() {
               <p class="text-5xl font-bold" aria-live="polite">
                 {score()}
               </p>
-              <p class="text-[10px] text-dim">/ 100 match</p>
+              <p class="text-[15px] text-dim">/ 100 match</p>
             </div>
           </div>
         </div>
@@ -247,19 +247,6 @@ export function ScoreSimulator() {
               )}
             </For>
           </div>
-          <p class="text-xs text-dim">
-            <For each={FACTORS}>
-              {(f, i) => (
-                <>
-                  <Show when={i() > 0}> + </Show>
-                  <span style={{ color: FACTOR_VAR[f.key] }}>
-                    {Math.round(parts()[f.key])}
-                  </span>
-                </>
-              )}
-            </For>{" "}
-            = <span class="text-paper">{score()}</span>
-          </p>
         </div>
 
         <p class="min-h-10 max-w-sm text-sm">

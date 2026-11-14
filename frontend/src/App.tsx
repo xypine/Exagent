@@ -31,14 +31,6 @@ export default function App() {
           </span>
           Exagent
         </button>
-
-        <a
-          href="#how-it-works"
-          class="ml-auto mr-6 hidden text-xs text-dim transition hover:text-signal sm:inline"
-          classList={{ "sm:hidden": job() !== null }}
-        >
-          How it works
-        </a>
       </header>
 
       <Switch>
