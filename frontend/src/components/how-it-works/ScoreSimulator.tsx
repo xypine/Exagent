@@ -56,7 +56,7 @@ export function ScoreSimulator() {
     >
       <div class="space-y-6">
         <div>
-          <p class="font-mono text-xs tracking-[0.25em] text-signal uppercase">
+          <p class="text-xs tracking-[0.25em] text-signal uppercase">
             Try the scoring
           </p>
           <h3 class="mt-2 text-3xl font-bold tracking-tight">
@@ -98,7 +98,7 @@ export function ScoreSimulator() {
                   <span class="flex items-baseline justify-between gap-3">
                     <span>
                       <span class="font-semibold">{f.label}</span>
-                      <span class="ml-2 font-mono text-xs text-dim">
+                      <span class="ml-2 text-xs text-dim">
                         {hasProfile()
                           ? `${WEIGHTS[f.key]} %`
                           : f.key === "decision"
@@ -107,7 +107,7 @@ export function ScoreSimulator() {
                       </span>
                       <span class="block text-xs text-dim">{f.question}</span>
                     </span>
-                    <span class="font-mono text-lg">{scores()[f.key]}</span>
+                    <span class="text-lg">{scores()[f.key]}</span>
                   </span>
                   <input
                     type="range"
@@ -153,7 +153,7 @@ export function ScoreSimulator() {
             I wrote about myself
           </button>
           <div class="rounded-xl border border-line p-3">
-            <p class="font-mono text-[10px] tracking-widest text-dim uppercase">
+            <p class="text-[10px] tracking-widest text-dim uppercase">
               Sources found
             </p>
             <div class="mt-2 flex flex-wrap gap-1.5">
@@ -165,7 +165,7 @@ export function ScoreSimulator() {
                     onClick={() =>
                       setFound((f) => f.map((v, k) => (k === i() ? !v : v)))
                     }
-                    class="rounded px-1.5 py-0.5 font-mono text-[10px] transition"
+                    class="rounded px-1.5 py-0.5 text-[10px] transition"
                     classList={{
                       "bg-fit/20 text-fit": found()[i()],
                       "border border-dashed border-line text-dim line-through":
@@ -211,16 +211,16 @@ export function ScoreSimulator() {
           </svg>
           <div class="absolute inset-0 grid place-items-center">
             <div>
-              <p class="font-mono text-5xl font-bold" aria-live="polite">
+              <p class="text-5xl font-bold" aria-live="polite">
                 {score()}
               </p>
-              <p class="font-mono text-[10px] text-dim">/ 100 match</p>
+              <p class="text-[10px] text-dim">/ 100 match</p>
             </div>
           </div>
         </div>
 
         <span
-          class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-mono text-xs"
+          class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs"
           classList={{
             "border-ok/60 text-ok": confidence() === "high",
             "border-signal/60 text-signal": confidence() === "medium",
@@ -247,7 +247,7 @@ export function ScoreSimulator() {
               )}
             </For>
           </div>
-          <p class="font-mono text-xs text-dim">
+          <p class="text-xs text-dim">
             <For each={FACTORS}>
               {(f, i) => (
                 <>

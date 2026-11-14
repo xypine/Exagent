@@ -113,7 +113,7 @@ export function PipelineStage(props: {
               aria-selected={props.step === i()}
               aria-label={`${step.n} ${step.title}`}
               onClick={() => props.onJump(i())}
-              class="group relative h-8 flex-1 overflow-hidden rounded-md border font-mono text-[10px] transition"
+              class="group relative h-8 flex-1 overflow-hidden rounded-md border text-[10px] transition"
               classList={{
                 "border-signal text-signal-ink": props.step === i(),
                 "border-signal/40 text-signal": props.step > i(),
@@ -135,7 +135,7 @@ export function PipelineStage(props: {
       <div class="stage relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-line">
         <div class="stage-grid pointer-events-none absolute inset-0" />
 
-        <p class="absolute top-3 left-4 z-10 font-mono text-[10px] tracking-[0.2em] text-signal uppercase">
+        <p class="absolute top-3 left-4 z-10 text-[10px] tracking-[0.2em] text-signal uppercase">
           {STEPS[props.step]?.label}
         </p>
 
@@ -233,7 +233,7 @@ export function PipelineStage(props: {
             transform: `translate(-50%, -50%) scale(${props.step === 0 ? 1.25 : 0.9})`,
           }}
         >
-          <span class="font-mono font-semibold text-signal">YOU</span>
+          <span class="font-semibold text-signal">YOU</span>
           <span class="rounded-full border border-line px-2 py-0.5">
             Helsinki
           </span>
@@ -274,7 +274,7 @@ export function PipelineStage(props: {
                   }}
                 >
                   <span
-                    class="absolute inset-[2px] grid place-items-center rounded-full bg-ink-2 font-mono text-[9px] sm:text-[10px]"
+                    class="absolute inset-[2px] grid place-items-center rounded-full bg-ink-2 text-[9px] sm:text-[10px]"
                     classList={{
                       "outline outline-1 outline-dashed outline-bad/70 outline-offset-2":
                         props.step === 3 && p.sources <= 1,
@@ -307,7 +307,7 @@ export function PipelineStage(props: {
                     </For>
                   </span>
                   <span
-                    class="absolute -top-2 -right-3 rounded bg-signal px-1 font-mono text-[9px] font-semibold text-signal-ink transition-opacity duration-500"
+                    class="absolute -top-2 -right-3 rounded bg-signal px-1 text-[9px] font-semibold text-signal-ink transition-opacity duration-500"
                     style={{ opacity: props.step === 4 ? "1" : "0" }}
                   >
                     {p.score}
@@ -318,12 +318,12 @@ export function PipelineStage(props: {
                   class="flex min-w-0 flex-1 items-center gap-3 overflow-hidden pr-3 transition-opacity duration-500"
                   style={{ opacity: props.step === 5 ? "1" : "0" }}
                 >
-                  <span class="w-5 shrink-0 font-mono text-[10px] text-dim">
+                  <span class="w-5 shrink-0 text-[10px] text-dim">
                     #{p.rank + 1}
                   </span>
                   <span class="min-w-0 flex-1 truncate text-xs sm:text-sm">
                     <span class="font-medium">{p.name}</span>
-                    <span class="ml-2 hidden font-mono text-[10px] text-dim sm:inline">
+                    <span class="ml-2 hidden text-[10px] text-dim sm:inline">
                       {p.title} · {DEMO_COMPANIES[p.company]}
                     </span>
                   </span>
@@ -337,7 +337,7 @@ export function PipelineStage(props: {
                       )}
                     </For>
                   </span>
-                  <span class="w-6 shrink-0 text-right font-mono text-xs font-semibold text-signal">
+                  <span class="w-6 shrink-0 text-right text-xs font-semibold text-signal">
                     {p.score}
                   </span>
                   <span
@@ -363,7 +363,7 @@ export function PipelineStage(props: {
               <div class="animate-rise absolute inset-x-2 bottom-2 z-30 max-h-[80%] overflow-auto rounded-2xl border border-signal/60 bg-ink/95 p-4 shadow-2xl backdrop-blur sm:inset-x-4 sm:bottom-4 sm:p-5">
                 <div class="flex items-start justify-between gap-3">
                   <div>
-                    <p class="font-mono text-[10px] tracking-widest text-signal uppercase">
+                    <p class="text-[10px] tracking-widest text-signal uppercase">
                       #{p().rank + 1} on your shortlist
                     </p>
                     <h4 class="mt-1 text-lg font-semibold">{p().name}</h4>
@@ -372,20 +372,18 @@ export function PipelineStage(props: {
                     </p>
                   </div>
                   <div class="text-right">
-                    <p class="font-mono text-3xl font-bold text-signal">
-                      {p().score}
-                    </p>
+                    <p class="text-3xl font-bold text-signal">{p().score}</p>
                     <button
                       type="button"
                       onClick={() => setSelected(null)}
-                      class="font-mono text-[10px] text-dim hover:text-paper"
+                      class="text-[10px] text-dim hover:text-paper"
                     >
                       close ✕
                     </button>
                   </div>
                 </div>
                 <span
-                  class="mt-2 inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 font-mono text-[10px]"
+                  class="mt-2 inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px]"
                   classList={{
                     "border-ok/60 text-ok": conf === "high",
                     "border-signal/60 text-signal": conf === "medium",
@@ -400,9 +398,7 @@ export function PipelineStage(props: {
                       <div class="grid grid-cols-[7.5rem_1fr_2.5rem] items-center gap-2 text-xs">
                         <span class="text-dim">
                           {f.label}{" "}
-                          <span class="font-mono text-[10px]">
-                            {WEIGHTS[f.key]}%
-                          </span>
+                          <span class="text-[10px]">{WEIGHTS[f.key]}%</span>
                         </span>
                         <span class="h-1.5 overflow-hidden rounded-full bg-line">
                           <span
@@ -410,9 +406,7 @@ export function PipelineStage(props: {
                             style={{ width: `${p().scores[f.key]}%` }}
                           />
                         </span>
-                        <span class="text-right font-mono">
-                          {p().scores[f.key]}
-                        </span>
+                        <span class="text-right">{p().scores[f.key]}</span>
                       </div>
                     )}
                   </For>
@@ -422,7 +416,7 @@ export function PipelineStage(props: {
                     {(r) => (
                       <li class="flex flex-wrap items-center gap-2">
                         <span>{r.claim}</span>
-                        <span class="rounded bg-fit/15 px-1.5 py-0.5 font-mono text-[10px] text-fit">
+                        <span class="rounded bg-fit/15 px-1.5 py-0.5 text-[10px] text-fit">
                           {r.source}
                         </span>
                       </li>
@@ -433,7 +427,7 @@ export function PipelineStage(props: {
                   <span class="mr-1 text-signal">✦ Opening angle:</span>
                   {p().angle}
                 </p>
-                <p class="mt-2 font-mono text-[10px] text-dim">
+                <p class="mt-2 text-[10px] text-dim">
                   Missing:{" "}
                   {p().missing.length
                     ? p().missing.join(", ")
@@ -445,7 +439,7 @@ export function PipelineStage(props: {
         </Show>
       </div>
 
-      <div class="flex items-center justify-between gap-3 font-mono text-[10px] text-dim">
+      <div class="flex items-center justify-between gap-3 text-[10px] text-dim">
         <div class="flex gap-3 sm:gap-4">
           <For each={counters()}>
             {(c) => (

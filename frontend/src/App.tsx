@@ -26,7 +26,7 @@ export default function App() {
           class="flex items-center gap-2 text-lg font-bold tracking-tight"
           onClick={() => setJob(null)}
         >
-          <span class="grid size-7 place-items-center rounded-md bg-signal font-mono text-sm text-signal-ink">
+          <span class="grid size-7 place-items-center rounded-md bg-signal text-sm text-signal-ink">
             X
           </span>
           Exagent
@@ -34,13 +34,13 @@ export default function App() {
 
         <a
           href="#how-it-works"
-          class="ml-auto mr-6 hidden font-mono text-xs text-dim transition hover:text-signal sm:inline"
+          class="ml-auto mr-6 hidden text-xs text-dim transition hover:text-signal sm:inline"
           classList={{ "sm:hidden": job() !== null }}
         >
           How it works
         </a>
         <Show when={client.isPending || client.isError}>
-          <p class="font-mono text-xs text-dim" aria-live="polite">
+          <p class="text-xs text-dim" aria-live="polite">
             <span
               class="mr-2 inline-block size-2 rounded-full"
               classList={{
@@ -83,7 +83,7 @@ export default function App() {
         </Match>
       </Switch>
 
-      <footer class="mx-auto max-w-6xl px-6 py-10 font-mono text-xs text-dim">
+      <footer class="mx-auto max-w-6xl px-6 py-10 text-xs text-dim">
         Powered by Exa search · built at the hackathon
       </footer>
     </div>

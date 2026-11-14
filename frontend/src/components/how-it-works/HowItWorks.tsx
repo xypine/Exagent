@@ -40,7 +40,7 @@ export function HowItWorks(props: { onTryIt?: () => void }) {
 
       <div class="mx-auto max-w-6xl px-6 pt-24">
         <div ref={reveal} class="max-w-3xl">
-          <p class="font-mono text-xs tracking-[0.25em] text-signal uppercase">
+          <p class="text-xs tracking-[0.25em] text-signal uppercase">
             How it works
           </p>
           <h2 class="mt-3 text-4xl leading-[1.05] font-bold tracking-tight sm:text-5xl">
@@ -78,7 +78,7 @@ export function HowItWorks(props: { onTryIt?: () => void }) {
                       "border-line/60 bg-ink-2/30 opacity-40": step() !== i(),
                     }}
                   >
-                    <p class="font-mono text-xs text-signal">
+                    <p class="text-xs text-signal">
                       {s.n} <span class="text-dim">· {s.label}</span>
                     </p>
                     <h3 class="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
@@ -88,7 +88,7 @@ export function HowItWorks(props: { onTryIt?: () => void }) {
                     <div class="mt-4 flex flex-wrap gap-2">
                       <For each={s.tags}>
                         {(t) => (
-                          <span class="rounded-full border border-line px-2.5 py-1 font-mono text-[11px] text-paper/80">
+                          <span class="rounded-full border border-line px-2.5 py-1 text-[11px] text-paper/80">
                             {t}
                           </span>
                         )}
@@ -116,7 +116,7 @@ export function HowItWorks(props: { onTryIt?: () => void }) {
         {/* Trust + limits */}
         <div class="mt-28 grid gap-12 lg:grid-cols-[1.4fr_1fr]">
           <div ref={reveal}>
-            <p class="font-mono text-xs tracking-[0.25em] text-signal uppercase">
+            <p class="text-xs tracking-[0.25em] text-signal uppercase">
               Why you can trust it
             </p>
             <h3 class="mt-2 text-3xl font-bold tracking-tight">
@@ -130,7 +130,7 @@ export function HowItWorks(props: { onTryIt?: () => void }) {
                     class="rounded-2xl border border-line bg-ink-2/50 p-5 sm:last:col-span-2"
                     style={{ "transition-delay": `${i() * 70}ms` }}
                   >
-                    <p class="font-mono text-xs text-signal">0{i() + 1}</p>
+                    <p class="text-xs text-signal">0{i() + 1}</p>
                     <p class="mt-2 font-semibold">{t.title}</p>
                     <p class="mt-1 text-sm leading-6 text-dim">{t.body}</p>
                   </li>
@@ -140,7 +140,7 @@ export function HowItWorks(props: { onTryIt?: () => void }) {
           </div>
           <div ref={reveal} class="lg:pt-16">
             <div class="rounded-2xl border border-dashed border-line p-6">
-              <p class="font-mono text-xs tracking-[0.25em] text-dim uppercase">
+              <p class="text-xs tracking-[0.25em] text-dim uppercase">
                 Limits, said out loud
               </p>
               <ul class="mt-4 space-y-3">

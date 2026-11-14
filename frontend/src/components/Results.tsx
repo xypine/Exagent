@@ -62,7 +62,7 @@ export function Results(props: {
         </button>
       </div>
 
-      <ol class="mt-6 grid grid-cols-2 gap-2 font-mono text-xs">
+      <ol class="mt-6 grid grid-cols-2 gap-2 text-xs">
         <For each={STEPS}>
           {(step, i) => (
             <li
@@ -117,14 +117,14 @@ export function Results(props: {
                     href={company.url}
                     target="_blank"
                     rel="noreferrer"
-                    class="font-mono text-xs text-dim hover:text-signal"
+                    class="text-xs text-dim hover:text-signal"
                   >
                     visit ↗
                   </a>
                 </div>
                 <p class="mt-1 text-sm text-dim">{company.summary}</p>
                 <div class="mt-4 border-l border-line pl-4">
-                  <p class="font-mono text-xs text-dim uppercase">Sources</p>
+                  <p class="text-xs text-dim uppercase">Sources</p>
                   <ul class="mt-2 space-y-1 text-sm">
                     <For each={company.sources}>
                       {(source) => (

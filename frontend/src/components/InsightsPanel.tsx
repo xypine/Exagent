@@ -25,7 +25,7 @@ export function InsightsPanel(props: { person: Person; onClose: () => void }) {
     <div class="animate-rise rounded-2xl border border-signal/50 bg-ink-2 p-5">
       <div class="flex items-start justify-between gap-3">
         <div>
-          <p class="font-mono text-xs tracking-widest text-signal uppercase">
+          <p class="text-xs tracking-widest text-signal uppercase">
             Key insights
           </p>
           <h3 class="mt-1 text-xl font-semibold">{props.person.name}</h3>
@@ -46,7 +46,7 @@ export function InsightsPanel(props: { person: Person; onClose: () => void }) {
           href={props.person.url}
           target="_blank"
           rel="noreferrer"
-          class="mt-2 inline-block font-mono text-xs text-dim hover:text-signal"
+          class="mt-2 inline-block text-xs text-dim hover:text-signal"
         >
           profile ↗
         </a>
