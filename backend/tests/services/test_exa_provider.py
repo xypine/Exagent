@@ -380,6 +380,7 @@ async def test_invalid_structured_output_is_rejected_without_retrying(output: ob
 async def test_retry_after_is_honored_and_retry_acquires_new_permit() -> None:
     client = FakeClient([ExaProviderRateLimit(retry_after=2), _response()])
     sleeps: list[float] = []
+    progress: list[tuple[int, int, int]] = []
 
     async def sleep(delay: float) -> None:
         sleeps.append(delay)
@@ -387,6 +388,9 @@ async def test_retry_after_is_honored_and_retry_acquires_new_permit() -> None:
     provider = ExaProvider(
         _settings(exa_max_retries=1),
         client=client,
+        on_request_progress=lambda metrics: progress.append(
+            (metrics.request_starts, metrics.requests_completed, metrics.requests_failed)
+        ),
         sleep=sleep,
         jitter=lambda _low, _high: 0,
     )
@@ -397,6 +401,9 @@ async def test_retry_after_is_honored_and_retry_acquires_new_permit() -> None:
     assert len(client.calls) == 2
     assert provider.limiter.metrics.permitted_requests == 2
     assert provider.metrics.request_starts == 2
+    assert provider.metrics.requests_completed == 2
+    assert provider.metrics.requests_failed == 1
+    assert progress == [(1, 0, 0), (1, 1, 1), (2, 1, 1), (2, 2, 1)]
     assert provider.metrics.retries == 1
     assert provider.metrics.throttled_responses == 1
 

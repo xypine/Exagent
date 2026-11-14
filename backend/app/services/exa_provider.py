@@ -319,6 +319,8 @@ class ProviderSearchResponse[OutputT: BaseModel]:
 @dataclass
 class ExaProviderMetrics:
     request_starts: int = 0
+    requests_completed: int = 0
+    requests_failed: int = 0
     retries: int = 0
     throttled_responses: int = 0
     limiter_wait_seconds: float = 0.0
@@ -453,6 +455,7 @@ class ExaProvider:
         *,
         client: Any | None = None,
         limiter: ExaRateLimiter | None = None,
+        on_request_progress: Callable[[ExaProviderMetrics], None] | None = None,
         sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
         jitter: Callable[[float, float], float] = random.uniform,
     ) -> None:
@@ -473,6 +476,7 @@ class ExaProvider:
         self._max_retries = settings.exa_max_retries
         self._retry_base_seconds = settings.exa_retry_base_seconds
         self._retry_max_seconds = settings.exa_retry_max_seconds
+        self._on_request_progress = on_request_progress
         self._sleep = sleep
         self._jitter = jitter
         self.metrics = ExaProviderMetrics()
@@ -648,13 +652,17 @@ class ExaProvider:
 
             self.metrics.limiter_wait_seconds += wait
             self.metrics.max_limiter_wait_seconds = max(self.metrics.max_limiter_wait_seconds, wait)
-            self.metrics.request_starts += 1
-            self.metrics.last_request_started_at.append(asyncio.get_running_loop().time())
             try:
                 async with self._semaphore:
+                    self.metrics.request_starts += 1
+                    self.metrics.last_request_started_at.append(asyncio.get_running_loop().time())
+                    self._notify_request_progress()
                     async with asyncio.timeout(self._timeout_seconds):
                         response = await call(output_schema)
             except Exception as error:
+                self.metrics.requests_completed += 1
+                self.metrics.requests_failed += 1
+                self._notify_request_progress()
                 provider_error = self._normalize_error(error)
                 if isinstance(provider_error, ExaProviderRateLimit):
                     self.metrics.throttled_responses += 1
@@ -673,6 +681,8 @@ class ExaProvider:
                 delay = self._retry_delay(attempt, provider_error)
                 await self._sleep(delay)
             else:
+                self.metrics.requests_completed += 1
+                self._notify_request_progress()
                 output = _to_output(response, output_type)
                 return ProviderSearchResponse(
                     results=tuple(_to_document(result) for result in response.results),
@@ -680,6 +690,10 @@ class ExaProvider:
                 )
 
         raise AssertionError("Exa retry loop exited unexpectedly")
+
+    def _notify_request_progress(self) -> None:
+        if self._on_request_progress is not None:
+            self._on_request_progress(self.metrics)
 
     def _retry_delay(self, attempt: int, error: ExaProviderError) -> float:
         if error.retry_after is not None:

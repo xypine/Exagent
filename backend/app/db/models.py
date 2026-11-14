@@ -38,6 +38,8 @@ class SearchJob(Base):
     people_error: Mapped[str | None] = mapped_column(String(500), nullable=True)
     people_companies_searched: Mapped[int] = mapped_column(default=0)
     people_request_count: Mapped[int] = mapped_column(default=0)
+    people_requests_completed: Mapped[int] = mapped_column(default=0)
+    people_requests_failed: Mapped[int] = mapped_column(default=0)
     error: Mapped[str | None] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -66,5 +68,7 @@ class PeopleSearchCache(Base):
     people_error: Mapped[str | None] = mapped_column(String(500), nullable=True)
     companies_searched: Mapped[int] = mapped_column(default=0)
     request_count: Mapped[int] = mapped_column(default=0)
+    requests_completed: Mapped[int] = mapped_column(default=0)
+    requests_failed: Mapped[int] = mapped_column(default=0)
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     refreshing_job_id: Mapped[UUID | None] = mapped_column(Uuid, nullable=True)

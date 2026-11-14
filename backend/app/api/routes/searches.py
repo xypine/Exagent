@@ -70,6 +70,9 @@ class PeopleSearchStatsResponse(BaseModel):
     companies_searched: int
     companies_available: int
     request_count: int
+    requests_completed: int
+    requests_failed: int
+    requests_in_flight: int
     batch_size: int
 
 
@@ -81,6 +84,9 @@ class SearchCreatedResponse(BaseModel):
 class SearchResponse(SearchCreatedResponse):
     model_config = ConfigDict(from_attributes=True)
 
+    area: str
+    industry: str
+    company_size: CompanySize | None
     error: str | None = None
     companies: list[CompanyResponse] = Field(default_factory=list)
     people: list[PersonResponse] = Field(default_factory=list)
@@ -145,6 +151,9 @@ def _search_response(job: SearchJob, batch_size: int) -> SearchResponse:
         {
             "job_id": job.id,
             "status": job.status,
+            "area": job.area,
+            "industry": job.industry,
+            "company_size": job.company_size,
             "error": job.error,
             "companies": job.companies,
             "people": job.people,
@@ -153,6 +162,11 @@ def _search_response(job: SearchJob, batch_size: int) -> SearchResponse:
                 "companies_searched": job.people_companies_searched,
                 "companies_available": len(job.companies),
                 "request_count": job.people_request_count,
+                "requests_completed": job.people_requests_completed,
+                "requests_failed": job.people_requests_failed,
+                "requests_in_flight": max(
+                    0, job.people_request_count - job.people_requests_completed
+                ),
                 "batch_size": batch_size,
             },
         }
