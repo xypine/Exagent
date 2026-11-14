@@ -15,6 +15,18 @@ make check
 make test
 ```
 
+## Command aliases
+
+- Prefer the project aliases to long command chains: `make check`, `make test`,
+  `make verify`, `make compose-config`, and `make dev`.
+- `make verify` validates Compose, runs frontend checks/tests in the Compose
+  container, then runs backend checks/tests. Use the narrower targets when
+  only one area changed.
+- The same aliases are available through the flake, for example `nix run
+  .#verify`, `nix run .#backend-check`, `nix run .#frontend-compose-check`,
+  and `nix run .#compose-config`. Prefer these stable prefixes for commands
+  that need approval.
+
 The frontend proxies `/api` requests to the backend. Do not expose API keys to browser code.
 
 ## Boundaries and conventions

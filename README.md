@@ -36,6 +36,19 @@ Running the apps outside Docker is optional. Install dependencies first with `pn
 ```bash
 make check   # formatting/lint/type checks
 make test    # frontend and backend tests
+make verify  # Compose config, containerized frontend checks/tests, backend checks/tests
+```
+
+The same commands are available as Nix flake apps. These provide stable command
+prefixes for approval rules and use the flake's tools:
+
+```bash
+nix run .#check
+nix run .#test
+nix run .#verify
+nix run .#frontend-compose-check
+nix run .#compose-config
+nix run .#dev
 ```
 
 ## Exa company and people search
