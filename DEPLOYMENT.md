@@ -34,5 +34,21 @@ to the internet.
 - The current rate limiter is in-memory. Keep one backend instance, or replace
   it with a shared limiter (such as Redis) before scaling horizontally.
 
+## Continuous deployment (unifood.fi on primergy)
+
+`unifood.fi` is a CNAME to `söis.fi` and is served by the primergy homelab
+(github.com/xypine/primergy, `stack/unifood/`): the edge Caddy routes `/api` to
+the backend container and everything else to the static frontend container.
+
+- `.github/workflows/deploy.yml` runs on every push to `main`. It applies
+  Alembic migrations to the managed Aiven PostgreSQL (repo secret
+  `AIVEN_DATABASE_URL`) and then pushes `ghcr.io/xypine/projectx-backend:latest`
+  (built from `backend/`) and `ghcr.io/xypine/projectx-frontend:latest` (built
+  from `frontend/Dockerfile.prod`).
+- The quadlets on primergy use `AutoUpdate=registry`, so podman pulls new image
+  digests by itself; no GitHub-to-host access is involved.
+- Runtime configuration (the Aiven `DATABASE_URL`, `FRONTEND_ORIGIN=https://unifood.fi`)
+  lives in `stack/unifood/.env` on primergy and never in this repo.
+
 The application has no authentication by design. Limit access at the network or
 proxy layer if the deployment should not be public.
