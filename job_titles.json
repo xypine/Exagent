@@ -1,0 +1,48 @@
+{
+  "investment_banking": [
+    "Investment Banking Analyst",
+    "M&A Analyst",
+    "Corporate Finance Analyst",
+    "Valuation Analyst",
+    "Senior Investment Banking Analyst",
+    "Investment Banking Associate",
+    "Partner, Investment Banking",
+    "M&A Associate",
+    "Vice President, Investment Banking"
+  ],
+  "saas_company": [
+    "Product Manager",
+    "Software Engineer",
+    "Software Developer",
+    "Team Lead",
+    "Engineering Manager",
+    "Director of Engineering",
+    "VP of Engineering",
+    "Chief Technology Officer (CTO)",
+    "Chief Product Officer (CPO)",
+    "Product Owner"
+  ],
+  "wealth_management": [
+    "Investment Analyst",
+    "Portfolio Analyst",
+    "Wealth Management Associate",
+    "Relationship Manager",
+    "Portfolio Manager"
+  ],
+  "marketing_agency": [
+    "Creative Director",
+    "Art Director",
+    "Copywriter",
+    "Graphic Designer",
+    "Project Manager"
+  ],
+  "recruiters": [
+    "University Recruiter",
+    "Campus Recruiter",
+    "Graduate Recruiter",
+    "Talent Acquisition Coordinator",
+    "Talent Acquisition Specialist",
+    "Junior Talent Acquisition Partner",
+    "HR Coordinator"
+  ]
+}
