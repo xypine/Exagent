@@ -118,7 +118,7 @@ export function PipelineStage(props: {
               aria-selected={props.step === i()}
               aria-label={`${step.n} ${step.title}`}
               onClick={() => props.onJump(i())}
-              class="group relative h-8 flex-1 overflow-hidden rounded-md border text-[10px] transition"
+              class="group relative h-8 flex-1 overflow-hidden rounded-md border text-sm transition"
               classList={{
                 "border-star text-signal-ink shadow-card": props.step === i(),
                 "border-star/70 bg-star/10 font-semibold text-star":

@@ -97,7 +97,7 @@ export function HowItWorks(props: { onTryIt?: () => void }) {
                       "border-line/60 bg-ink-2/30 opacity-40": step() !== i(),
                     }}
                   >
-                    <p class="text-xs text-star">
+                    <p class="text-base text-star">
                       {s.n} <span class="text-dim">· {s.label}</span>
                     </p>
                     <h3 class="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">

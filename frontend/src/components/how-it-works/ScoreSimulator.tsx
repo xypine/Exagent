@@ -56,7 +56,7 @@ export function ScoreSimulator() {
     >
       <div class="space-y-6">
         <div>
-          <p class="text-xs tracking-[0.25em] text-star uppercase">
+          <p class="text-l tracking-[0.1em] text-star uppercase font-extrabold">
             Try the scoring
           </p>
           <h3 class="mt-2 text-3xl font-bold tracking-tight">
@@ -228,7 +228,7 @@ export function ScoreSimulator() {
         >
           ● {CONFIDENCE_LABEL[confidence()]}
         </span>
-        <p class="-mt-3 max-w-xs text-xs text-dim">
+        <p class="-mt-3 max-w-xs text-s text-dim">
           Confidence shows how much we found, not how good the match is.
         </p>
 
