@@ -1,6 +1,10 @@
 import { createQuery } from "@tanstack/solid-query";
+import { createSignal, Match, Switch } from "solid-js";
 
 import { getClient } from "./api";
+import { Results } from "./components/Results";
+import { SearchForm } from "./components/SearchForm";
+import type { SearchInput } from "./types";
 
 export default function App() {
   const client = createQuery(() => ({
@@ -9,27 +13,58 @@ export default function App() {
     staleTime: Infinity,
   }));
 
+  const [job, setJob] = createSignal<{ id: string; input: SearchInput } | null>(
+    null,
+  );
+
   return (
-    <main class="mx-auto flex min-h-screen max-w-3xl items-center px-6 py-16">
-      <section class="space-y-6">
-        <p class="text-sm font-semibold tracking-[0.2em] text-sky-700 uppercase">
-          Prospecting
-        </p>
-        <h1 class="text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl">
-          Find the people behind your next opportunity.
-        </h1>
-        <p class="max-w-2xl text-lg leading-8 text-slate-600">
-          The research workspace is ready. Company discovery and people search
-          will follow.
-        </p>
-        <p class="text-sm text-slate-500" aria-live="polite">
+    <div class="font-sans">
+      <header class="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
+        <button
+          type="button"
+          class="flex items-center gap-2 text-lg font-bold tracking-tight"
+          onClick={() => setJob(null)}
+        >
+          <span class="grid size-7 place-items-center rounded-md bg-signal font-mono text-sm text-signal-ink">
+            X
+          </span>
+          Exagent
+        </button>
+        <p class="font-mono text-xs text-dim" aria-live="polite">
+          <span
+            class="mr-2 inline-block size-2 rounded-full"
+            classList={{
+              "bg-signal animate-pulse": client.isPending,
+              "bg-bad": client.isError,
+              "bg-ok": client.isSuccess,
+            }}
+          />
           {client.isPending
             ? "Initializing anonymous workspace…"
             : client.isError
               ? "The API is not available yet."
               : "Anonymous workspace ready."}
         </p>
-      </section>
-    </main>
+      </header>
+
+      <Switch>
+        <Match when={job() === null}>
+          <SearchForm onStarted={(id, input) => setJob({ id, input })} />
+        </Match>
+        <Match when={job()}>
+          {(j) => (
+            <Results
+              jobId={j().id}
+              input={j().input}
+              onReset={() => setJob(null)}
+            />
+          )}
+        </Match>
+      </Switch>
+
+      <footer class="mx-auto max-w-6xl px-6 py-10 font-mono text-xs text-dim">
+        Powered by Exa search · built at the hackathon
+      </footer>
+    </div>
   );
 }
