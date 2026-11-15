@@ -178,14 +178,20 @@ async function main() {
       });
     };
 
+    if (mode === "pipeline") {
+      await evaluate(
+        "window.scrollTo({ top: document.querySelector('#how-it-works').offsetTop - 20, behavior: 'instant' })",
+      );
+      await wait(500);
+    }
+
     const actions = mode === "pipeline"
       ? [
-          [400, () => evaluate("window.scrollTo({ top: document.querySelector('#how-it-works').offsetTop - 20, behavior: 'instant' })")],
-          [2_200, () => evaluate("window.scrollBy({ top: 860, behavior: 'instant' })")],
-          [4_000, () => evaluate("window.scrollBy({ top: 860, behavior: 'instant' })")],
-          [5_800, () => evaluate("window.scrollBy({ top: 860, behavior: 'instant' })")],
-          [7_600, () => evaluate("window.scrollBy({ top: 860, behavior: 'instant' })")],
-          [9_400, () => evaluate("window.scrollBy({ top: 860, behavior: 'instant' })")],
+          [1_700, () => evaluate("window.scrollBy({ top: 760, behavior: 'smooth' })")],
+          [3_600, () => evaluate("window.scrollBy({ top: 760, behavior: 'smooth' })")],
+          [5_500, () => evaluate("window.scrollBy({ top: 760, behavior: 'smooth' })")],
+          [7_400, () => evaluate("window.scrollBy({ top: 760, behavior: 'smooth' })")],
+          [9_300, () => evaluate("window.scrollBy({ top: 760, behavior: 'smooth' })")],
         ]
       : [
           [450, () => type("#industry", "SaaS")],
@@ -207,7 +213,7 @@ async function main() {
       }
       const screenshot = await client.send("Page.captureScreenshot", {
         format: "jpeg",
-        quality: 90,
+        quality: mode === "pipeline" ? 72 : 90,
         captureBeyondViewport: false,
       });
       frame += 1;
@@ -227,6 +233,9 @@ async function main() {
           "-y",
           "-framerate", String(captureRate),
           "-i", resolve(frames, "frame-%05d.jpg"),
+          ...(mode === "pipeline"
+            ? ["-vf", "minterpolate=fps=30:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:vsbmc=1"]
+            : []),
           "-c:v", "libx264",
           "-crf", "18",
           "-pix_fmt", "yuv420p",

@@ -10,6 +10,7 @@ node_modules/
 .pnpm-store/
 dist/
 video/out/
+video/public/recordings/pipeline.mp4
 coverage/
 .exagent-cli.json
 
