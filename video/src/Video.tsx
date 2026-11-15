@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import {
   AbsoluteFill,
   Easing,
@@ -9,20 +10,23 @@ import {
 
 import logo from "../../frontend/public/logo.svg";
 
-import { demo, scenes } from "./script";
+import { ApplicantSea } from "./sections/ApplicantSea";
+import { ManualFriction } from "./sections/ManualFriction";
+import { OpportunityLandscape } from "./sections/OpportunityLandscape";
+import { ProductFlow } from "./sections/ProductFlow";
+import { scenes } from "./script";
 
 const navy = "#0b1b3f";
 const surface = "#ffffff";
-const page = "#f4f6fb";
 const line = "#dce1f0";
 const muted = "#5a6685";
 const signal = "#1e3a8a";
 const star = "#4338ca";
-const teal = "#27859b";
-const amber = "#b96b11";
 const sans = "Inter, ui-sans-serif, system-ui, sans-serif";
 const serif = "Instrument Serif, Georgia, serif";
-const shadow = "0 2px 4px rgb(11 27 63 / .06), 0 22px 46px -18px rgb(30 58 138 / .25)";
+const appUrl = "https://exa.söis.fi";
+const qrCode =
+  "https://api.qrserver.com/v1/create-qr-code/?format=svg&size=360x360&data=https%3A%2F%2Fexa.s%C3%B6is.fi";
 
 const enter = (frame: number, at: number, duration = 16) =>
   interpolate(frame, [at, at + duration], [0, 1], {
@@ -30,304 +34,188 @@ const enter = (frame: number, at: number, duration = 16) =>
     extrapolateRight: "clamp",
     easing: Easing.out(Easing.cubic),
   });
-const leave = (frame: number, at: number, duration = 16) =>
-  interpolate(frame, [at - duration, at], [1, 0], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-    easing: Easing.in(Easing.cubic),
-  });
-const clamp = (value: number) => Math.max(0, Math.min(1, value));
 
-const base: React.CSSProperties = {
-  background:
-    "radial-gradient(62rem 32rem at 93% -5%, rgb(67 56 202 / .14), transparent 62%), radial-gradient(44rem 28rem at 3% 0%, rgb(30 58 138 / .10), transparent 60%), linear-gradient(180deg, #fff 0%, #f4f6fb 70%)",
-  color: navy,
-  fontFamily: sans,
-  overflow: "hidden",
-};
-
-function Scene({ from, duration, children }: { from: number; duration: number; children: React.ReactNode }) {
-  const frame = useCurrentFrame();
-  return <AbsoluteFill style={{ opacity: enter(frame, from, 10) * leave(frame, from + duration, 10) }}>{children}</AbsoluteFill>;
+function Brand({ size = 42 }: { size?: number }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: size * 0.24,
+        color: navy,
+        fontFamily: sans,
+        fontSize: size * 0.76,
+        fontWeight: 750,
+        letterSpacing: -size * 0.035,
+      }}
+    >
+      <Img src={logo} style={{ width: size, height: size }} />
+      Exagent
+    </div>
+  );
 }
 
-function Background() {
-  return <>
-    <AbsoluteFill style={{ opacity: 0.55, backgroundImage: "linear-gradient(rgb(67 56 202 / .055) 1px, transparent 1px), linear-gradient(90deg, rgb(67 56 202 / .055) 1px, transparent 1px)", backgroundSize: "72px 72px", maskImage: "linear-gradient(to bottom, black, transparent 75%)" }} />
-    <div style={{ position: "absolute", width: 760, height: 760, right: -340, top: -410, borderRadius: "50%", border: "1px solid rgb(67 56 202 / .14)" }} />
-  </>;
-}
-
-function Brand({ small = false }: { small?: boolean }) {
-  const size = small ? 35 : 46;
-  return <div style={{ display: "flex", alignItems: "center", gap: small ? 9 : 12, fontSize: small ? 24 : 31, fontWeight: 700, letterSpacing: -1.2 }}>
-    <Img src={logo} style={{ width: size, height: size, objectFit: "contain" }} />
-    <span>Exagent</span>
-  </div>;
-}
-
-function Header() {
-  return <div style={{ position: "absolute", left: 72, top: 44, zIndex: 10 }}>
-    <Brand small />
-  </div>;
-}
-
-function Eyebrow({ children }: { children: React.ReactNode }) {
-  return <div style={{ color: star, fontFamily: serif, fontStyle: "italic", fontSize: 28 }}>{children}</div>;
-}
-
-function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
-  return <div style={{ borderRadius: 24, border: `1px solid ${line}`, background: surface, boxShadow: shadow, ...style }}>{children}</div>;
+function Page({ children, style }: { children: React.ReactNode; style?: CSSProperties }) {
+  return (
+    <AbsoluteFill
+      style={{
+        overflow: "hidden",
+        background:
+          "radial-gradient(58rem 30rem at 94% -8%, rgb(67 56 202 / .14), transparent 63%), radial-gradient(42rem 26rem at 4% 100%, rgb(30 58 138 / .09), transparent 68%), linear-gradient(180deg, #fff 0%, #f4f6fb 100%)",
+        color: navy,
+        fontFamily: sans,
+        ...style,
+      }}
+    >
+      {children}
+    </AbsoluteFill>
+  );
 }
 
 function LogoIntro() {
   const frame = useCurrentFrame();
   const local = frame - scenes.intro.from;
-  const settle = spring({ frame: local, fps: 30, config: { damping: 17, stiffness: 110 } });
-  const exit = leave(local, scenes.intro.duration, 12);
-  return <Scene {...scenes.intro}>
-    <Background />
-    <div style={{ display: "grid", height: "100%", placeItems: "center", opacity: exit, transform: `scale(${0.9 + settle * 0.1})` }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
-        <Img src={logo} style={{ width: 164, height: 164, objectFit: "contain" }} />
-        <div style={{ fontSize: 104, fontWeight: 700, letterSpacing: -6 }}>Exagent</div>
+  const inView = spring({
+    frame: Math.max(0, local),
+    fps: 30,
+    config: { damping: 16, stiffness: 130 },
+  });
+  const fadeOut = interpolate(local, [scenes.intro.duration - 10, scenes.intro.duration], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  return (
+    <Page style={{ opacity: inView * fadeOut }}>
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          opacity: 0.6,
+          backgroundImage:
+            "linear-gradient(rgb(67 56 202 / .05) 1px, transparent 1px), linear-gradient(90deg, rgb(67 56 202 / .05) 1px, transparent 1px)",
+          backgroundSize: "72px 72px",
+          maskImage: "linear-gradient(to bottom, black, transparent 78%)",
+        }}
+      />
+      <div
+        style={{
+          display: "grid",
+          height: "100%",
+          placeItems: "center",
+          transform: `scale(${0.89 + inView * 0.11})`,
+        }}
+      >
+        <Brand size={140} />
       </div>
-    </div>
-  </Scene>;
+    </Page>
+  );
 }
 
-const seaDots = Array.from({ length: 104 }, (_, i) => ({
-  x: 9 + (i % 13) * 6.9 + (i % 2) * 1.2,
-  y: 28 + Math.floor(i / 13) * 7 + Math.sin(i * 1.7) * 1.1,
-}));
-
-function SeaDot({ x, y, i, local, featured = false }: { x: number; y: number; i: number; local: number; featured?: boolean }) {
-  const driftX = Math.sin(local / 22 + i * 1.93) * 10;
-  const driftY = Math.cos(local / 20 + i * 1.17) * 12 + Math.sin(local / 38 + i) * 9;
-  const blend = enter(local, 52, 42);
-  const color = featured && blend < 0.98 ? star : signal;
-  const size = featured && blend < 0.98 ? 20 - blend * 9 : 10;
-  return <div style={{ position: "absolute", left: `${x}%`, top: `${y + driftY / 12}%`, width: size, height: size, marginLeft: -size / 2, marginTop: -size / 2, borderRadius: "50%", background: color, opacity: featured ? 1 : 0.62 + (i % 3) * 0.1, transform: `translateX(${driftX}px)`, boxShadow: featured && blend < 0.9 ? "0 0 0 7px rgb(67 56 202 / .13)" : "none" }} />;
-}
-
-function Competition() {
+function Outcome() {
   const frame = useCurrentFrame();
-  const local = frame - scenes.competition.from;
-  const words = enter(local, 20, 22);
-  const visual = enter(local, 48, 14);
-  return <Scene {...scenes.competition}>
-    <Background /><Header />
-    <div style={{ position: "absolute", left: 128, top: 185, width: 710, opacity: words, transform: `translateY(${(1 - words) * 28}px)` }}>
-      <Eyebrow>Job posts are noisy places.</Eyebrow>
-      <h1 style={{ fontSize: 74, letterSpacing: -4.4, lineHeight: 0.98, margin: "18px 0 20px" }}>When every application looks alike, it is hard to <span style={{ color: signal }}>stand out.</span></h1>
-      <p style={{ color: muted, fontSize: 23, lineHeight: 1.45, margin: 0, width: 610 }}>A capable applicant can disappear into an existing pool before a conversation even begins.</p>
-    </div>
-    <div style={{ position: "absolute", left: 870, right: 90, top: 170, bottom: 132, opacity: visual, transform: `translateY(${(1 - visual) * 20}px)` }}>
-      <div style={{ position: "absolute", inset: 0, borderRadius: 38, background: "linear-gradient(140deg, rgb(255 255 255 / .92), rgb(235 239 252 / .65))", border: "1px solid rgb(67 56 202 / .18)", overflow: "hidden", boxShadow: "0 30px 70px -32px rgb(30 58 138 / .38)" }}>
-        <div style={{ position: "absolute", left: 42, top: 38, color: muted, fontSize: 16, fontWeight: 700, letterSpacing: 1.1, textTransform: "uppercase" }}>Application sea</div>
-        {seaDots.map((dot, i) => <SeaDot key={i} {...dot} i={i} local={local} featured={i === 54} />)}
-        <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", opacity: 0.35 }}>
-          {Array.from({ length: 7 }, (_, i) => <path key={i} d={`M 0 ${38 + i * 7} C 22 ${31 + i * 7}, 39 ${45 + i * 7}, 59 ${38 + i * 7} S 85 ${31 + i * 7}, 100 ${38 + i * 7}`} fill="none" stroke={star} strokeWidth="0.13" />)}
-        </svg>
-        <div style={{ position: "absolute", right: 38, bottom: 34, borderRadius: 999, padding: "10px 16px", background: "rgb(255 255 255 / .86)", border: `1px solid ${line}`, color: muted, fontSize: 15, fontWeight: 600 }}>Everyone is qualified to be here.</div>
+  const local = frame - scenes.outcome.from;
+  const inView = enter(local, 0, 15);
+  const card = spring({
+    frame: Math.max(0, local - 12),
+    fps: 30,
+    config: { damping: 17, stiffness: 115 },
+  });
+  const reason = enter(local, 48, 18);
+  const fadeOut = interpolate(local, [scenes.outcome.duration - 12, scenes.outcome.duration], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  return (
+    <Page style={{ opacity: inView * fadeOut }}>
+      <div style={{ position: "absolute", left: 74, top: 45 }}>
+        <Brand size={35} />
       </div>
-    </div>
-  </Scene>;
-}
-
-const companies = ["Dream Company", "Orbit Labs", "Northstar Systems", "Signal Works"];
-
-function Reframe() {
-  const frame = useCurrentFrame();
-  const local = frame - scenes.reframe.from;
-  const t = enter(local, 14, 22);
-  const visual = enter(local, 48, 14);
-  const route = enter(local, 58, 46);
-  return <Scene {...scenes.reframe}>
-    <Background /><Header />
-    <div style={{ position: "absolute", left: 130, top: 220, width: 620, opacity: t }}>
-      <Eyebrow>Try a different starting point.</Eyebrow>
-      <h2 style={{ fontSize: 76, letterSpacing: -4.1, lineHeight: 0.98, margin: "17px 0 20px" }}>Find a company where you could <span style={{ color: star }}>contribute.</span></h2>
-      <p style={{ fontSize: 24, lineHeight: 1.42, color: muted, margin: 0 }}>The right opportunity may not be posted yet.</p>
-    </div>
-    <div style={{ position: "absolute", left: 790, right: 78, top: 175, bottom: 128, opacity: visual, transform: `translateY(${(1 - visual) * 20}px)` }}>
-      <Card style={{ position: "absolute", inset: 0, overflow: "hidden", background: "radial-gradient(circle at 52% 75%, rgb(67 56 202 / .14), transparent 34%), #fff" }}>
-        <div style={{ position: "absolute", left: 45, top: 38, fontSize: 16, textTransform: "uppercase", letterSpacing: 1.1, color: muted, fontWeight: 700 }}>Opportunity landscape</div>
-        <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
-          {[0, 1, 2, 3].map((i) => <path key={i} d={`M 50 81 C ${52 - i * 13} ${67 - i * 7}, ${18 + i * 24} ${46 - i * 5}, ${14 + i * 24} 23`} fill="none" stroke={i === 0 ? star : signal} strokeWidth={i === 0 ? 0.55 : 0.22} strokeDasharray={i === 0 ? "0" : "1.2 1.8"} pathLength="1" strokeDashoffset={1 - route} opacity={i === 0 ? route : 0.35 * route} />)}
-        </svg>
-        {companies.map((company, i) => {
-          const x = 15 + i * 24;
-          const y = 24 + ((i * 31) % 3) * 18;
-          const selected = i === 0;
-          const scale = selected ? 0.7 + route * 0.3 : 0.75 + route * 0.25;
-          return <div key={company} style={{ position: "absolute", left: `${x}%`, top: `${y}%`, padding: selected ? "18px 22px" : "13px 16px", borderRadius: 17, background: selected ? star : surface, color: selected ? "#fff" : navy, border: `1px solid ${selected ? star : line}`, boxShadow: selected ? "0 18px 36px -14px rgb(67 56 202 / .55)" : "0 8px 18px -12px rgb(11 27 63 / .26)", fontWeight: 700, fontSize: selected ? 21 : 16, transform: `translate(-50%, -50%) scale(${scale})`, opacity: visual }}>
-            {selected && <div style={{ fontFamily: serif, fontStyle: "italic", fontWeight: 400, fontSize: 16, marginBottom: 3 }}>potential fit</div>}{company}
-          </div>;
-        })}
-        <div style={{ position: "absolute", left: "50%", top: "81%", transform: `translate(-50%, -50%) scale(${0.8 + route * 0.2})`, width: 96, height: 96, borderRadius: "50%", border: `3px solid ${star}`, background: surface, display: "grid", placeItems: "center", color: star, fontWeight: 800, fontSize: 16, boxShadow: "0 0 0 11px rgb(67 56 202 / .09)" }}>YOU</div>
-      </Card>
-    </div>
-  </Scene>;
-}
-
-function Pipeline() {
-  const frame = useCurrentFrame();
-  const local = frame - scenes.pipeline.from;
-  const visual = enter(local, 36, 16);
-  const companiesIn = enter(local, 54, 14);
-  const peopleIn = enter(local, 88, 14);
-  const researchIn = enter(local, 120, 14);
-  const scoreIn = enter(local, 150, 14);
-  const companyX = [22, 40, 60, 78];
-  return <Scene {...scenes.pipeline}>
-    <Background /><Header />
-    <div style={{ position: "absolute", left: 180, right: 180, top: 154, textAlign: "center", opacity: 1 - visual * 0.55 }}><Eyebrow>A search becomes a pipeline.</Eyebrow><h2 style={{ margin: "12px 0 0", fontSize: 58, letterSpacing: -3 }}>Companies. People. Research. <span style={{ color: star }}>A shortlist you can inspect.</span></h2></div>
-    <Card style={{ position: "absolute", left: 165, right: 165, top: 303, bottom: 125, overflow: "hidden", opacity: visual, transform: `translateY(${(1 - visual) * 22}px)` }}>
-      <div style={{ position: "absolute", left: 35, top: 25, color: star, fontFamily: serif, fontStyle: "italic", fontSize: 24 }}>How Exagent works</div>
-      <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
-        {companyX.map((x) => <path key={x} d={`M 50 84 L ${x} 35`} fill="none" stroke={star} strokeWidth="0.34" pathLength="1" strokeDashoffset={1 - companiesIn} opacity={companiesIn * 0.75} />)}
-        {companyX.map((x) => <path key={x} d={`M ${x} 40 L ${x} 58`} fill="none" stroke={signal} strokeWidth="0.3" pathLength="1" strokeDashoffset={1 - peopleIn} opacity={peopleIn * 0.75} />)}
-        {companyX.map((x) => <path key={x} d={`M ${x} 62 Q ${x + 6} 72 87 72`} fill="none" stroke={teal} strokeWidth="0.3" pathLength="1" strokeDashoffset={1 - scoreIn} opacity={scoreIn * 0.8} />)}
-      </svg>
-      {companyX.map((x, i) => <div key={x} style={{ position: "absolute", left: `${x}%`, top: "35%", transform: `translate(-50%, -50%) scale(${0.7 + companiesIn * 0.3})`, opacity: companiesIn, padding: "9px 13px", borderRadius: 99, border: `1px solid ${line}`, background: surface, fontSize: 14, fontWeight: 750 }}>{companies[i]}</div>)}
-      {companyX.map((x, i) => <div key={`${x}-person`} style={{ position: "absolute", left: `${x}%`, top: "60%", transform: `translate(-50%, -50%) scale(${0.55 + peopleIn * 0.45})`, opacity: peopleIn, width: 38, height: 38, borderRadius: "50%", color: "#fff", background: i === 0 ? star : signal, display: "grid", placeItems: "center", fontSize: 12, fontWeight: 800 }}>{["MM", "JS", "AJ", "TB"][i]}</div>)}
-      {companyX.map((x, i) => <div key={`${x}-source`} style={{ position: "absolute", left: `${x + 3}%`, top: "50%", width: 11, height: 11, borderRadius: "50%", background: i % 2 ? teal : amber, opacity: researchIn, transform: `scale(${researchIn})` }} />)}
-      <div style={{ position: "absolute", left: "50%", top: "84%", transform: "translate(-50%, -50%)", width: 62, height: 62, borderRadius: "50%", border: `3px solid ${star}`, background: surface, color: star, display: "grid", placeItems: "center", fontSize: 13, fontWeight: 800 }}>YOU</div>
-      <div style={{ position: "absolute", right: 38, top: "61%", opacity: scoreIn, transform: `translateY(${(1 - scoreIn) * 18}px)` }}><div style={{ color: muted, fontSize: 12, letterSpacing: 1, fontWeight: 800, textTransform: "uppercase" }}>Shortlist</div><div style={{ marginTop: 8, borderRadius: 12, background: "rgb(67 56 202 / .08)", border: "1px solid rgb(67 56 202 / .25)", padding: "10px 14px", color: star, fontWeight: 800 }}>Ranked, sourced, explained</div></div>
-      <div style={{ position: "absolute", left: 35, bottom: 24, display: "flex", gap: 26, color: muted, fontSize: 14, fontWeight: 650 }}><span style={{ opacity: companiesIn }}>1 · Companies</span><span style={{ opacity: peopleIn }}>2 · People</span><span style={{ opacity: researchIn }}>3 · Public research</span><span style={{ opacity: scoreIn }}>4 · Scoring</span></div>
-    </Card>
-  </Scene>;
-}
-
-function ResearchChip({ text, x, y, angle, local, i }: { text: string; x: number; y: number; angle: number; local: number; i: number }) {
-  const appear = enter(local, i * 11, 18);
-  const collapse = enter(local, 210 + i * 3, 65);
-  return <div style={{ position: "absolute", left: `${x + (50 - x) * collapse}%`, top: `${y + (48 - y) * collapse}%`, padding: "12px 16px", borderRadius: 14, background: surface, border: `1px solid ${line}`, color: navy, fontSize: 16, fontWeight: 650, boxShadow: "0 11px 26px -18px rgb(11 27 63 / .35)", opacity: appear * (1 - collapse * 0.25), transform: `translate(-50%, -50%) rotate(${angle * (1 - collapse)}deg) scale(${0.82 + appear * 0.18})` }}>{text}</div>;
-}
-
-function Workflow() {
-  const frame = useCurrentFrame();
-  const local = frame - scenes.workflow.from;
-  const organize = enter(local, 34, 16);
-  const typed = Math.floor(interpolate(local, [58, 88], [0, demo.city.length], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }));
-  const start = enter(local, 103, 10);
-  const screenTilt = interpolate(local, [34, 100, 120], [5, -3, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) });
-  const chips = [
-    ["company site", 19, 24, -7], ["news", 75, 19, 8], ["team page", 79, 57, -8], ["role history", 20, 66, 7], ["public source", 52, 16, -3], ["funding", 52, 76, 4],
-  ] as const;
-  return <Scene {...scenes.workflow}>
-    <Background /><Header />
-    <div style={{ position: "absolute", left: 125, top: 157, right: 125, textAlign: "center", opacity: 1 - organize }}>
-      <Eyebrow>Start with what you know.</Eyebrow>
-      <h2 style={{ fontSize: 61, letterSpacing: -3.1, margin: "11px 0 0" }}>A city and industry are enough for a <span style={{ color: star }}>useful first pass.</span></h2>
-    </div>
-    <div style={{ display: "none", position: "absolute", left: 190, right: 190, top: 315, bottom: 155, opacity: 1 - organize }}>
-      <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
-        {chips.map(([, x, y], i) => <path key={i} d={`M ${x} ${y} Q 50 ${i % 2 ? 75 : 20} 50 48`} fill="none" stroke={i % 2 ? signal : star} strokeWidth="0.32" strokeDasharray="1 1.4" opacity=".48" />)}
-      </svg>
-      {chips.map(([text, x, y, angle], i) => <ResearchChip key={text} text={text} x={x} y={y} angle={angle} local={local} i={i} />)}
-      <div style={{ position: "absolute", left: "50%", top: "48%", transform: "translate(-50%, -50%)", width: 108, height: 108, display: "grid", placeItems: "center", borderRadius: "50%", color: "#fff", background: star, fontWeight: 800, boxShadow: "0 0 0 14px rgb(67 56 202 / .10)" }}>hours</div>
-    </div>
-    <div style={{ position: "absolute", left: 145, right: 145, top: 190, bottom: 135, opacity: organize, transform: `perspective(2200px) rotateY(${screenTilt}deg) rotateX(1.2deg) translateY(${(1 - organize) * 35}px)`, transformOrigin: "50% 55%" }}>
-      <Card style={{ height: "100%", padding: 42, boxSizing: "border-box", borderColor: "rgb(67 56 202 / .35)", background: "linear-gradient(180deg, #fff, #f9faff)" }}>
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 5, background: `linear-gradient(90deg, ${signal}, ${star})`, borderRadius: "24px 24px 0 0" }} />
-        <div style={{ display: "grid", gridTemplateColumns: "0.92fr 1.08fr", gap: 52, height: "100%", alignItems: "center" }}>
-          <div><Eyebrow>First pass</Eyebrow><h2 style={{ margin: "13px 0 16px", fontSize: 50, lineHeight: 1.02, letterSpacing: -2.7 }}>Start with what you <span style={{ color: star }}>know.</span></h2><p style={{ margin: 0, color: muted, fontSize: 20, lineHeight: 1.45 }}>First: companies. Then: people inside them. A clear path from a city and industry to a shortlist.</p></div>
-          <div style={{ border: `1px solid ${line}`, borderRadius: 18, padding: 25, background: surface, boxShadow: "0 16px 35px -25px rgb(11 27 63 / .35)" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>{[["Area", demo.city.slice(0, typed)], ["Industry", local > 240 ? demo.industry : ""]].map(([label, value], i) => <div key={label}><div style={{ color: star, fontSize: 13, fontWeight: 750, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>{label}</div><div style={{ height: 55, borderRadius: 11, boxSizing: "border-box", background: surface, border: `1px solid ${i === 0 && typed > 0 ? "rgb(67 56 202 / .65)" : line}`, padding: "15px 14px", fontSize: 17, color: value ? navy : muted }}>{value || "SaaS, Marketing…"}{i === 0 && typed > 0 && typed < demo.city.length ? <span style={{ color: star }}>|</span> : null}</div></div>)}</div>
-            <div style={{ color: star, fontSize: 13, fontWeight: 750, textTransform: "uppercase", letterSpacing: 1, margin: "19px 0 8px" }}>Company size</div><div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>{["Startup", "Mid-size", "Enterprise"].map((size, i) => <div key={size} style={{ padding: "12px 8px", borderRadius: 11, textAlign: "center", color: i === 0 ? star : muted, border: `1px solid ${i === 0 ? star : line}`, background: i === 0 ? "rgb(67 56 202 / .08)" : surface, fontSize: 14, fontWeight: 650 }}>{size}</div>)}</div>
-            <div style={{ marginTop: 15, borderRadius: 10, border: `1px dashed ${line}`, padding: "10px 12px", color: muted, fontSize: 14 }}><span style={{ color: star, fontWeight: 750 }}>About you · optional</span><span style={{ marginLeft: 9 }}>Add details to sharpen the match</span></div>
-            <div style={{ marginTop: 17, borderRadius: 12, background: signal, color: "#fff", padding: "15px 18px", textAlign: "center", fontWeight: 750, fontSize: 17, boxShadow: "0 11px 22px -12px rgb(30 58 138 / .7)", transform: `scale(${0.96 + start * .04})` }}>Search</div>
+      <div style={{ position: "absolute", left: 180, top: 168, width: 620 }}>
+        <div style={{ color: star, fontFamily: serif, fontSize: 32, fontStyle: "italic" }}>
+          A clearer next step.
+        </div>
+        <h2 style={{ margin: "15px 0 18px", fontSize: 69, letterSpacing: -4, lineHeight: 0.97 }}>
+          Know who to <span style={{ color: star }}>contact first.</span>
+        </h2>
+        <p style={{ margin: 0, color: muted, fontSize: 23, lineHeight: 1.42 }}>
+          Find the companies worth exploring, then focus your energy where it can matter.
+        </p>
+      </div>
+      <div
+        style={{
+          position: "absolute",
+          left: 900,
+          right: 150,
+          top: 192,
+          bottom: 154,
+          border: "1px solid rgb(67 56 202 / .38)",
+          borderRadius: 29,
+          background: surface,
+          boxShadow: "0 3px 6px rgb(11 27 63 / .06), 0 32px 68px -29px rgb(30 58 138 / .38)",
+          opacity: card,
+          transform: `perspective(2000px) rotateY(${-3 + card * 3}deg) translateY(${(1 - card) * 28}px)`,
+          overflow: "hidden",
+        }}
+      >
+        <div style={{ padding: "28px 32px 22px", background: "linear-gradient(90deg, rgb(67 56 202 / .10), transparent)", borderBottom: `1px solid ${line}` }}>
+          <div style={{ color: star, fontSize: 13, fontWeight: 850, letterSpacing: 1, textTransform: "uppercase" }}>Ranked contact</div>
+          <div style={{ marginTop: 8, display: "flex", alignItems: "start", justifyContent: "space-between" }}>
+            <div><div style={{ fontSize: 35, fontWeight: 800, letterSpacing: -1.6 }}>Matti Meikäläinen</div><div style={{ marginTop: 5, color: muted, fontSize: 18 }}>CTO · Dream Company</div></div>
+            <div style={{ width: 70, height: 70, borderRadius: "50%", display: "grid", placeItems: "center", background: "conic-gradient(#4338ca 92%, #e9edf7 0)", fontSize: 20, fontWeight: 850 }}><div style={{ width: 54, height: 54, borderRadius: "50%", display: "grid", placeItems: "center", background: surface }}>92</div></div>
           </div>
         </div>
-        {start > 0 && <div style={{ position: "absolute", left: 42, right: 42, bottom: 25, color: star, fontSize: 14, fontWeight: 750, textAlign: "center", opacity: start }}>Building your first shortlist →</div>}
-      </Card>
-    </div>
-  </Scene>;
-}
-
-function Score({ value, color = star }: { value: number; color?: string }) {
-  return <div style={{ width: 48, height: 48, borderRadius: "50%", display: "grid", placeItems: "center", background: `conic-gradient(${color} ${value}%, #e9edf7 0)`, color: navy, fontSize: 13, fontWeight: 800 }}><div style={{ width: 36, height: 36, background: surface, borderRadius: "50%", display: "grid", placeItems: "center" }}>{value}</div></div>;
-}
-
-function FactorScore({ label, value, color, visible }: { label: string; value: number; color: string; visible: number }) {
-  return <div style={{ minWidth: 57, textAlign: "center" }}><div style={{ color: muted, fontSize: 10, fontWeight: 750, textTransform: "uppercase", letterSpacing: 0.4 }}>{label}</div><div style={{ color, fontSize: 16, fontWeight: 800, marginTop: 3 }}>{visible > 0.08 ? Math.round(value * visible) : "—"}</div></div>;
-}
-
-function Results() {
-  const frame = useCurrentFrame();
-  const local = frame - scenes.results.from;
-  const reveal = spring({ frame: Math.max(0, local - 26), fps: 30, config: { damping: 18, mass: 0.7 } });
-  const personReveal = spring({ frame: Math.max(0, local - 72), fps: 30, config: { damping: 19, mass: 0.7 } });
-  const profilePanel = enter(local, 195, 14);
-  const profileCharacters = Math.floor(interpolate(local, [215, 305], [0, demo.profile.length], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }));
-  const refine = enter(local, 330, 24);
-  const screenTilt = interpolate(local, [0, 105, 250], [4, -2.5, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) });
-  const matches = [
-    ["Dream Company", "SaaS · Helsinki", 92, star], ["Orbit Labs", "Climate tech · Helsinki", 84, teal], ["Northstar Systems", "Developer tools · Helsinki", 79, signal], ["Signal Works", "B2B software · Helsinki", 74, amber],
-  ] as const;
-  const people = [
-    { name: demo.person, title: demo.title, final: 92, decision: 75, fit: 98, shared: 80 },
-    { name: "Jane Smith", title: "Head of Product", final: 76, decision: 88, fit: 68, shared: 45 },
-    { name: "Alex Johnson", title: "Engineering Manager", final: 72, decision: 82, fit: 65, shared: 40 },
-    { name: "Taylor Brown", title: "People Lead", final: 64, decision: 63, fit: 70, shared: 55 },
-  ] as const;
-  return <Scene {...scenes.results}>
-    <Background /><Header />
-    <div style={{ position: "absolute", left: 125, top: 150, right: 125 }}>
-      <Eyebrow>One search, then a sharper second pass.</Eyebrow>
-      <h2 style={{ margin: "9px 0 0", fontSize: 53, letterSpacing: -2.7 }}>Companies → people → public research → a transparent shortlist.</h2>
-    </div>
-    <div style={{ position: "absolute", left: 125, right: 125, top: 315, bottom: 115, display: "grid", gridTemplateColumns: "0.9fr 1.28fr", gap: 28, transform: `perspective(2200px) rotateY(${screenTilt}deg) rotateX(1deg)`, transformOrigin: "50% 52%" }}>
-      <Card style={{ padding: 28, opacity: reveal, transform: `translateX(${(1 - reveal) * -45}px)` }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><div><div style={{ color: muted, fontSize: 14, fontWeight: 750, letterSpacing: 1, textTransform: "uppercase" }}>Matched companies</div><h3 style={{ margin: "8px 0 0", fontSize: 29, letterSpacing: -1.2 }}>Worth exploring</h3></div><div style={{ color: star, fontWeight: 750 }}>4 found</div></div>
-        <div style={{ marginTop: 22 }}>{matches.map(([name, detail, score, color], i) => { const p = enter(local, 75 + i * 27, 18); return <div key={name} style={{ display: "flex", alignItems: "center", gap: 14, borderTop: `1px solid ${line}`, padding: "17px 2px", opacity: p, transform: `translateX(${(1 - p) * -22}px)` }}><Score value={score} color={color} /><div style={{ flex: 1 }}><div style={{ fontSize: 18, fontWeight: 750 }}>{name}</div><div style={{ color: muted, fontSize: 14, marginTop: 3 }}>{detail}</div></div>{i === 0 && <div style={{ color: star, fontSize: 13, fontWeight: 800 }}>SELECTED</div>}</div>; })}</div>
-        <div style={{ marginTop: 12, padding: "13px 14px", borderRadius: 13, border: "1px solid rgb(67 56 202 / .22)", background: "rgb(67 56 202 / .05)", opacity: profilePanel, transform: `translateY(${(1 - profilePanel) * 18}px)` }}><div style={{ color: star, fontSize: 12, fontWeight: 800, letterSpacing: 0.8, textTransform: "uppercase" }}>Second pass · about you</div><div style={{ marginTop: 5, fontSize: 13, lineHeight: 1.35, fontWeight: 650 }}>{demo.profile.slice(0, profileCharacters)}{profileCharacters > 0 && profileCharacters < demo.profile.length ? <span style={{ color: star }}>|</span> : null}</div>{refine > 0.12 && <div style={{ marginTop: 7, color: muted, fontSize: 12 }}>Matched: TypeScript teams → conference talk · developer tools → company post</div>}</div>
-      </Card>
-      <Card style={{ overflow: "hidden", borderColor: "rgb(67 56 202 / .35)", opacity: personReveal, transform: `translateY(${(1 - personReveal) * 36}px)` }}>
-        <div style={{ padding: "24px 30px 17px", background: "linear-gradient(90deg, rgb(67 56 202 / .08), transparent)" }}><div style={{ color: star, fontSize: 14, fontWeight: 800, letterSpacing: 1, textTransform: "uppercase" }}>{demo.company}</div><h3 style={{ margin: "8px 0 5px", fontSize: 31, letterSpacing: -1.5 }}>People who can open a conversation</h3><p style={{ margin: 0, color: muted, fontSize: 15 }}>{refine > 0.08 ? "Profile-aware scores · every point has a reason." : "First pass · decision power only."}</p></div>
-        {people.map((person, i) => { const p = enter(local, 100 + i * 24, 15); const active = person.name === demo.person; const final = Math.round(person.decision + (person.final - person.decision) * refine); return <div key={person.name} style={{ display: "flex", alignItems: "center", gap: 14, padding: "13px 24px", borderTop: `1px solid ${line}`, background: active ? "rgb(67 56 202 / .06)" : surface, opacity: p, transform: `translateX(${(1 - p) * 32}px)` }}><div style={{ width: 36, height: 36, borderRadius: "50%", background: active ? star : "#e9edf7", color: active ? "#fff" : signal, display: "grid", placeItems: "center", fontWeight: 750, fontSize: 13 }}>{person.name.split(" ").map((part) => part[0]).join("")}</div><div style={{ width: 170 }}><div style={{ fontSize: 17, fontWeight: 750 }}>{person.name}</div><div style={{ color: muted, marginTop: 2, fontSize: 13 }}>{person.title}</div></div><div style={{ display: "flex", flex: 1, justifyContent: "flex-end", gap: 7 }}><FactorScore label="Decision" value={person.decision} color={signal} visible={1} /><FactorScore label="Fit" value={person.fit} color={teal} visible={refine} /><FactorScore label="Shared" value={person.shared} color={amber} visible={refine} /></div><div style={{ width: 49, textAlign: "right", color: active ? star : navy, fontWeight: 800, fontSize: 22 }}>{final}</div></div>; })}
-      </Card>
-    </div>
-  </Scene>;
-}
-
-function Contact() {
-  const frame = useCurrentFrame();
-  const local = frame - scenes.contact.from;
-  const card = spring({ frame: Math.max(0, local - 12), fps: 30, config: { damping: 16, stiffness: 115 } });
-  const evidence = enter(local, 60, 18);
-  const angle = enter(local, 120, 20);
-  return <Scene {...scenes.contact}>
-    <Background /><Header />
-    <div style={{ position: "absolute", left: 290, right: 290, top: 177, bottom: 125, opacity: card, transform: `perspective(2200px) rotateY(${-3 + card * 3}deg) rotateX(1deg) scale(${0.95 + card * .05})`, transformOrigin: "50% 52%" }}>
-      <Card style={{ height: "100%", boxSizing: "border-box", padding: 48, borderColor: "rgb(67 56 202 / .45)", boxShadow: "0 3px 5px rgb(11 27 63 / .06), 0 35px 70px -27px rgb(30 58 138 / .36)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}><div><Eyebrow>One compelling place to begin.</Eyebrow><h2 style={{ margin: "12px 0 6px", fontSize: 58, letterSpacing: -3 }}>{demo.person}</h2><div style={{ color: muted, fontSize: 24 }}>{demo.title} · {demo.company}</div></div><div style={{ width: 106, height: 106, borderRadius: 24, background: "rgb(67 56 202 / .09)", display: "grid", placeItems: "center", color: star, fontSize: 16, fontWeight: 750, textAlign: "center" }}>MATCH<br /><span style={{ fontSize: 38 }}>{demo.score}</span></div></div>
-        <div style={{ display: "grid", gridTemplateColumns: "1.1fr .9fr", gap: 26, marginTop: 38 }}>
-          <div style={{ borderLeft: `4px solid ${star}`, padding: "5px 0 5px 22px" }}><div style={{ color: muted, fontSize: 13, textTransform: "uppercase", fontWeight: 800, letterSpacing: 1 }}>Why this person</div><p style={{ fontSize: 24, lineHeight: 1.38, margin: "10px 0 0" }}>A technical leader whose public work on TypeScript teams and developer tools overlaps with what you want to do.</p></div>
-          <div style={{ border: `1px solid ${line}`, borderRadius: 17, padding: 20, background: "#fbfcff", opacity: evidence, transform: `translateY(${(1 - evidence) * 16}px)` }}><div style={{ color: muted, fontSize: 13, textTransform: "uppercase", fontWeight: 800, letterSpacing: 1 }}>Public evidence</div><p style={{ margin: "10px 0 8px", fontSize: 18, lineHeight: 1.35 }}>Company website · conference talk · company post</p><div style={{ color: star, fontSize: 15, fontWeight: 700 }}>See why each score changed ↗</div></div>
+        <div style={{ padding: "28px 32px" }}>
+          <div style={{ color: muted, fontSize: 12, fontWeight: 800, letterSpacing: 1, textTransform: "uppercase" }}>Why now</div>
+          <p style={{ margin: "10px 0 0", color: navy, fontSize: 22, lineHeight: 1.36 }}>
+            Technical leadership, TypeScript experience, and developer-tools context—each reason is visible.
+          </p>
+          <div style={{ marginTop: 26, borderRadius: 14, padding: "17px 18px", background: "rgb(67 56 202 / .07)", border: "1px solid rgb(67 56 202 / .19)", color: signal, opacity: reason, transform: `translateY(${(1 - reason) * 16}px)`, fontSize: 17, fontWeight: 700 }}>
+            Start with a thoughtful question about their next stage of growth.
+          </div>
         </div>
-        <div style={{ marginTop: 29, padding: "20px 23px", borderRadius: 16, background: "linear-gradient(90deg, rgb(30 58 138 / .08), rgb(67 56 202 / .06))", border: "1px solid rgb(67 56 202 / .20)", opacity: angle, transform: `translateY(${(1 - angle) * 16}px)` }}><span style={{ color: star, fontWeight: 800, fontSize: 14, letterSpacing: 1, textTransform: "uppercase" }}>Thoughtful opening&nbsp;&nbsp;</span><span style={{ fontSize: 19 }}>{demo.outreach}</span></div>
-      </Card>
-    </div>
-  </Scene>;
+      </div>
+    </Page>
+  );
 }
 
-function Closing() {
+function EndCard() {
   const frame = useCurrentFrame();
   const local = frame - scenes.close.from;
-  const inView = spring({ frame: local, fps: 30, config: { damping: 15, mass: 0.9 } });
-  return <Scene {...scenes.close}>
-    <Background />
-    <div style={{ display: "grid", height: "100%", placeItems: "center", textAlign: "center", transform: `scale(${0.9 + inView * .1})`, opacity: inView }}><div><Brand />
-      <div style={{ marginTop: 43 }}><Eyebrow>From company interest to human connection.</Eyebrow><h2 style={{ fontSize: 91, letterSpacing: -5.3, lineHeight: .94, margin: "16px 0 20px" }}>Find the right<br /><span style={{ color: star }}>conversation.</span></h2><p style={{ margin: 0, color: muted, fontSize: 25 }}>Research the opportunity. Know who to contact. Start informed.</p></div>
-      <div style={{ marginTop: 42, display: "inline-block", padding: "15px 25px", color: "#fff", background: signal, borderRadius: 12, fontSize: 18, fontWeight: 750 }}>Exagent</div>
-    </div></div>
-    <div style={{ position: "absolute", right: 54, bottom: 38, color: muted, fontSize: 13, fontWeight: 650 }}>Illustrative demo data</div>
-  </Scene>;
+  const inView = enter(local, 0, 12);
+  const qrIn = enter(local, 18, 14);
+
+  return (
+    <Page style={{ opacity: inView }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 116, alignItems: "center", height: "100%", padding: "0 270px", boxSizing: "border-box" }}>
+        <div>
+          <Brand size={64} />
+          <div style={{ marginTop: 35, color: star, fontFamily: serif, fontSize: 37, fontStyle: "italic" }}>From interest to connection.</div>
+          <h2 style={{ margin: "13px 0 20px", fontSize: 75, letterSpacing: -4.5, lineHeight: 0.95 }}>Find the right<br /><span style={{ color: star }}>conversation.</span></h2>
+          <div style={{ color: muted, fontSize: 23 }}>Research the opportunity. Know who to contact. Start informed.</div>
+          <div style={{ marginTop: 28, color: signal, fontSize: 22, fontWeight: 800 }}>{appUrl.replace("https://", "")}</div>
+        </div>
+        <div style={{ opacity: qrIn, transform: `scale(${0.84 + qrIn * 0.16})`, transformOrigin: "50% 50%", textAlign: "center" }}>
+          <div style={{ padding: 16, borderRadius: 20, background: "#fff", border: `1px solid ${line}`, boxShadow: "0 20px 38px -22px rgb(30 58 138 / .36)" }}><Img src={qrCode} style={{ width: 210, height: 210, display: "block" }} /></div>
+          <div style={{ marginTop: 13, color: muted, fontSize: 15, fontWeight: 700 }}>Scan to start exploring</div>
+        </div>
+      </div>
+      <div style={{ position: "absolute", right: 50, bottom: 34, color: muted, fontSize: 13, fontWeight: 650 }}>Illustrative demo data</div>
+    </Page>
+  );
 }
 
 export function ExagentDemo() {
-  return <AbsoluteFill style={base}><LogoIntro /><Competition /><Reframe /><Pipeline /><Workflow /><Results /><Contact /><Closing /></AbsoluteFill>;
+  return (
+    <AbsoluteFill>
+      <LogoIntro />
+      <ApplicantSea {...scenes.competition} />
+      <OpportunityLandscape {...scenes.landscape} />
+      <ManualFriction {...scenes.friction} />
+      <ProductFlow {...scenes.product} />
+      <Outcome />
+      <EndCard />
+    </AbsoluteFill>
+  );
 }

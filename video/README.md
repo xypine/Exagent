@@ -1,8 +1,9 @@
 # Exagent demo video
 
-An editable 105-second, 1920×1080 Remotion composition. It is deliberately built
+An editable 60-second, 1920×1080 Remotion composition. It is deliberately built
 from code, rather than a screen-recording timeline, so copy, pacing, fictional
-demo records, and visuals can be revised quickly.
+demo records, and visuals can be revised quickly. Its product sequence recreates
+the real Exagent interface with deterministic illustrative data.
 
 ## Preview and render
 
@@ -20,7 +21,9 @@ Chromium and FFmpeg from the development environment; set
 ## What to edit
 
 - `src/script.ts` — all fictional demo data and scene timing.
-- `src/Video.tsx` — visuals and motion.
+- `src/Video.tsx` — composition, outcome, and end-card visuals.
+- `src/sections/` — independently editable opening, landscape, friction, and
+  app-flow scenes.
 - `src/Root.tsx` — output format and composition duration.
 
 ## Voiceover
