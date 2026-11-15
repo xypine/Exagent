@@ -18,9 +18,7 @@ def test_explicit_psycopg_url_is_unchanged() -> None:
     assert settings.database_url == database_url
 
 
-def test_company_search_result_cap_cannot_exceed_fifty() -> None:
-    with pytest.raises(ValidationError):
-        Settings(company_search_max_results=51)
+def test_company_search_initial_result_cap_cannot_exceed_fifty() -> None:
     with pytest.raises(ValidationError):
         Settings(company_search_initial_results=51)
 

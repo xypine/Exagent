@@ -1,8 +1,6 @@
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
-import pytest
-
 from app.core.config import Settings
 from app.db.models import CompanySearchCache, PeopleSearchCache, SearchJob
 from app.services.company_search import (
@@ -14,8 +12,6 @@ from app.services.company_search import (
     cache_key_for,
     company_query,
     discover_companies_with_fallback,
-    merge_companies,
-    next_company_result_limit,
     normalize_companies,
 )
 from app.services.exa_provider import (
@@ -79,32 +75,6 @@ class CacheHitSession:
 
     def add(self, value: object) -> None:
         self.added.append(value)
-
-    def commit(self) -> None:
-        self.commits += 1
-
-    def refresh(self, _value: object) -> None:
-        pass
-
-
-class MoreCompaniesSession:
-    def __init__(
-        self, job: SearchJob, cache: CompanySearchCache, people_cache: PeopleSearchCache
-    ) -> None:
-        self.job = job
-        self.cache = cache
-        self.people_cache = people_cache
-        self.commits = 0
-
-    def get(
-        self, model: object, _key: object
-    ) -> SearchJob | CompanySearchCache | PeopleSearchCache:
-        if model is SearchJob:
-            return self.job
-        if model is CompanySearchCache:
-            return self.cache
-        assert model is PeopleSearchCache
-        return self.people_cache
 
     def commit(self) -> None:
         self.commits += 1
@@ -188,84 +158,6 @@ def test_company_query_uses_company_sector_terms_for_recruiters() -> None:
     assert "recruitment agencies, executive-search firms, and staffing companies" in query
     assert "Recruiters companies" not in query
     assert "fewer than 25 employees" in query
-
-
-def test_next_company_result_limit_expands_in_user_sized_batches() -> None:
-    assert next_company_result_limit(15, initial_results=15, max_results=50) == 30
-    assert next_company_result_limit(31, initial_results=15, max_results=50) == 46
-    assert next_company_result_limit(46, initial_results=15, max_results=50) == 50
-
-
-def test_merge_companies_keeps_existing_order_and_deduplicates() -> None:
-    existing = [{"id": "first", "name": "First"}, {"id": "second", "name": "Second"}]
-    discovered = [{"id": "second", "name": "Updated"}, {"id": "third", "name": "Third"}]
-
-    assert merge_companies(existing, discovered) == [
-        {"id": "first", "name": "First"},
-        {"id": "second", "name": "Second"},
-        {"id": "third", "name": "Third"},
-    ]
-
-
-async def test_more_companies_merges_results_and_starts_people_research(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    job = SearchJob(
-        id=uuid4(),
-        client_id=uuid4(),
-        cache_key="a" * 64,
-        area="Helsinki",
-        industry="Fintech",
-        company_size="small",
-        status=JOB_DONE,
-        companies=[{"id": "first", "name": "First"}],
-    )
-    cache = CompanySearchCache(cache_key=job.cache_key, companies=list(job.companies))
-    people_cache = PeopleSearchCache(cache_key=job.cache_key, companies_searched=1)
-    session = MoreCompaniesSession(job, cache, people_cache)
-    service = CompanySearchService(
-        session,  # type: ignore[arg-type]
-        Settings(company_search_initial_results=15, company_search_max_results=50),
-    )
-
-    class FakeProvider:
-        def __init__(self, _settings: Settings) -> None:
-            pass
-
-        async def close(self) -> None:
-            pass
-
-    async def discover(*_args: object, **kwargs: object) -> list[dict[str, str]]:
-        assert kwargs["max_results"] == 30
-        return [
-            {"id": "first", "name": "First"},
-            {"id": "second", "name": "Second"},
-        ]
-
-    monkeypatch.setattr("app.services.company_search.ExaProvider", FakeProvider)
-    monkeypatch.setattr("app.services.company_search.discover_companies_with_fallback", discover)
-
-    refreshed_jobs: list[SearchJob] = []
-
-    async def refresh_people(refreshed_job: SearchJob) -> None:
-        refreshed_jobs.append(refreshed_job)
-        refreshed_job.status = JOB_DONE
-
-    monkeypatch.setattr(service, "_refresh_people", refresh_people)
-
-    assert service.search_more_companies(job) is True
-    assert job.status == JOB_FINDING_COMPANIES
-
-    await service.refresh_more_companies(job.id)
-
-    assert job.status == JOB_DONE
-    assert job.companies == [
-        {"id": "first", "name": "First"},
-        {"id": "second", "name": "Second"},
-    ]
-    assert cache.companies == job.companies
-    assert people_cache.refreshing_job_id == job.id
-    assert refreshed_jobs == [job]
 
 
 async def test_company_search_does_not_fall_back_when_matches_exist() -> None:

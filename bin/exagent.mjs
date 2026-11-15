@@ -12,6 +12,8 @@ const DEFAULT_STATE_FILE = ".exagent-cli.json";
 // other requests made by the same anonymous client.
 const DEFAULT_INTERVAL_MS = 3_000;
 const DEFAULT_TIMEOUT_MS = 120_000;
+const MAX_RATE_LIMIT_RETRIES = 2;
+const MIN_RETRY_DELAY_MS = 1_000;
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -34,7 +36,6 @@ Commands:
   client
   search create --area <area> --industry <industry> --company-size <small|medium|large>
   search get <job-id>
-  search more-companies <job-id>
   search more-people <job-id>
   person get <job-id> <person-id>
   person research <job-id> <person-id>
@@ -144,24 +145,31 @@ export function createApiClient({ apiUrl, clientId, fetchImpl = fetch }) {
   const origin = apiUrl.replace(/\/$/, "");
 
   async function request(path, init = {}) {
-    const response = await fetchImpl(`${origin}${path}`, {
-      ...init,
-      headers: {
-        "Content-Type": "application/json",
-        "X-Client-Id": clientId,
-        ...init.headers,
-      },
-    });
-    const body = await response.text();
-    const data = body === "" ? null : parseResponseBody(body);
-    if (!response.ok) {
-      const detail =
-        data !== null && typeof data === "object" && "detail" in data
-          ? `: ${String(data.detail)}`
-          : "";
-      throw new Error(`Request failed (${response.status})${detail}`);
+    for (let attempt = 0; attempt <= MAX_RATE_LIMIT_RETRIES; attempt += 1) {
+      const response = await fetchImpl(`${origin}${path}`, {
+        ...init,
+        headers: {
+          "Content-Type": "application/json",
+          "X-Client-Id": clientId,
+          ...init.headers,
+        },
+      });
+      if (response.status === 429 && attempt < MAX_RATE_LIMIT_RETRIES) {
+        await sleep(retryDelay(response));
+        continue;
+      }
+      const body = await response.text();
+      const data = body === "" ? null : parseResponseBody(body);
+      if (!response.ok) {
+        const detail =
+          data !== null && typeof data === "object" && "detail" in data
+            ? `: ${String(data.detail)}`
+            : "";
+        throw new Error(`Request failed (${response.status})${detail}`);
+      }
+      return data;
     }
-    return data;
+    throw new Error("Request could not be completed.");
   }
 
   return {
@@ -170,8 +178,6 @@ export function createApiClient({ apiUrl, clientId, fetchImpl = fetch }) {
     createSearch: (input) =>
       request("/api/v1/searches", { method: "POST", body: JSON.stringify(input) }),
     getSearch: (jobId) => request(`/api/v1/searches/${encodeURIComponent(jobId)}`),
-    searchMoreCompanies: (jobId) =>
-      request(`/api/v1/searches/${encodeURIComponent(jobId)}/companies`, { method: "POST" }),
     searchMorePeople: (jobId) =>
       request(`/api/v1/searches/${encodeURIComponent(jobId)}/people`, { method: "POST" }),
     getPersonResearch: (jobId, personId) =>
@@ -193,6 +199,13 @@ export function createApiClient({ apiUrl, clientId, fetchImpl = fetch }) {
         `/api/v1/searches/${encodeURIComponent(jobId)}/matches/${encodeURIComponent(runId)}`,
       ),
   };
+}
+
+function retryDelay(response) {
+  const seconds = Number(response.headers.get("Retry-After"));
+  return Number.isFinite(seconds) && seconds >= 0
+    ? Math.max(MIN_RETRY_DELAY_MS, Math.ceil(seconds * 1_000))
+    : MIN_RETRY_DELAY_MS;
 }
 
 function parseResponseBody(body) {
@@ -264,16 +277,6 @@ export async function run(argv, dependencies = {}) {
     }
   } else if (resource === "search" && action === "get" && ids.length === 1) {
     response = await api.getSearch(ids[0]);
-  } else if (resource === "search" && action === "more-companies" && ids.length === 1) {
-    response = await api.searchMoreCompanies(ids[0]);
-    if (options.wait) {
-      response = await waitForOperationCompletion(
-        response,
-        () => api.getSearch(ids[0]),
-        searchComplete,
-        options,
-      );
-    }
   } else if (resource === "search" && action === "more-people" && ids.length === 1) {
     response = await api.searchMorePeople(ids[0]);
     if (options.wait) {

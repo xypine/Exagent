@@ -20,7 +20,6 @@ test("API client uses the frontend's API paths, payloads, and client header", as
   await api.getClient();
   await api.createSearch({ area: "Helsinki", industry: "SaaS", company_size: "small" });
   await api.getSearch("job id");
-  await api.searchMoreCompanies("job id");
   await api.searchMorePeople("job id");
   await api.getPersonResearch("job id", "person/id");
   await api.startPersonResearch("job id", "person/id");
@@ -48,11 +47,6 @@ test("API client uses the frontend's API paths, payloads, and client header", as
       {
         url: "http://localhost:8000/api/v1/searches/job%20id",
         method: undefined,
-        body: undefined,
-      },
-      {
-        url: "http://localhost:8000/api/v1/searches/job%20id/companies",
-        method: "POST",
         body: undefined,
       },
       {
@@ -84,6 +78,24 @@ test("API client uses the frontend's API paths, payloads, and client header", as
   );
   assert.ok(calls.every(({ init }) => init.headers["X-Client-Id"] === CLIENT_ID));
   assert.ok(calls.every(({ init }) => init.headers["Content-Type"] === "application/json"));
+});
+
+test("API client waits and retries a rate-limited request", async () => {
+  let calls = 0;
+  const api = createApiClient({
+    apiUrl: "http://localhost:8000",
+    clientId: CLIENT_ID,
+    fetchImpl: async () => {
+      calls += 1;
+      if (calls === 1) {
+        return new Response("", { status: 429, headers: { "Retry-After": "0" } });
+      }
+      return new Response(JSON.stringify({ status: "ok" }), { status: 200 });
+    },
+  });
+
+  assert.deepEqual(await api.getHealth(), { status: "ok" });
+  assert.equal(calls, 2);
 });
 
 test("search create sends the same input shape and can poll its job", async () => {
@@ -119,29 +131,6 @@ test("search create sends the same input shape and can poll its job", async () =
   assert.deepEqual(result.response, { job_id: "job-1", status: "done", people: [] });
   assert.equal(requests.length, 3);
   assert.equal(requests[0].init.body, '{"area":"Helsinki","industry":"SaaS","company_size":"small"}');
-  assert.equal(requests[1].url, "http://localhost:8000/api/v1/searches/job-1");
-});
-
-test("search more-companies can poll the expanded company search", async () => {
-  const requests = [];
-  const responses = [
-    { job_id: "job-1", status: "finding_companies" },
-    { job_id: "job-1", status: "done", companies: [] },
-  ];
-  const result = await run(
-    ["search", "more-companies", "job-1", "--wait", "--interval", "1"],
-    {
-      getClientId: async () => CLIENT_ID,
-      fetchImpl: async (url, init) => {
-        requests.push({ url, init });
-        return new Response(JSON.stringify(responses.shift()), { status: 200 });
-      },
-    },
-  );
-
-  assert.deepEqual(result.response, { job_id: "job-1", status: "done", companies: [] });
-  assert.equal(requests[0].url, "http://localhost:8000/api/v1/searches/job-1/companies");
-  assert.equal(requests[0].init.method, "POST");
   assert.equal(requests[1].url, "http://localhost:8000/api/v1/searches/job-1");
 });
 

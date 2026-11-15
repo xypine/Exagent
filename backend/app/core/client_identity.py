@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict, deque
 from dataclasses import dataclass
+from math import ceil
 from time import monotonic
 from uuid import UUID
 
@@ -34,9 +35,11 @@ class InMemoryRateLimiter:
             bucket.popleft()
 
         if len(bucket) >= settings.rate_limit_requests:
+            retry_after = max(1, ceil(bucket[0] + settings.rate_limit_window_seconds - now))
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail="Rate limit exceeded. Try again shortly.",
+                headers={"Retry-After": str(retry_after)},
             )
 
         bucket.append(now)

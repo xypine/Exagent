@@ -149,7 +149,6 @@ export const mockApi = {
         industry: "SaaS company",
         company_size: "small",
         companies: [],
-        can_load_more_companies: true,
         people: [],
         people_search_stats: {
           companies_searched: 0,
@@ -168,7 +167,6 @@ export const mockApi = {
       industry: "SaaS company",
       company_size: "small",
       companies: COMPANIES,
-      can_load_more_companies: true,
       people: PEOPLE,
       people_search_stats: {
         companies_searched: 20,
@@ -205,9 +203,6 @@ export const mockApi = {
       ],
       volunteer_experience: [],
     };
-  },
-  async searchMoreCompanies(jobId: string): Promise<SearchJob> {
-    return this.getSearch(jobId);
   },
   async startPersonResearch(
     jobId: string,

@@ -9,7 +9,6 @@ import {
   getMatchRun,
   getSearch,
   getStoredProfile,
-  searchMoreCompanies,
   searchMorePeople,
   startMatchRun,
   storeProfile,
@@ -222,13 +221,6 @@ export function Results(props: {
     },
   }));
 
-  const moreCompanies = createMutation(() => ({
-    mutationFn: () => searchMoreCompanies(props.jobId),
-    onSuccess: (data) => {
-      queryClient.setQueryData(["search", props.jobId], data);
-    },
-  }));
-
   const matchRun = createQuery(() => ({
     queryKey: ["match-run", props.jobId, matchRunId()],
     queryFn: () => getMatchRun(props.jobId, matchRunId() ?? ""),
@@ -334,23 +326,10 @@ export function Results(props: {
         </p>
       </Show>
 
-      <Show
-        when={job.data?.status === "done" && job.data.can_load_more_companies}
-      >
-        <button
-          type="button"
-          disabled={moreCompanies.isPending}
-          onClick={() => moreCompanies.mutate()}
-          class="mt-3 rounded-lg border border-star px-3 py-2 text-sm text-star transition hover:bg-star/10 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {moreCompanies.isPending
-            ? "Loading companies…"
-            : "Load more companies"}
-        </button>
-      </Show>
-
-      <Show when={moreCompanies.isError}>
-        <p class="mt-3 text-sm text-bad">{moreCompanies.error?.message}</p>
+      <Show when={job.data?.status === "done"}>
+        <p class="mt-3 text-sm text-dim">
+          Company search complete — no more companies to load.
+        </p>
       </Show>
 
       <Show when={job.data?.people_search_stats}>

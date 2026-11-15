@@ -1,10 +1,4 @@
-import {
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@solidjs/testing-library";
+import { cleanup, fireEvent, render, screen } from "@solidjs/testing-library";
 import { QueryClient, QueryClientProvider } from "@tanstack/solid-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -13,7 +7,6 @@ import {
   getPersonResearch,
   getSearch,
   getStoredProfile,
-  searchMoreCompanies,
   startMatchRun,
   startPersonResearch,
   storeProfile,
@@ -25,7 +18,6 @@ vi.mock("../api", () => ({
   getSearch: vi.fn(),
   getPersonResearch: vi.fn(),
   startPersonResearch: vi.fn(),
-  searchMoreCompanies: vi.fn(),
   searchMorePeople: vi.fn(),
   getStoredProfile: vi.fn(),
   storeProfile: vi.fn(),
@@ -48,7 +40,6 @@ const JOB: SearchJob = {
       sources: [],
     },
   ],
-  can_load_more_companies: true,
   people: [
     {
       id: "person-1",
@@ -96,7 +87,6 @@ describe("Results", () => {
       volunteer_experience: [],
     });
     vi.mocked(getStoredProfile).mockReturnValue("");
-    vi.mocked(searchMoreCompanies).mockResolvedValue(JOB);
     vi.mocked(startMatchRun).mockResolvedValue({
       id: "match-1",
       status: "done",
@@ -140,7 +130,7 @@ describe("Results", () => {
     expect(screen.getByText("Leads product at Northstar Labs.")).not.toBeNull();
   });
 
-  it("loads more companies only after the user requests it", async () => {
+  it("states that the company search is complete", async () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
@@ -151,13 +141,11 @@ describe("Results", () => {
       </QueryClientProvider>
     ));
 
-    fireEvent.click(
-      await screen.findByRole("button", { name: "Load more companies" }),
-    );
-
-    await waitFor(() =>
-      expect(searchMoreCompanies).toHaveBeenCalledWith("job-1"),
-    );
+    expect(
+      await screen.findByText(
+        "Company search complete — no more companies to load.",
+      ),
+    ).not.toBeNull();
   });
 
   it("hides people with an unverified employer until requested", async () => {

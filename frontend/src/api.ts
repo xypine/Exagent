@@ -5,6 +5,8 @@ const CLIENT_ID_STORAGE_KEY = "prospecting.client-id";
 const PROFILE_STORAGE_KEY = "prospecting.profile";
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const MAX_RATE_LIMIT_RETRIES = 2;
+const MIN_RETRY_DELAY_MS = 1_000;
 
 /** Set VITE_USE_MOCKS=true to demo the UI without the backend. */
 export const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === "true";
@@ -28,22 +30,42 @@ export function storeProfile(profile: string): void {
   window.localStorage.setItem(PROFILE_STORAGE_KEY, profile);
 }
 
+function retryDelay(response: Response): number {
+  const seconds = Number(response.headers.get("Retry-After"));
+  return Number.isFinite(seconds) && seconds >= 0
+    ? Math.max(MIN_RETRY_DELAY_MS, Math.ceil(seconds * 1_000))
+    : MIN_RETRY_DELAY_MS;
+}
+
+function sleep(milliseconds: number): Promise<void> {
+  return new Promise((resolveSleep) => setTimeout(resolveSleep, milliseconds));
+}
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const response = await fetch(path, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      "X-Client-Id": getClientId(),
-      ...init.headers,
-    },
-  });
-  if (response.status === 429) {
-    throw new Error("Slow down a bit — too many requests. Try again shortly.");
+  for (let attempt = 0; attempt <= MAX_RATE_LIMIT_RETRIES; attempt += 1) {
+    const response = await fetch(path, {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        "X-Client-Id": getClientId(),
+        ...init.headers,
+      },
+    });
+    if (response.status === 429) {
+      if (attempt < MAX_RATE_LIMIT_RETRIES) {
+        await sleep(retryDelay(response));
+        continue;
+      }
+      throw new Error(
+        "Slow down a bit — too many requests. Try again shortly.",
+      );
+    }
+    if (!response.ok) {
+      throw new Error(`Request failed (${response.status}).`);
+    }
+    return response.json() as Promise<T>;
   }
-  if (!response.ok) {
-    throw new Error(`Request failed (${response.status}).`);
-  }
-  return response.json() as Promise<T>;
+  throw new Error("Request could not be completed.");
 }
 
 export async function getClient(): Promise<{ client_id: string }> {
@@ -66,14 +88,6 @@ export async function createSearch(
 export async function getSearch(jobId: string): Promise<SearchJob> {
   if (USE_MOCKS) return mockApi.getSearch(jobId);
   return request(`/api/v1/searches/${encodeURIComponent(jobId)}`);
-}
-
-/** Expand a completed company search with one user-requested batch. */
-export async function searchMoreCompanies(jobId: string): Promise<SearchJob> {
-  if (USE_MOCKS) return mockApi.searchMoreCompanies(jobId);
-  return request(`/api/v1/searches/${encodeURIComponent(jobId)}/companies`, {
-    method: "POST",
-  });
 }
 
 /** Start the next capped batch of automatic people research for a completed search. */

@@ -87,33 +87,6 @@ def company_size_attempts(company_size: CompanySize | None) -> tuple[CompanySize
     return tuple(reversed(sizes[: selected_index + 1]))
 
 
-def next_company_result_limit(
-    current_company_count: int, *, initial_results: int, max_results: int
-) -> int:
-    """Return the expanded Exa result cap for one user-requested company batch."""
-    initial_batch = min(initial_results, max_results)
-    return min(max_results, max(initial_batch, current_company_count) + initial_batch)
-
-
-def merge_companies(
-    existing: list[dict[str, Any]], discovered: list[dict[str, Any]]
-) -> list[dict[str, Any]]:
-    """Append newly discovered companies without changing the established result order."""
-    merged = list(existing)
-    seen_ids = {
-        company_id
-        for company in existing
-        if isinstance(company_id := company.get("id"), str) and company_id
-    }
-    for company in discovered:
-        company_id = company.get("id")
-        if not isinstance(company_id, str) or not company_id or company_id in seen_ids:
-            continue
-        merged.append(company)
-        seen_ids.add(company_id)
-    return merged
-
-
 async def discover_companies_with_fallback(
     provider: ExaProvider,
     *,
@@ -362,81 +335,6 @@ class CompanySearchService:
         self._session.commit()
         await self._refresh_people(job)
 
-    def search_more_companies(self, job: SearchJob) -> bool:
-        """Queue one explicit, expanded company search for a completed job."""
-        if (
-            job.status != JOB_DONE
-            or len(job.companies) >= self._settings.company_search_max_results
-        ):
-            return False
-        cache = self._session.get(CompanySearchCache, job.cache_key)
-        if cache is None or cache.refreshing_job_id is not None:
-            return False
-
-        cache.refreshing_job_id = job.id
-        job.status = JOB_FINDING_COMPANIES
-        job.error = None
-        job.completed_at = None
-        self._session.commit()
-        self._session.refresh(job)
-        return True
-
-    async def refresh_more_companies(self, job_id: UUID) -> None:
-        """Merge one expanded company search and research its newly added companies."""
-        job = self._session.get(SearchJob, job_id)
-        if job is None or job.status != JOB_FINDING_COMPANIES:
-            return
-        cache = self._session.get(CompanySearchCache, job.cache_key)
-        if cache is None or cache.refreshing_job_id != job.id:
-            return
-
-        result_limit = next_company_result_limit(
-            len(cache.companies),
-            initial_results=self._settings.company_search_initial_results,
-            max_results=self._settings.company_search_max_results,
-        )
-        try:
-            provider = ExaProvider(self._settings)
-            try:
-                discovered = await discover_companies_with_fallback(
-                    provider,
-                    area=job.area,
-                    industry=job.industry,
-                    company_size=job.company_size,
-                    max_results=result_limit,
-                )
-            finally:
-                await provider.close()
-        except Exception:
-            cache.refreshing_job_id = None
-            job.status = JOB_DONE
-            job.error = "More companies could not be loaded. Please try again."
-            job.completed_at = datetime.now(UTC)
-            self._session.commit()
-            return
-
-        now = datetime.now(UTC)
-        companies = merge_companies(cache.companies, discovered)
-        cache.companies = companies
-        cache.fetched_at = now
-        cache.expires_at = now + timedelta(seconds=self._settings.company_search_cache_ttl_seconds)
-        cache.refreshing_job_id = None
-        job.companies = companies
-        job.error = None
-        people_cache = self._session.get(PeopleSearchCache, job.cache_key)
-        if people_cache is not None and people_cache.companies_searched < len(companies):
-            people_cache.people_error = None
-            people_cache.refreshing_job_id = job.id
-            job.status = JOB_FINDING_PEOPLE
-            job.completed_at = None
-            self._session.commit()
-            await self._refresh_people(job)
-            return
-
-        job.status = JOB_DONE
-        job.completed_at = now
-        self._session.commit()
-
     def search_more_people(self, job: SearchJob) -> bool:
         """Queue the next capped key-people batch and return whether to start it."""
         if job.status != JOB_DONE:
@@ -622,12 +520,6 @@ def recover_interrupted_searches() -> list[SearchRecovery]:
     """Persist recovery leases and return work to resume after startup."""
     with SessionLocal() as session:
         return CompanySearchService(session).recover_interrupted_searches()
-
-
-async def refresh_more_companies(job_id: UUID) -> None:
-    """Background-task entry point for an explicit expanded company search."""
-    with SessionLocal() as session:
-        await CompanySearchService(session).refresh_more_companies(job_id)
 
 
 def normalize_companies(
