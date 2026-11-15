@@ -208,7 +208,7 @@ function EndCard() {
 
 export function ExagentDemo() {
   return (
-    <AbsoluteFill>
+    <AbsoluteFill style={{ backgroundColor: surface }}>
       <LogoIntro />
       <ApplicantSea {...scenes.competition} />
       <OpportunityLandscape {...scenes.landscape} />

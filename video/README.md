@@ -1,6 +1,6 @@
 # Exagent demo video
 
-An editable 60-second, 1920×1080 Remotion composition. It is deliberately built
+An editable 66-second, 1920×1080 Remotion composition. It is deliberately built
 from code, rather than a screen-recording timeline, so copy, pacing, fictional
 demo records, and visuals can be revised quickly. Its product sequence recreates
 the real Exagent interface with deterministic illustrative data.
