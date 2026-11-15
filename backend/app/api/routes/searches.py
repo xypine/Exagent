@@ -320,7 +320,12 @@ def _authorized_person(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Search job not found.")
     for candidate in job.people:
         if candidate.get("id") == str(person_id):
-            return PersonResponse.model_validate(candidate)
+            return PersonResponse.model_validate(
+                {
+                    **candidate,
+                    "decision_power_score": decision_power_score(candidate["title"]),
+                }
+            )
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND, detail="Person not found in search job."
     )
