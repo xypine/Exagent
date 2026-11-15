@@ -103,9 +103,9 @@ const seaDots = Array.from({ length: 104 }, (_, i) => ({
 }));
 
 function SeaDot({ x, y, i, local, featured = false }: { x: number; y: number; i: number; local: number; featured?: boolean }) {
-  const driftX = Math.sin(local / 28 + i * 1.93) * 5;
-  const driftY = Math.cos(local / 25 + i * 1.17) * 8 + Math.sin(local / 45 + i) * 6;
-  const blend = enter(local, 180, 45);
+  const driftX = Math.sin(local / 22 + i * 1.93) * 10;
+  const driftY = Math.cos(local / 20 + i * 1.17) * 12 + Math.sin(local / 38 + i) * 9;
+  const blend = enter(local, 52, 42);
   const color = featured && blend < 0.98 ? star : signal;
   const size = featured && blend < 0.98 ? 20 - blend * 9 : 10;
   return <div style={{ position: "absolute", left: `${x}%`, top: `${y + driftY / 12}%`, width: size, height: size, marginLeft: -size / 2, marginTop: -size / 2, borderRadius: "50%", background: color, opacity: featured ? 1 : 0.62 + (i % 3) * 0.1, transform: `translateX(${driftX}px)`, boxShadow: featured && blend < 0.9 ? "0 0 0 7px rgb(67 56 202 / .13)" : "none" }} />;
@@ -141,7 +141,7 @@ function Reframe() {
   const frame = useCurrentFrame();
   const local = frame - scenes.reframe.from;
   const t = enter(local, 18, 26);
-  const route = enter(local, 90, 60);
+  const route = enter(local, 58, 46);
   return <Scene {...scenes.reframe}>
     <Background /><Header />
     <div style={{ position: "absolute", left: 130, top: 220, width: 620, opacity: t }}>
@@ -182,12 +182,13 @@ function Workflow() {
   const organize = enter(local, 120, 30);
   const typed = Math.floor(interpolate(local, [180, 240], [0, demo.city.length], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }));
   const start = enter(local, 300, 15);
+  const screenTilt = interpolate(local, [120, 300, 410], [5, -3, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) });
   const chips = [
     ["company site", 19, 24, -7], ["news", 75, 19, 8], ["team page", 79, 57, -8], ["role history", 20, 66, 7], ["public source", 52, 16, -3], ["funding", 52, 76, 4],
   ] as const;
   return <Scene {...scenes.workflow}>
     <Background /><Header />
-    <div style={{ position: "absolute", left: 125, top: 157, right: 125, textAlign: "center", opacity: 1 - organize * 0.25 }}>
+    <div style={{ position: "absolute", left: 125, top: 157, right: 125, textAlign: "center", opacity: 1 - organize }}>
       <Eyebrow>Research can splinter quickly.</Eyebrow>
       <h2 style={{ fontSize: 61, letterSpacing: -3.1, margin: "11px 0 0" }}>Company. People. Evidence. <span style={{ color: star }}>Where do you begin?</span></h2>
     </div>
@@ -198,15 +199,18 @@ function Workflow() {
       {chips.map(([text, x, y, angle], i) => <ResearchChip key={text} text={text} x={x} y={y} angle={angle} local={local} i={i} />)}
       <div style={{ position: "absolute", left: "50%", top: "48%", transform: "translate(-50%, -50%)", width: 108, height: 108, display: "grid", placeItems: "center", borderRadius: "50%", color: "#fff", background: star, fontWeight: 800, boxShadow: "0 0 0 14px rgb(67 56 202 / .10)" }}>hours</div>
     </div>
-    <div style={{ position: "absolute", left: 145, right: 145, top: 190, bottom: 135, opacity: organize, transform: `translateY(${(1 - organize) * 35}px)` }}>
+    <div style={{ position: "absolute", left: 145, right: 145, top: 190, bottom: 135, opacity: organize, transform: `perspective(2200px) rotateY(${screenTilt}deg) rotateX(1.2deg) translateY(${(1 - organize) * 35}px)`, transformOrigin: "50% 55%" }}>
       <Card style={{ height: "100%", padding: 42, boxSizing: "border-box", borderColor: "rgb(67 56 202 / .35)", background: "linear-gradient(180deg, #fff, #f9faff)" }}>
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 5, background: `linear-gradient(90deg, ${signal}, ${star})`, borderRadius: "24px 24px 0 0" }} />
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}><div><Eyebrow>Exagent organizes the work.</Eyebrow><h2 style={{ margin: "8px 0 0", fontSize: 45, letterSpacing: -2.2 }}>Start with where you want to contribute.</h2></div><div style={{ color: muted, fontSize: 15, fontWeight: 700, paddingTop: 12 }}>ILLUSTRATIVE DEMO</div></div>
-        <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr .72fr", gap: 18, marginTop: 42 }}>
-          {[["City", demo.city.slice(0, typed)], ["Industry", local > 240 ? demo.industry : ""], ["Stage", local > 270 ? "Startup" : ""]].map(([label, value], i) => <div key={label}><div style={{ color: star, fontSize: 14, fontWeight: 750, textTransform: "uppercase", letterSpacing: 1, marginBottom: 9 }}>{label}</div><div style={{ height: 64, borderRadius: 12, boxSizing: "border-box", background: surface, border: `1px solid ${i === 0 && typed > 0 ? "rgb(67 56 202 / .65)" : line}`, padding: "18px 17px", fontSize: 20, color: value ? navy : muted }}>{value || "Select…"}{i === 0 && typed > 0 && typed < demo.city.length ? <span style={{ color: star }}>|</span> : null}</div></div>)}
+        <div style={{ display: "grid", gridTemplateColumns: "0.92fr 1.08fr", gap: 52, height: "100%", alignItems: "center" }}>
+          <div><Eyebrow>The hidden job market — unlocked</Eyebrow><h2 style={{ margin: "13px 0 16px", fontSize: 50, lineHeight: 1.02, letterSpacing: -2.7 }}>Find who matters.<br /><span style={{ color: star }}>Say what works.</span></h2><p style={{ margin: 0, color: muted, fontSize: 20, lineHeight: 1.45 }}>Tell us where you want to work. We will find the companies and people worth knowing.</p></div>
+          <div style={{ border: `1px solid ${line}`, borderRadius: 18, padding: 25, background: surface, boxShadow: "0 16px 35px -25px rgb(11 27 63 / .35)" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>{[["Area", demo.city.slice(0, typed)], ["Industry", local > 240 ? demo.industry : ""]].map(([label, value], i) => <div key={label}><div style={{ color: star, fontSize: 13, fontWeight: 750, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>{label}</div><div style={{ height: 55, borderRadius: 11, boxSizing: "border-box", background: surface, border: `1px solid ${i === 0 && typed > 0 ? "rgb(67 56 202 / .65)" : line}`, padding: "15px 14px", fontSize: 17, color: value ? navy : muted }}>{value || "SaaS, Marketing…"}{i === 0 && typed > 0 && typed < demo.city.length ? <span style={{ color: star }}>|</span> : null}</div></div>)}</div>
+            <div style={{ color: star, fontSize: 13, fontWeight: 750, textTransform: "uppercase", letterSpacing: 1, margin: "19px 0 8px" }}>Company size</div><div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>{["Startup", "Mid-size", "Enterprise"].map((size, i) => <div key={size} style={{ padding: "12px 8px", borderRadius: 11, textAlign: "center", color: i === 0 ? star : muted, border: `1px solid ${i === 0 ? star : line}`, background: i === 0 ? "rgb(67 56 202 / .08)" : surface, fontSize: 14, fontWeight: 650 }}>{size}</div>)}</div>
+            <div style={{ marginTop: 17, borderRadius: 12, background: signal, color: "#fff", padding: "15px 18px", textAlign: "center", fontWeight: 750, fontSize: 17, boxShadow: "0 11px 22px -12px rgb(30 58 138 / .7)", transform: `scale(${0.96 + start * .04})` }}>Search</div>
+          </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 22, marginTop: 44 }}><div style={{ borderRadius: 12, background: signal, color: "#fff", padding: "17px 26px", fontWeight: 750, fontSize: 19, boxShadow: "0 11px 22px -12px rgb(30 58 138 / .7)", transform: `scale(${0.96 + start * .04})` }}>Find opportunities</div>{start > 0 && <div style={{ color: muted, fontSize: 17, opacity: start }}>Mapping companies <span style={{ color: star }}>→</span> finding people <span style={{ color: star }}>→</span> checking evidence</div>}</div>
-        {start > 0 && <div style={{ position: "absolute", left: 42, right: 42, bottom: 42, height: 84, display: "flex", gap: 10, alignItems: "center" }}>{["Companies", "People", "Evidence", "Ranking"].map((step, i) => <div key={step} style={{ flex: 1, position: "relative", height: 8, borderRadius: 99, background: line, overflow: "hidden" }}><div style={{ position: "absolute", inset: 0, transformOrigin: "left", transform: `scaleX(${clamp((local - 330 - i * 30) / 32)})`, background: i === 3 ? star : signal }} /><div style={{ position: "absolute", top: 18, color: muted, whiteSpace: "nowrap", fontSize: 14, fontWeight: 650 }}>{step}</div></div>)}</div>}
+        {start > 0 && <div style={{ position: "absolute", left: 42, right: 42, bottom: 25, height: 42, display: "flex", gap: 10, alignItems: "center", opacity: start }}>{["Companies", "People", "Evidence", "Ranking"].map((step, i) => <div key={step} style={{ flex: 1, position: "relative", height: 6, borderRadius: 99, background: line, overflow: "hidden" }}><div style={{ position: "absolute", inset: 0, transformOrigin: "left", transform: `scaleX(${clamp((local - 330 - i * 30) / 32)})`, background: i === 3 ? star : signal }} /><div style={{ position: "absolute", top: 14, color: muted, whiteSpace: "nowrap", fontSize: 13, fontWeight: 650 }}>{step}</div></div>)}</div>}
       </Card>
     </div>
   </Scene>;
@@ -221,6 +225,7 @@ function Results() {
   const local = frame - scenes.results.from;
   const reveal = spring({ frame: Math.max(0, local - 26), fps: 30, config: { damping: 18, mass: 0.7 } });
   const personReveal = spring({ frame: Math.max(0, local - 120), fps: 30, config: { damping: 19, mass: 0.7 } });
+  const screenTilt = interpolate(local, [0, 105, 250], [4, -2.5, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) });
   const matches = [
     ["Dream Company", "SaaS · Helsinki", 92, star], ["Orbit Labs", "Climate tech · Helsinki", 84, teal], ["Northstar Systems", "Developer tools · Helsinki", 79, signal], ["Signal Works", "B2B software · Helsinki", 74, amber],
   ] as const;
@@ -231,7 +236,7 @@ function Results() {
       <Eyebrow>From a wide field to a few good leads.</Eyebrow>
       <h2 style={{ margin: "9px 0 0", fontSize: 53, letterSpacing: -2.7 }}>See the companies worth exploring — then the people who matter.</h2>
     </div>
-    <div style={{ position: "absolute", left: 125, right: 125, top: 315, bottom: 115, display: "grid", gridTemplateColumns: "0.9fr 1.28fr", gap: 28 }}>
+    <div style={{ position: "absolute", left: 125, right: 125, top: 315, bottom: 115, display: "grid", gridTemplateColumns: "0.9fr 1.28fr", gap: 28, transform: `perspective(2200px) rotateY(${screenTilt}deg) rotateX(1deg)`, transformOrigin: "50% 52%" }}>
       <Card style={{ padding: 28, opacity: reveal, transform: `translateX(${(1 - reveal) * -45}px)` }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><div><div style={{ color: muted, fontSize: 14, fontWeight: 750, letterSpacing: 1, textTransform: "uppercase" }}>Matched companies</div><h3 style={{ margin: "8px 0 0", fontSize: 29, letterSpacing: -1.2 }}>Worth exploring</h3></div><div style={{ color: star, fontWeight: 750 }}>4 found</div></div>
         <div style={{ marginTop: 22 }}>{matches.map(([name, detail, score, color], i) => { const p = enter(local, 75 + i * 27, 18); return <div key={name} style={{ display: "flex", alignItems: "center", gap: 14, borderTop: `1px solid ${line}`, padding: "17px 2px", opacity: p, transform: `translateX(${(1 - p) * -22}px)` }}><Score value={score} color={color} /><div style={{ flex: 1 }}><div style={{ fontSize: 18, fontWeight: 750 }}>{name}</div><div style={{ color: muted, fontSize: 14, marginTop: 3 }}>{detail}</div></div>{i === 0 && <div style={{ color: star, fontSize: 13, fontWeight: 800 }}>SELECTED</div>}</div>; })}</div>
@@ -252,7 +257,7 @@ function Contact() {
   const angle = enter(local, 120, 20);
   return <Scene {...scenes.contact}>
     <Background /><Header />
-    <div style={{ position: "absolute", left: 290, right: 290, top: 177, bottom: 125, opacity: card, transform: `scale(${0.95 + card * .05})` }}>
+    <div style={{ position: "absolute", left: 290, right: 290, top: 177, bottom: 125, opacity: card, transform: `perspective(2200px) rotateY(${-3 + card * 3}deg) rotateX(1deg) scale(${0.95 + card * .05})`, transformOrigin: "50% 52%" }}>
       <Card style={{ height: "100%", boxSizing: "border-box", padding: 48, borderColor: "rgb(67 56 202 / .45)", boxShadow: "0 3px 5px rgb(11 27 63 / .06), 0 35px 70px -27px rgb(30 58 138 / .36)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}><div><Eyebrow>One compelling place to begin.</Eyebrow><h2 style={{ margin: "12px 0 6px", fontSize: 58, letterSpacing: -3 }}>{demo.person}</h2><div style={{ color: muted, fontSize: 24 }}>{demo.title} · {demo.company}</div></div><div style={{ width: 106, height: 106, borderRadius: 24, background: "rgb(67 56 202 / .09)", display: "grid", placeItems: "center", color: star, fontSize: 16, fontWeight: 750, textAlign: "center" }}>MATCH<br /><span style={{ fontSize: 38 }}>{demo.score}</span></div></div>
         <div style={{ display: "grid", gridTemplateColumns: "1.1fr .9fr", gap: 26, marginTop: 38 }}>

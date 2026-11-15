@@ -29,10 +29,10 @@ export const scenes = {
   // Every entry is a downbeat. The short holds after each arrival make the
   // edit feel intentional rather than like a sequence of rushed slides.
   intro: { from: atBar(0), duration: atBar(1) },
-  competition: { from: atBar(1), duration: atBar(5) },
-  reframe: { from: atBar(6), duration: atBar(5) },
-  workflow: { from: atBar(11), duration: atBar(8) },
-  results: { from: atBar(19), duration: atBar(9) },
+  competition: { from: atBar(1), duration: atBar(3) },
+  reframe: { from: atBar(4), duration: atBar(4) },
+  workflow: { from: atBar(8), duration: atBar(10) },
+  results: { from: atBar(18), duration: atBar(10) },
   contact: { from: atBar(28), duration: atBar(4) },
   close: { from: atBar(32), duration: atBar(3) },
 } as const;
