@@ -67,6 +67,7 @@ function People(props: {
   people: Person[];
   onSelect: (person: Person) => void;
   matches: PersonMatch[];
+  matchRunComplete: boolean;
   researchingPersonId?: string;
 }) {
   const [showUnverified, setShowUnverified] = createSignal(false);
@@ -108,7 +109,9 @@ function People(props: {
               props.matches.find((candidate) => candidate.id === person.id);
             const researchedMatch = () => {
               const candidate = match();
-              return candidate && !isInfluenceOnly(candidate)
+              return props.matchRunComplete &&
+                candidate &&
+                !isInfluenceOnly(candidate)
                 ? candidate
                 : undefined;
             };
@@ -139,10 +142,7 @@ function People(props: {
                     </Show>
                   </span>
                   <span class="flex items-center gap-2">
-                    <span
-                      aria-label={scoreLabel()}
-                      class="font-mono text-sm font-semibold text-star"
-                    >
+                    <span class="font-mono text-sm font-semibold text-star">
                       {score()}
                     </span>
                     <Show when={props.researchingPersonId === person.id}>
@@ -152,15 +152,10 @@ function People(props: {
                         class="size-3 animate-spin rounded-full border-2 border-star border-t-transparent"
                       />
                     </Show>
-                    <span
-                      aria-hidden="true"
-                      class="h-1.5 w-24 overflow-hidden rounded-full bg-line"
-                    >
-                      <span
-                        class="block h-full rounded-full bg-signal transition-[width] duration-300"
-                        style={{ width: `${score()}%` }}
-                      />
-                    </span>
+                    <ScoreBar
+                      match={researchedMatch()}
+                      fallbackScore={person.decision_power_score}
+                    />
                   </span>
                 </button>
               </li>
@@ -169,6 +164,94 @@ function People(props: {
         </For>
       </ul>
     </div>
+  );
+}
+
+const SCORE_FACTORS = [
+  {
+    key: "decision_power",
+    label: "Decision power",
+    maximum: 40,
+    color: "bg-signal",
+  },
+  {
+    key: "background_fit",
+    label: "Background fit",
+    maximum: 40,
+    color: "bg-fit",
+  },
+  {
+    key: "shared_ground",
+    label: "Shared ground",
+    maximum: 20,
+    color: "bg-shared",
+  },
+] as const;
+
+function ScoreBar(props: {
+  match: PersonMatch | undefined;
+  fallbackScore: number;
+}) {
+  const factors = () => {
+    if (!props.match) return [];
+
+    let offset = 0;
+    return SCORE_FACTORS.map((factor) => {
+      const score = props.match?.breakdown[factor.key] ?? 0;
+      const result = { ...factor, score, offset };
+      offset += score;
+      return result;
+    });
+  };
+  const scoreBreakdownLabel = () =>
+    `Score breakdown: ${factors()
+      .map((factor) => `${factor.label} ${factor.score}/${factor.maximum}`)
+      .join(", ")}`;
+
+  return (
+    <Show
+      when={props.match}
+      fallback={
+        <span
+          aria-hidden="true"
+          class="h-1.5 w-24 overflow-hidden rounded-full bg-line"
+        >
+          <span
+            class="block h-full rounded-full bg-signal transition-[width] duration-300"
+            style={{ width: `${props.fallbackScore}%` }}
+          />
+        </span>
+      }
+    >
+      <span
+        role="img"
+        aria-label={scoreBreakdownLabel()}
+        class="relative h-1.5 w-24"
+      >
+        <span
+          aria-hidden="true"
+          class="absolute inset-0 overflow-hidden rounded-full bg-line"
+        >
+          <For each={factors()}>
+            {(factor) => (
+              <span
+                class={`absolute inset-y-0 ${factor.color} transition-[width] duration-300`}
+                style={{ left: `${factor.offset}%`, width: `${factor.score}%` }}
+              />
+            )}
+          </For>
+        </span>
+        <For each={factors()}>
+          {(factor) => (
+            <span
+              title={`${factor.label}: ${factor.score}/${factor.maximum}`}
+              class="absolute inset-y-0 cursor-help"
+              style={{ left: `${factor.offset}%`, width: `${factor.score}%` }}
+            />
+          )}
+        </For>
+      </span>
+    </Show>
   );
 }
 
@@ -730,6 +813,7 @@ export function Results(props: {
                       people={people()}
                       onSelect={setSelectedPerson}
                       matches={matchRun.data?.results ?? []}
+                      matchRunComplete={matchRun.data?.status === "done"}
                       researchingPersonId={researchingPersonId()}
                     />
                   </Show>

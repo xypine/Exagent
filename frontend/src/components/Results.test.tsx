@@ -159,8 +159,24 @@ describe("Results", () => {
     ));
 
     expect(
-      await screen.findByLabelText("Overall match score 72"),
+      await screen.findByRole("button", {
+        name: "Maya Chen, VP Product, overall match score 72",
+      }),
     ).not.toBeNull();
+    const scoreBreakdown = screen.getByRole("img", {
+      name: "Score breakdown: Decision power 32/40, Background fit 28/40, Shared ground 12/20",
+    });
+    const scoreSegments = scoreBreakdown.querySelectorAll("[title]");
+    expect(
+      [...scoreSegments].map((segment) => segment.getAttribute("title")),
+    ).toEqual([
+      "Decision power: 32/40",
+      "Background fit: 28/40",
+      "Shared ground: 12/20",
+    ]);
+    expect(scoreSegments[0]?.getAttribute("style")).toContain("width: 32%");
+    expect(scoreSegments[1]?.getAttribute("style")).toContain("width: 28%");
+    expect(scoreSegments[2]?.getAttribute("style")).toContain("width: 12%");
     expect(screen.queryByText("Power 32")).toBeNull();
     expect(screen.queryByText("Fit 28")).toBeNull();
     expect(screen.queryByText("Shared 12")).toBeNull();
@@ -446,8 +462,55 @@ describe("Results", () => {
         name: "Maya Chen, VP Product, hiring influence 80",
       }),
     ).not.toBeNull();
-    expect(screen.queryByLabelText("Overall match score 80")).toBeNull();
+    expect(screen.queryByRole("img", { name: /Score breakdown/ })).toBeNull();
     expect(screen.queryByText("Score factors")).toBeNull();
+  });
+
+  it("keeps the hiring-influence bar until the full match run is complete", async () => {
+    const match = {
+      id: "person-1",
+      score: 72,
+      confidence: "medium" as const,
+      breakdown: {
+        decision_power: 32,
+        background_fit: 28,
+        shared_ground: 12,
+      },
+      reasoning: "Strong hiring influence and relevant company work.",
+      outreach_approaches: [],
+      missing_info: [],
+      evidence: [],
+    };
+    vi.mocked(startMatchRun).mockResolvedValue({
+      id: "match-1",
+      status: "researching",
+      candidate_count: 2,
+      completed_count: 1,
+      results: [match],
+    });
+    vi.mocked(getMatchRun).mockResolvedValue({
+      id: "match-1",
+      status: "researching",
+      candidate_count: 2,
+      completed_count: 1,
+      results: [match],
+    });
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(() => (
+      <QueryClientProvider client={queryClient}>
+        <Results jobId="job-1" onReset={() => {}} />
+      </QueryClientProvider>
+    ));
+
+    expect(
+      await screen.findByRole("button", {
+        name: "Maya Chen, VP Product, hiring influence 80",
+      }),
+    ).not.toBeNull();
+    expect(screen.queryByRole("img", { name: /Score breakdown/ })).toBeNull();
   });
 
   it("shows a spinner beside the person currently being researched", async () => {
