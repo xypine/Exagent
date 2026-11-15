@@ -1,235 +1,268 @@
 import {
   AbsoluteFill,
   Easing,
+  Img,
   interpolate,
   spring,
   useCurrentFrame,
-  useVideoConfig,
 } from "remotion";
 
-import { captions, demo, scenes } from "./script";
+import logo from "../../frontend/public/logo.svg";
 
-const ink = "#090b12";
-const paper = "#f5f2ea";
-const dim = "#a3a9b8";
-const line = "#283040";
-const star = "#e4c06e";
-const signal = "#c8f169";
-const mono = "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace";
-const sans = "Inter, Avenir Next, Avenir, Helvetica Neue, Arial, sans-serif";
+import { demo, scenes } from "./script";
 
-const stage: React.CSSProperties = {
-  background: `radial-gradient(circle at 75% 15%, #22335c 0%, transparent 30%), radial-gradient(circle at 20% 85%, #233022 0%, transparent 27%), ${ink}`,
-  color: paper,
+const navy = "#0b1b3f";
+const surface = "#ffffff";
+const page = "#f4f6fb";
+const line = "#dce1f0";
+const muted = "#5a6685";
+const signal = "#1e3a8a";
+const star = "#4338ca";
+const teal = "#27859b";
+const amber = "#b96b11";
+const sans = "Inter, ui-sans-serif, system-ui, sans-serif";
+const serif = "Instrument Serif, Georgia, serif";
+const shadow = "0 2px 4px rgb(11 27 63 / .06), 0 22px 46px -18px rgb(30 58 138 / .25)";
+
+const enter = (frame: number, at: number, duration = 16) =>
+  interpolate(frame, [at, at + duration], [0, 1], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.out(Easing.cubic),
+  });
+const leave = (frame: number, at: number, duration = 16) =>
+  interpolate(frame, [at - duration, at], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+    easing: Easing.in(Easing.cubic),
+  });
+const clamp = (value: number) => Math.max(0, Math.min(1, value));
+
+const base: React.CSSProperties = {
+  background:
+    "radial-gradient(62rem 32rem at 93% -5%, rgb(67 56 202 / .14), transparent 62%), radial-gradient(44rem 28rem at 3% 0%, rgb(30 58 138 / .10), transparent 60%), linear-gradient(180deg, #fff 0%, #f4f6fb 70%)",
+  color: navy,
   fontFamily: sans,
   overflow: "hidden",
 };
 
-function clamp(value: number) {
-  return Math.max(0, Math.min(1, value));
-}
-
-function fade(frame: number, start: number, duration = 18) {
-  return clamp(interpolate(frame, [start, start + duration, start + 9999], [0, 1, 1]));
-}
-
-function exit(frame: number, end: number, duration = 18) {
-  return clamp(interpolate(frame, [end - duration, end], [1, 0]));
-}
-
-function Scene(props: { from: number; duration: number; children: React.ReactNode }) {
+function Scene({ from, duration, children }: { from: number; duration: number; children: React.ReactNode }) {
   const frame = useCurrentFrame();
-  const opacity = fade(frame, props.from) * exit(frame, props.from + props.duration);
-  return <AbsoluteFill style={{ opacity }}>{props.children}</AbsoluteFill>;
+  return <AbsoluteFill style={{ opacity: enter(frame, from) * leave(frame, from + duration) }}>{children}</AbsoluteFill>;
 }
 
-function Grid() {
-  return (
-    <AbsoluteFill
-      style={{
-        opacity: 0.18,
-        backgroundImage: "linear-gradient(#ffffff0b 1px, transparent 1px), linear-gradient(90deg, #ffffff0b 1px, transparent 1px)",
-        backgroundSize: "72px 72px",
-        maskImage: "linear-gradient(to bottom, black, transparent)",
-      }}
-    />
-  );
+function Background() {
+  return <>
+    <AbsoluteFill style={{ opacity: 0.55, backgroundImage: "linear-gradient(rgb(67 56 202 / .055) 1px, transparent 1px), linear-gradient(90deg, rgb(67 56 202 / .055) 1px, transparent 1px)", backgroundSize: "72px 72px", maskImage: "linear-gradient(to bottom, black, transparent 75%)" }} />
+    <div style={{ position: "absolute", width: 760, height: 760, right: -340, top: -410, borderRadius: "50%", border: "1px solid rgb(67 56 202 / .14)" }} />
+  </>;
 }
 
-function Brand({ compact = false }: { compact?: boolean }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 13, fontSize: compact ? 22 : 28, fontWeight: 750, letterSpacing: -1 }}>
-      <div style={{ width: compact ? 26 : 32, height: compact ? 26 : 32, border: `2px solid ${star}`, borderRadius: 8, transform: "rotate(45deg)", display: "grid", placeItems: "center" }}>
-        <div style={{ width: 8, height: 8, borderRadius: 100, background: signal }} />
-      </div>
-      Exagent
-    </div>
-  );
+function Brand({ small = false }: { small?: boolean }) {
+  const size = small ? 35 : 46;
+  return <div style={{ display: "flex", alignItems: "center", gap: small ? 9 : 12, fontSize: small ? 24 : 31, fontWeight: 700, letterSpacing: -1.2 }}>
+    <Img src={logo} style={{ width: size, height: size, objectFit: "contain" }} />
+    <span>Exagent</span>
+  </div>;
 }
 
-function Pill({ children, accent = false }: { children: React.ReactNode; accent?: boolean }) {
-  return <span style={{ border: `1px solid ${accent ? "#e4c06e88" : line}`, background: accent ? "#e4c06e13" : "#0e121c", borderRadius: 999, padding: "10px 16px", color: accent ? star : dim, fontFamily: mono, fontSize: 16 }}>{children}</span>;
+function Header() {
+  return <div style={{ position: "absolute", left: 72, right: 72, top: 44, display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 10 }}>
+    <Brand small />
+    <div style={{ color: muted, fontSize: 16, fontWeight: 600 }}>Research-led opportunity discovery</div>
+  </div>;
 }
 
-function CaptionLayer() {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const active = captions.find((caption, i) => {
-    const next = captions[i + 1];
-    return frame >= caption.from * fps && frame < (next?.from ?? 104) * fps;
-  });
-  if (!active) return null;
-  const local = frame - active.from * fps;
-  const opacity = interpolate(local, [0, 10, 20], [0, 1, 1], { extrapolateRight: "clamp" });
-  const y = interpolate(local, [0, 18], [20, 0], { extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) });
-  return (
-    <div style={{ position: "absolute", zIndex: 40, left: 0, right: 0, bottom: 70, display: "flex", justifyContent: "center", opacity, transform: `translateY(${y}px)`, pointerEvents: "none" }}>
-      <div style={{ maxWidth: 1180, border: "1px solid #ffffff1a", background: "#080a10d9", boxShadow: "0 18px 70px #0008", backdropFilter: "blur(18px)", borderRadius: 16, padding: "18px 28px", fontSize: 32, fontWeight: 600, letterSpacing: -0.6, textAlign: "center" }}>
-        {active.text}
-      </div>
-    </div>
-  );
+function Eyebrow({ children }: { children: React.ReactNode }) {
+  return <div style={{ color: star, fontFamily: serif, fontStyle: "italic", fontSize: 28 }}>{children}</div>;
+}
+
+function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return <div style={{ borderRadius: 24, border: `1px solid ${line}`, background: surface, boxShadow: shadow, ...style }}>{children}</div>;
+}
+
+const seaDots = Array.from({ length: 104 }, (_, i) => ({
+  x: 9 + (i % 13) * 6.9 + (i % 2) * 1.2,
+  y: 28 + Math.floor(i / 13) * 7 + Math.sin(i * 1.7) * 1.1,
+}));
+
+function SeaDot({ x, y, i, local, featured = false }: { x: number; y: number; i: number; local: number; featured?: boolean }) {
+  const driftX = Math.sin(local / 28 + i * 1.93) * 5;
+  const driftY = Math.cos(local / 25 + i * 1.17) * 8 + Math.sin(local / 45 + i) * 6;
+  const blend = enter(local, 245, 70);
+  const color = featured && blend < 0.98 ? star : signal;
+  const size = featured && blend < 0.98 ? 20 - blend * 9 : 10;
+  return <div style={{ position: "absolute", left: `${x}%`, top: `${y + driftY / 12}%`, width: size, height: size, marginLeft: -size / 2, marginTop: -size / 2, borderRadius: "50%", background: color, opacity: featured ? 1 : 0.62 + (i % 3) * 0.1, transform: `translateX(${driftX}px)`, boxShadow: featured && blend < 0.9 ? "0 0 0 7px rgb(67 56 202 / .13)" : "none" }} />;
 }
 
 function Competition() {
   const frame = useCurrentFrame();
   const local = frame - scenes.competition.from;
-  const cards = Array.from({ length: 13 }, (_, i) => i);
-  const count = Math.floor(interpolate(local, [32, 230], [0, 847], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }));
-  return (
-    <Scene {...scenes.competition}>
-      <Grid />
-      <div style={{ position: "absolute", top: 58, left: 72 }}><Brand compact /></div>
-      <div style={{ position: "absolute", left: 150, top: 205, width: 680 }}>
-        <p style={{ color: star, fontFamily: mono, fontSize: 20, letterSpacing: 2, textTransform: "uppercase" }}>The application queue</p>
-        <h1 style={{ margin: "20px 0 0", fontSize: 75, lineHeight: 0.98, letterSpacing: -4 }}>A good application<br />is not always a<br /><span style={{ color: star }}>visible one.</span></h1>
+  const words = enter(local, 20, 22);
+  return <Scene {...scenes.competition}>
+    <Background /><Header />
+    <div style={{ position: "absolute", left: 128, top: 185, width: 710, opacity: words, transform: `translateY(${(1 - words) * 28}px)` }}>
+      <Eyebrow>Job posts are noisy places.</Eyebrow>
+      <h1 style={{ fontSize: 74, letterSpacing: -4.4, lineHeight: 0.98, margin: "18px 0 20px" }}>When every application looks alike, it is hard to <span style={{ color: signal }}>stand out.</span></h1>
+      <p style={{ color: muted, fontSize: 23, lineHeight: 1.45, margin: 0, width: 610 }}>A capable applicant can disappear into an existing pool before a conversation even begins.</p>
+    </div>
+    <div style={{ position: "absolute", left: 870, right: 90, top: 170, bottom: 132 }}>
+      <div style={{ position: "absolute", inset: 0, borderRadius: 38, background: "linear-gradient(140deg, rgb(255 255 255 / .92), rgb(235 239 252 / .65))", border: "1px solid rgb(67 56 202 / .18)", overflow: "hidden", boxShadow: "0 30px 70px -32px rgb(30 58 138 / .38)" }}>
+        <div style={{ position: "absolute", left: 42, top: 38, color: muted, fontSize: 16, fontWeight: 700, letterSpacing: 1.1, textTransform: "uppercase" }}>Application sea</div>
+        {seaDots.map((dot, i) => <SeaDot key={i} {...dot} i={i} local={local} featured={i === 54} />)}
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", opacity: 0.35 }}>
+          {Array.from({ length: 7 }, (_, i) => <path key={i} d={`M 0 ${38 + i * 7} C 22 ${31 + i * 7}, 39 ${45 + i * 7}, 59 ${38 + i * 7} S 85 ${31 + i * 7}, 100 ${38 + i * 7}`} fill="none" stroke={star} strokeWidth="0.13" />)}
+        </svg>
+        <div style={{ position: "absolute", right: 38, bottom: 34, borderRadius: 999, padding: "10px 16px", background: "rgb(255 255 255 / .86)", border: `1px solid ${line}`, color: muted, fontSize: 15, fontWeight: 600 }}>Everyone is qualified to be here.</div>
       </div>
-      <div style={{ position: "absolute", right: 145, top: 164, width: 660, height: 650 }}>
-        <div style={{ position: "absolute", zIndex: 5, inset: 0, border: `1px solid ${line}`, borderRadius: 26, background: "#101622e6", boxShadow: "0 35px 100px #0008", padding: 34 }}>
-          <div style={{ color: dim, fontFamily: mono, fontSize: 17 }}>SOFTWARE ENGINEER · HELSINKI</div>
-          <div style={{ display: "flex", alignItems: "end", justifyContent: "space-between", marginTop: 24 }}>
-            <div style={{ fontSize: 48, letterSpacing: -2, fontWeight: 700 }}>Applications</div>
-            <div style={{ fontFamily: mono, fontSize: 52, color: signal }}>{count}</div>
-          </div>
-          <div style={{ height: 10, background: "#232b39", borderRadius: 99, marginTop: 25, overflow: "hidden" }}>
-            <div style={{ height: "100%", width: `${Math.min(count / 9, 100)}%`, borderRadius: 99, background: signal }} />
-          </div>
-          <p style={{ marginTop: 22, color: dim, fontSize: 20 }}>New applications arriving every minute</p>
-        </div>
-        {cards.map((i) => {
-          const progress = clamp((local - 18 * i) / 45);
-          return <div key={i} style={{ position: "absolute", top: 345 + i * 15, left: 45 + (i % 3) * 80, width: 540, height: 86, borderRadius: 16, border: "1px solid #ffffff15", background: "#171d2a", opacity: progress * (i === 5 ? 1 : 0.8), transform: `translate(${(1 - progress) * 190}px, ${(1 - progress) * -30}px) rotate(${(i - 6) * 0.55}deg)` }} />;
-        })}
-      </div>
-    </Scene>
-  );
+    </div>
+  </Scene>;
 }
+
+const companies = ["Dream Company", "Orbit Labs", "Northstar Systems", "Signal Works"];
 
 function Reframe() {
   const frame = useCurrentFrame();
   const local = frame - scenes.reframe.from;
-  const orbit = local * 0.8;
-  return (
-    <Scene {...scenes.reframe}>
-      <Grid />
-      <div style={{ position: "absolute", top: 58, left: 72 }}><Brand compact /></div>
-      <div style={{ position: "absolute", left: 150, top: 230, width: 800 }}>
-        <p style={{ color: star, fontFamily: mono, fontSize: 20, letterSpacing: 2, textTransform: "uppercase" }}>A different starting point</p>
-        <h2 style={{ margin: "20px 0", fontSize: 78, lineHeight: 0.98, letterSpacing: -4 }}>Look for the<br /><span style={{ color: signal }}>right company</span><br />before the post.</h2>
-        <p style={{ color: dim, fontSize: 25, lineHeight: 1.4, width: 640 }}>Especially at smaller companies, a thoughtful conversation can start long before a role is published.</p>
-      </div>
-      <div style={{ position: "absolute", right: 90, top: 130, width: 760, height: 760, display: "grid", placeItems: "center" }}>
-        {[0, 1, 2].map((ring) => <div key={ring} style={{ position: "absolute", width: 250 + ring * 175, height: 250 + ring * 175, border: `1px solid ${ring === 2 ? "#e4c06e66" : "#ffffff16"}`, borderRadius: "50%", transform: `rotate(${orbit * (ring % 2 ? -1 : 1) * 0.3}deg)` }} />)}
-        {[0, 120, 240].map((angle, i) => {
-          const radians = ((angle + orbit) * Math.PI) / 180;
-          const radius = 280;
-          return <div key={angle} style={{ position: "absolute", left: 380 + Math.cos(radians) * radius - 72, top: 380 + Math.sin(radians) * radius - 42, width: 144, padding: "14px 10px", borderRadius: 13, border: "1px solid #ffffff22", background: "#121926", textAlign: "center", fontSize: 15, color: i === 1 ? star : dim }}>{i === 1 ? demo.company : ["Potential fit", "Growing team"][i % 2]}</div>;
+  const t = enter(local, 18, 26);
+  const route = enter(local, 125, 85);
+  return <Scene {...scenes.reframe}>
+    <Background /><Header />
+    <div style={{ position: "absolute", left: 130, top: 220, width: 620, opacity: t }}>
+      <Eyebrow>Try a different starting point.</Eyebrow>
+      <h2 style={{ fontSize: 76, letterSpacing: -4.1, lineHeight: 0.98, margin: "17px 0 20px" }}>Find a company where you could <span style={{ color: star }}>contribute.</span></h2>
+      <p style={{ fontSize: 24, lineHeight: 1.42, color: muted, margin: 0 }}>The right opportunity may not be posted yet.</p>
+    </div>
+    <div style={{ position: "absolute", left: 790, right: 78, top: 175, bottom: 128 }}>
+      <Card style={{ position: "absolute", inset: 0, overflow: "hidden", background: "radial-gradient(circle at 52% 75%, rgb(67 56 202 / .14), transparent 34%), #fff" }}>
+        <div style={{ position: "absolute", left: 45, top: 38, fontSize: 16, textTransform: "uppercase", letterSpacing: 1.1, color: muted, fontWeight: 700 }}>Opportunity landscape</div>
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+          {[0, 1, 2, 3].map((i) => <path key={i} d={`M 50 81 C ${52 - i * 13} ${67 - i * 7}, ${18 + i * 24} ${46 - i * 5}, ${14 + i * 24} 23`} fill="none" stroke={i === 0 ? star : signal} strokeWidth={i === 0 ? 0.55 : 0.22} strokeDasharray={i === 0 ? "0" : "1.2 1.8"} pathLength="1" strokeDashoffset={1 - route} opacity={i === 0 ? route : 0.35 * route} />)}
+        </svg>
+        {companies.map((company, i) => {
+          const x = 15 + i * 24;
+          const y = 24 + ((i * 31) % 3) * 18;
+          const selected = i === 0;
+          const scale = selected ? 0.7 + route * 0.3 : 0.75 + route * 0.25;
+          return <div key={company} style={{ position: "absolute", left: `${x}%`, top: `${y}%`, padding: selected ? "18px 22px" : "13px 16px", borderRadius: 17, background: selected ? star : surface, color: selected ? "#fff" : navy, border: `1px solid ${selected ? star : line}`, boxShadow: selected ? "0 18px 36px -14px rgb(67 56 202 / .55)" : "0 8px 18px -12px rgb(11 27 63 / .26)", fontWeight: 700, fontSize: selected ? 21 : 16, transform: `translate(-50%, -50%) scale(${scale})`, opacity: t }}>
+            {selected && <div style={{ fontFamily: serif, fontStyle: "italic", fontWeight: 400, fontSize: 16, marginBottom: 3 }}>potential fit</div>}{company}
+          </div>;
         })}
-        <div style={{ zIndex: 2, width: 188, height: 188, borderRadius: 32, border: `1px solid ${star}`, background: "#1b1a18", display: "grid", placeItems: "center", color: star, fontWeight: 700, fontSize: 25, textAlign: "center", boxShadow: "0 0 90px #e4c06e22" }}>Dream<br />Company</div>
-      </div>
-    </Scene>
-  );
+        <div style={{ position: "absolute", left: "50%", top: "81%", transform: `translate(-50%, -50%) scale(${0.8 + route * 0.2})`, width: 96, height: 96, borderRadius: "50%", border: `3px solid ${star}`, background: surface, display: "grid", placeItems: "center", color: star, fontWeight: 800, fontSize: 16, boxShadow: "0 0 0 11px rgb(67 56 202 / .09)" }}>YOU</div>
+      </Card>
+    </div>
+  </Scene>;
 }
 
-function SearchUI() {
+function ResearchChip({ text, x, y, angle, local, i }: { text: string; x: number; y: number; angle: number; local: number; i: number }) {
+  const appear = enter(local, i * 11, 18);
+  const collapse = enter(local, 210 + i * 3, 65);
+  return <div style={{ position: "absolute", left: `${x + (50 - x) * collapse}%`, top: `${y + (48 - y) * collapse}%`, padding: "12px 16px", borderRadius: 14, background: surface, border: `1px solid ${line}`, color: navy, fontSize: 16, fontWeight: 650, boxShadow: "0 11px 26px -18px rgb(11 27 63 / .35)", opacity: appear * (1 - collapse * 0.25), transform: `translate(-50%, -50%) rotate(${angle * (1 - collapse)}deg) scale(${0.82 + appear * 0.18})` }}>{text}</div>;
+}
+
+function Workflow() {
   const frame = useCurrentFrame();
-  const local = frame - scenes.search.from;
-  const fields = [demo.city, demo.industry, "Startup"];
-  const shown = Math.floor(interpolate(local, [115, 235], [0, 3], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }));
-  const searching = local > 285;
-  return (
-    <Scene {...scenes.search}>
-      <Grid />
-      <div style={{ position: "absolute", top: 58, left: 72 }}><Brand /></div>
-      <div style={{ position: "absolute", left: 160, top: 168, right: 160, bottom: 180, border: `1px solid ${line}`, borderRadius: 32, background: "#0d111ae8", boxShadow: "0 45px 130px #0008", padding: 52 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div><p style={{ margin: 0, color: star, fontFamily: mono, fontSize: 17, letterSpacing: 2 }}>NEW SEARCH</p><h2 style={{ margin: "12px 0 0", fontSize: 52, letterSpacing: -2 }}>Where do you want to work?</h2></div>
-          <Pill accent>Private by default</Pill>
+  const local = frame - scenes.workflow.from;
+  const organize = enter(local, 230, 38);
+  const typed = Math.floor(interpolate(local, [345, 460], [0, demo.city.length], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }));
+  const start = enter(local, 470, 18);
+  const chips = [
+    ["company site", 19, 24, -7], ["news", 75, 19, 8], ["team page", 79, 57, -8], ["role history", 20, 66, 7], ["public source", 52, 16, -3], ["funding", 52, 76, 4],
+  ] as const;
+  return <Scene {...scenes.workflow}>
+    <Background /><Header />
+    <div style={{ position: "absolute", left: 125, top: 157, right: 125, textAlign: "center", opacity: 1 - organize * 0.25 }}>
+      <Eyebrow>Research can splinter quickly.</Eyebrow>
+      <h2 style={{ fontSize: 61, letterSpacing: -3.1, margin: "11px 0 0" }}>Company. People. Evidence. <span style={{ color: star }}>Where do you begin?</span></h2>
+    </div>
+    <div style={{ position: "absolute", left: 190, right: 190, top: 315, bottom: 155, opacity: 1 - organize }}>
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+        {chips.map(([, x, y], i) => <path key={i} d={`M ${x} ${y} Q 50 ${i % 2 ? 75 : 20} 50 48`} fill="none" stroke={i % 2 ? signal : star} strokeWidth="0.32" strokeDasharray="1 1.4" opacity=".48" />)}
+      </svg>
+      {chips.map(([text, x, y, angle], i) => <ResearchChip key={text} text={text} x={x} y={y} angle={angle} local={local} i={i} />)}
+      <div style={{ position: "absolute", left: "50%", top: "48%", transform: "translate(-50%, -50%)", width: 108, height: 108, display: "grid", placeItems: "center", borderRadius: "50%", color: "#fff", background: star, fontWeight: 800, boxShadow: "0 0 0 14px rgb(67 56 202 / .10)" }}>hours</div>
+    </div>
+    <div style={{ position: "absolute", left: 145, right: 145, top: 190, bottom: 135, opacity: organize, transform: `translateY(${(1 - organize) * 35}px)` }}>
+      <Card style={{ height: "100%", padding: 42, boxSizing: "border-box", borderColor: "rgb(67 56 202 / .35)", background: "linear-gradient(180deg, #fff, #f9faff)" }}>
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 5, background: `linear-gradient(90deg, ${signal}, ${star})`, borderRadius: "24px 24px 0 0" }} />
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}><div><Eyebrow>Exagent organizes the work.</Eyebrow><h2 style={{ margin: "8px 0 0", fontSize: 45, letterSpacing: -2.2 }}>Start with where you want to contribute.</h2></div><div style={{ color: muted, fontSize: 15, fontWeight: 700, paddingTop: 12 }}>ILLUSTRATIVE DEMO</div></div>
+        <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr .72fr", gap: 18, marginTop: 42 }}>
+          {[["City", demo.city.slice(0, typed)], ["Industry", local > 420 ? demo.industry : ""], ["Stage", local > 455 ? "Startup" : ""]].map(([label, value], i) => <div key={label}><div style={{ color: star, fontSize: 14, fontWeight: 750, textTransform: "uppercase", letterSpacing: 1, marginBottom: 9 }}>{label}</div><div style={{ height: 64, borderRadius: 12, boxSizing: "border-box", background: surface, border: `1px solid ${i === 0 && typed > 0 ? "rgb(67 56 202 / .65)" : line}`, padding: "18px 17px", fontSize: 20, color: value ? navy : muted }}>{value || "Select…"}{i === 0 && typed > 0 && typed < demo.city.length ? <span style={{ color: star }}>|</span> : null}</div></div>)}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 0.8fr", gap: 20, marginTop: 62 }}>
-          {fields.map((value, i) => <div key={value} style={{ opacity: i < shown ? 1 : 0.3, transition: "none" }}><p style={{ margin: "0 0 10px", fontFamily: mono, color: star, fontSize: 15 }}>{["AREA", "INDUSTRY", "COMPANY SIZE"][i]}</p><div style={{ height: 66, boxSizing: "border-box", border: `1px solid ${i < shown ? star : line}`, borderRadius: 14, padding: "20px 18px", color: i < shown ? paper : dim, fontSize: 20 }}>{i < shown ? value : "…"}</div></div>)}
-        </div>
-        <div style={{ display: "flex", alignItems: "center", marginTop: 72, gap: 24 }}>
-          <div style={{ borderRadius: 14, background: searching ? signal : "#65718a", color: "#13180b", fontWeight: 800, padding: "20px 32px", fontSize: 21 }}>Search</div>
-          {searching && <div style={{ color: star, fontFamily: mono, fontSize: 17 }}>FINDING COMPANIES · IDENTIFYING KEY PEOPLE</div>}
-        </div>
-      </div>
-      {searching && <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 7, background: star, transformOrigin: "left", transform: `scaleX(${clamp((local - 285) / 210)})` }} />}
-    </Scene>
-  );
+        <div style={{ display: "flex", alignItems: "center", gap: 22, marginTop: 44 }}><div style={{ borderRadius: 12, background: signal, color: "#fff", padding: "17px 26px", fontWeight: 750, fontSize: 19, boxShadow: "0 11px 22px -12px rgb(30 58 138 / .7)", transform: `scale(${0.96 + start * .04})` }}>Find opportunities</div>{start > 0 && <div style={{ color: muted, fontSize: 17, opacity: start }}>Mapping companies <span style={{ color: star }}>→</span> finding people <span style={{ color: star }}>→</span> checking evidence</div>}</div>
+        {start > 0 && <div style={{ position: "absolute", left: 42, right: 42, bottom: 42, height: 84, display: "flex", gap: 10, alignItems: "center" }}>{["Companies", "People", "Evidence", "Ranking"].map((step, i) => <div key={step} style={{ flex: 1, position: "relative", height: 8, borderRadius: 99, background: line, overflow: "hidden" }}><div style={{ position: "absolute", inset: 0, transformOrigin: "left", transform: `scaleX(${clamp((local - 500 - i * 34) / 52)})`, background: i === 3 ? star : signal }} /><div style={{ position: "absolute", top: 18, color: muted, whiteSpace: "nowrap", fontSize: 14, fontWeight: 650 }}>{step}</div></div>)}</div>}
+      </Card>
+    </div>
+  </Scene>;
 }
 
-const PersonRow = ({ name, title, score, active = false }: { name: string; title: string; score: number; active?: boolean }) => <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "19px 22px", borderTop: `1px solid ${line}`, background: active ? "#e4c06e12" : "transparent" }}><div><span style={{ fontSize: 20, fontWeight: 650 }}>{name}</span><span style={{ color: dim, fontSize: 18 }}> · {title}</span></div><div style={{ color: active ? signal : star, fontFamily: mono, fontSize: 20, fontWeight: 700 }}>{score}</div></div>;
+function Score({ value, color = star }: { value: number; color?: string }) {
+  return <div style={{ width: 48, height: 48, borderRadius: "50%", display: "grid", placeItems: "center", background: `conic-gradient(${color} ${value}%, #e9edf7 0)`, color: navy, fontSize: 13, fontWeight: 800 }}><div style={{ width: 36, height: 36, background: surface, borderRadius: "50%", display: "grid", placeItems: "center" }}>{value}</div></div>;
+}
 
 function Results() {
   const frame = useCurrentFrame();
   const local = frame - scenes.results.from;
-  const reveal = spring({ frame: Math.max(0, local - 45), fps: 30, config: { damping: 18, mass: 0.7 } });
-  return (
-    <Scene {...scenes.results}>
-      <Grid />
-      <div style={{ position: "absolute", top: 58, left: 72 }}><Brand compact /></div>
-      <div style={{ position: "absolute", left: 150, top: 145, right: 150, bottom: 170 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><div style={{ display: "flex", gap: 10 }}><Pill>{demo.city}</Pill><Pill>{demo.industry}</Pill><Pill>Startup</Pill></div><span style={{ color: signal, fontFamily: mono, fontSize: 17 }}>SEARCH COMPLETE</span></div>
-        <div style={{ display: "grid", gridTemplateColumns: "0.9fr 1.3fr", gap: 30, marginTop: 32, height: 660 }}>
-          <div style={{ border: `1px solid ${line}`, borderRadius: 24, background: "#0e131e", padding: 28 }}><p style={{ margin: 0, color: star, fontFamily: mono, fontSize: 15 }}>COMPANIES FOUND</p><h2 style={{ margin: "12px 0 30px", fontSize: 38, letterSpacing: -1.5 }}>Worth exploring</h2>{["Dream Company", "Orbit Labs", "Northstar Systems", "Signal Works"].map((company, i) => <div key={company} style={{ padding: "17px 0", borderTop: `1px solid ${line}`, color: i === 0 ? paper : dim, fontSize: 20, transform: `translateX(${(1 - reveal) * 32}px)`, opacity: reveal }}>{company}{i === 0 && <span style={{ marginLeft: 10, color: signal, fontSize: 14 }}>selected</span>}</div>)}</div>
-          <div style={{ border: `1px solid ${star}`, borderRadius: 24, background: "#11151be8", overflow: "hidden", boxShadow: "0 0 80px #e4c06e16", transform: `translateY(${(1 - reveal) * 35}px)`, opacity: reveal }}><div style={{ padding: "26px 28px 22px" }}><p style={{ margin: 0, color: star, fontFamily: mono, fontSize: 15 }}>DREAM COMPANY</p><h2 style={{ margin: "10px 0 0", fontSize: 38, letterSpacing: -1.5 }}>People who can open a door</h2><p style={{ margin: "11px 0 0", color: dim, fontSize: 18 }}>Ranked by ability to influence a hiring decision.</p></div><PersonRow name={demo.person} title={demo.title} score={demo.score} active /><PersonRow name="Jane Smith" title="Head of Product" score={76} /><PersonRow name="Alex Johnson" title="Engineering Manager" score={72} /><PersonRow name="Taylor Brown" title="People Lead" score={64} /></div>
-        </div>
-      </div>
-    </Scene>
-  );
+  const reveal = spring({ frame: Math.max(0, local - 26), fps: 30, config: { damping: 18, mass: 0.7 } });
+  const personReveal = spring({ frame: Math.max(0, local - 170), fps: 30, config: { damping: 19, mass: 0.7 } });
+  const matches = [
+    ["Dream Company", "SaaS · Helsinki", 92, star], ["Orbit Labs", "Climate tech · Helsinki", 84, teal], ["Northstar Systems", "Developer tools · Helsinki", 79, signal], ["Signal Works", "B2B software · Helsinki", 74, amber],
+  ] as const;
+  const people = [[demo.person, demo.title, 92], ["Jane Smith", "Head of Product", 76], ["Alex Johnson", "Engineering Manager", 72], ["Taylor Brown", "People Lead", 64]] as const;
+  return <Scene {...scenes.results}>
+    <Background /><Header />
+    <div style={{ position: "absolute", left: 125, top: 150, right: 125 }}>
+      <Eyebrow>From a wide field to a few good leads.</Eyebrow>
+      <h2 style={{ margin: "9px 0 0", fontSize: 53, letterSpacing: -2.7 }}>See the companies worth exploring — then the people who matter.</h2>
+    </div>
+    <div style={{ position: "absolute", left: 125, right: 125, top: 315, bottom: 115, display: "grid", gridTemplateColumns: "0.9fr 1.28fr", gap: 28 }}>
+      <Card style={{ padding: 28, opacity: reveal, transform: `translateX(${(1 - reveal) * -45}px)` }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><div><div style={{ color: muted, fontSize: 14, fontWeight: 750, letterSpacing: 1, textTransform: "uppercase" }}>Matched companies</div><h3 style={{ margin: "8px 0 0", fontSize: 29, letterSpacing: -1.2 }}>Worth exploring</h3></div><div style={{ color: star, fontWeight: 750 }}>4 found</div></div>
+        <div style={{ marginTop: 22 }}>{matches.map(([name, detail, score, color], i) => { const p = enter(local, 75 + i * 27, 18); return <div key={name} style={{ display: "flex", alignItems: "center", gap: 14, borderTop: `1px solid ${line}`, padding: "17px 2px", opacity: p, transform: `translateX(${(1 - p) * -22}px)` }}><Score value={score} color={color} /><div style={{ flex: 1 }}><div style={{ fontSize: 18, fontWeight: 750 }}>{name}</div><div style={{ color: muted, fontSize: 14, marginTop: 3 }}>{detail}</div></div>{i === 0 && <div style={{ color: star, fontSize: 13, fontWeight: 800 }}>SELECTED</div>}</div>; })}</div>
+      </Card>
+      <Card style={{ overflow: "hidden", borderColor: "rgb(67 56 202 / .35)", opacity: personReveal, transform: `translateY(${(1 - personReveal) * 36}px)` }}>
+        <div style={{ padding: "27px 30px 22px", background: "linear-gradient(90deg, rgb(67 56 202 / .08), transparent)" }}><div style={{ color: star, fontSize: 14, fontWeight: 800, letterSpacing: 1, textTransform: "uppercase" }}>{demo.company}</div><h3 style={{ margin: "8px 0 7px", fontSize: 32, letterSpacing: -1.5 }}>People who can open a conversation</h3><p style={{ margin: 0, color: muted, fontSize: 16 }}>Ranked by relevance and ability to influence a hiring decision.</p></div>
+        {people.map(([name, title, score], i) => { const p = enter(local, 205 + i * 24, 18); const active = i === 0; return <div key={name} style={{ display: "flex", alignItems: "center", gap: 18, padding: "16px 30px", borderTop: `1px solid ${line}`, background: active ? "rgb(67 56 202 / .06)" : surface, opacity: p, transform: `translateX(${(1 - p) * 32}px)` }}><div style={{ width: 39, height: 39, borderRadius: "50%", background: active ? star : "#e9edf7", color: active ? "#fff" : signal, display: "grid", placeItems: "center", fontWeight: 750 }}>{name.split(" ").map((part) => part[0]).join("")}</div><div style={{ flex: 1 }}><div style={{ fontSize: 19, fontWeight: 750 }}>{name}</div><div style={{ color: muted, marginTop: 2, fontSize: 15 }}>{title}</div></div><div style={{ color: active ? star : muted, fontWeight: 800, fontSize: 20 }}>{score}</div></div>; })}
+      </Card>
+    </div>
+  </Scene>;
 }
 
 function Contact() {
   const frame = useCurrentFrame();
   const local = frame - scenes.contact.from;
-  const pop = spring({ frame: Math.max(0, local - 20), fps: 30, config: { damping: 14, stiffness: 120 } });
-  return (
-    <Scene {...scenes.contact}>
-      <Grid />
-      <div style={{ position: "absolute", top: 58, left: 72 }}><Brand compact /></div>
-      <div style={{ position: "absolute", left: 350, top: 135, width: 1220, border: `1px solid ${star}`, borderRadius: 32, background: "#10151fee", boxShadow: "0 45px 140px #0009, 0 0 100px #e4c06e19", padding: 50, opacity: pop, transform: `scale(${0.94 + pop * 0.06})` }}>
-        <div style={{ display: "flex", justifyContent: "space-between" }}><div><p style={{ margin: 0, color: star, fontFamily: mono, letterSpacing: 2, fontSize: 17 }}>A PROMISING FIRST CONVERSATION</p><h2 style={{ margin: "13px 0 0", fontSize: 60, letterSpacing: -3 }}>{demo.person}</h2><p style={{ margin: "6px 0 0", color: dim, fontSize: 25 }}>{demo.title} · {demo.company}</p></div><div style={{ width: 160, height: 160, borderRadius: 24, background: "#e4c06e18", border: "1px solid #e4c06e77", display: "grid", placeItems: "center", color: star, fontFamily: mono, textAlign: "center", fontSize: 17 }}>DECISION<br />POWER<br /><b style={{ color: signal, fontSize: 45 }}>{demo.score}</b></div></div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 22, marginTop: 42 }}><div style={{ borderLeft: `3px solid ${star}`, padding: "3px 0 3px 22px" }}><p style={{ margin: 0, color: star, fontFamily: mono, fontSize: 14 }}>WHY MATTI?</p><p style={{ margin: "12px 0 0", fontSize: 25, lineHeight: 1.32 }}>Technical leader at a growing company, with direct influence over engineering direction and headcount.</p></div><div style={{ border: `1px solid ${line}`, background: "#0a0e16", borderRadius: 18, padding: 22 }}><p style={{ margin: 0, color: dim, fontFamily: mono, fontSize: 14 }}>EVIDENCE</p><p style={{ margin: "12px 0 0", color: paper, fontSize: 19 }}>{demo.evidence}</p><div style={{ marginTop: 18, color: signal, fontSize: 16 }}>View supporting source ↗</div></div></div>
-        <div style={{ marginTop: 30, borderRadius: 18, background: "#c8f16912", border: "1px solid #c8f16955", padding: "20px 24px" }}><span style={{ color: signal, fontFamily: mono, fontSize: 14 }}>OUTREACH ANGLE&nbsp;&nbsp;</span><span style={{ fontSize: 20 }}>{demo.outreach}</span></div>
-      </div>
-    </Scene>
-  );
+  const card = spring({ frame: Math.max(0, local - 12), fps: 30, config: { damping: 16, stiffness: 115 } });
+  const evidence = enter(local, 125, 22);
+  const angle = enter(local, 245, 25);
+  return <Scene {...scenes.contact}>
+    <Background /><Header />
+    <div style={{ position: "absolute", left: 290, right: 290, top: 177, bottom: 125, opacity: card, transform: `scale(${0.95 + card * .05})` }}>
+      <Card style={{ height: "100%", boxSizing: "border-box", padding: 48, borderColor: "rgb(67 56 202 / .45)", boxShadow: "0 3px 5px rgb(11 27 63 / .06), 0 35px 70px -27px rgb(30 58 138 / .36)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}><div><Eyebrow>One compelling place to begin.</Eyebrow><h2 style={{ margin: "12px 0 6px", fontSize: 58, letterSpacing: -3 }}>{demo.person}</h2><div style={{ color: muted, fontSize: 24 }}>{demo.title} · {demo.company}</div></div><div style={{ width: 106, height: 106, borderRadius: 24, background: "rgb(67 56 202 / .09)", display: "grid", placeItems: "center", color: star, fontSize: 16, fontWeight: 750, textAlign: "center" }}>MATCH<br /><span style={{ fontSize: 38 }}>{demo.score}</span></div></div>
+        <div style={{ display: "grid", gridTemplateColumns: "1.1fr .9fr", gap: 26, marginTop: 38 }}>
+          <div style={{ borderLeft: `4px solid ${star}`, padding: "5px 0 5px 22px" }}><div style={{ color: muted, fontSize: 13, textTransform: "uppercase", fontWeight: 800, letterSpacing: 1 }}>Why this person</div><p style={{ fontSize: 24, lineHeight: 1.38, margin: "10px 0 0" }}>A technical leader with direct influence over engineering direction and future headcount.</p></div>
+          <div style={{ border: `1px solid ${line}`, borderRadius: 17, padding: 20, background: "#fbfcff", opacity: evidence, transform: `translateY(${(1 - evidence) * 16}px)` }}><div style={{ color: muted, fontSize: 13, textTransform: "uppercase", fontWeight: 800, letterSpacing: 1 }}>Evidence</div><p style={{ margin: "10px 0 8px", fontSize: 18, lineHeight: 1.35 }}>{demo.evidence}</p><div style={{ color: star, fontSize: 15, fontWeight: 700 }}>View supporting source ↗</div></div>
+        </div>
+        <div style={{ marginTop: 29, padding: "20px 23px", borderRadius: 16, background: "linear-gradient(90deg, rgb(30 58 138 / .08), rgb(67 56 202 / .06))", border: "1px solid rgb(67 56 202 / .20)", opacity: angle, transform: `translateY(${(1 - angle) * 16}px)` }}><span style={{ color: star, fontWeight: 800, fontSize: 14, letterSpacing: 1, textTransform: "uppercase" }}>Thoughtful opening&nbsp;&nbsp;</span><span style={{ fontSize: 19 }}>{demo.outreach}</span></div>
+      </Card>
+    </div>
+  </Scene>;
 }
 
 function Closing() {
   const frame = useCurrentFrame();
   const local = frame - scenes.close.from;
-  const scale = 0.9 + spring({ frame: local, fps: 30, config: { damping: 15 } }) * 0.1;
-  return (
-    <Scene {...scenes.close}>
-      <Grid />
-      <div style={{ display: "grid", placeItems: "center", height: "100%", textAlign: "center", transform: `scale(${scale})` }}><div><div style={{ display: "inline-flex", marginBottom: 35 }}><Brand /></div><h2 style={{ margin: 0, fontSize: 95, letterSpacing: -5, lineHeight: 0.94 }}>Find the right<br /><span style={{ color: signal }}>conversation.</span></h2><p style={{ marginTop: 30, color: dim, fontSize: 27 }}>From interest in a company to a person worth contacting.</p><div style={{ marginTop: 42, color: star, fontFamily: mono, fontSize: 16, letterSpacing: 2 }}>EXAGENT · JUNCTION 2026</div></div></div>
-      <div style={{ position: "absolute", right: 52, bottom: 38, color: "#a3a9b888", fontFamily: mono, fontSize: 13 }}>Illustrative demo data</div>
-    </Scene>
-  );
+  const inView = spring({ frame: local, fps: 30, config: { damping: 15, mass: 0.9 } });
+  return <Scene {...scenes.close}>
+    <Background />
+    <div style={{ display: "grid", height: "100%", placeItems: "center", textAlign: "center", transform: `scale(${0.9 + inView * .1})`, opacity: inView }}><div><Brand />
+      <div style={{ marginTop: 43 }}><Eyebrow>From company interest to human connection.</Eyebrow><h2 style={{ fontSize: 91, letterSpacing: -5.3, lineHeight: .94, margin: "16px 0 20px" }}>Find the right<br /><span style={{ color: star }}>conversation.</span></h2><p style={{ margin: 0, color: muted, fontSize: 25 }}>Research the opportunity. Know who to contact. Start informed.</p></div>
+      <div style={{ marginTop: 42, display: "inline-block", padding: "15px 25px", color: "#fff", background: signal, borderRadius: 12, fontSize: 18, fontWeight: 750 }}>Exagent</div>
+    </div></div>
+    <div style={{ position: "absolute", right: 54, bottom: 38, color: muted, fontSize: 13, fontWeight: 650 }}>Illustrative demo data</div>
+  </Scene>;
 }
 
 export function ExagentDemo() {
-  return <AbsoluteFill style={stage}><Competition /><Reframe /><SearchUI /><Results /><Contact /><Closing /><CaptionLayer /></AbsoluteFill>;
+  return <AbsoluteFill style={base}><Competition /><Reframe /><Workflow /><Results /><Contact /><Closing /></AbsoluteFill>;
 }

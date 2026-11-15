@@ -95,7 +95,17 @@ The first silent 105-second Remotion animatic is rendered at:
 `video/out/exagent-demo.mp4` (ignored output)
 
 It validates the programmatic rendering pipeline but is **not** the desired
-creative direction yet. Its problems:
+creative direction. A second, light-brand motion-graphics pass is now in the
+working tree above that first draft and is being rendered for review. It:
+
+- imports the frontend's actual logo and uses its light navy/indigo tokens;
+- replaces the application queue with an abstract drifting application sea;
+- turns scattered manual research sources into a branded search pipeline;
+- assembles company and people results, then expands one evidence-backed
+  contact recommendation;
+- removes the persistent caption box in favour of scene-integrated copy.
+
+The first draft's remaining problems were:
 
 - dark/neon palette instead of the actual Exagent brand;
 - motion is too subtle to read as motion graphics;
@@ -104,8 +114,8 @@ creative direction yet. Its problems:
 
 Source files:
 
-- `video/src/script.ts` — data, timing, current caption copy
-- `video/src/Video.tsx` — current visual implementation to replace/rework
+- `video/src/script.ts` — fictional data and scene timing
+- `video/src/Video.tsx` — current visual implementation
 - `video/src/Root.tsx` — composition dimensions and duration
 - `video/README.md` — run and render instructions
 
@@ -125,14 +135,10 @@ The project routes Remotion through wrappers in `video/bin/` so it uses the
 Nix-provided FFmpeg rather than Remotion's generic binary. `video/out/` is
 ignored.
 
-## Next implementation pass
+## Follow-up pass
 
-1. Import/reuse the actual logo and reproduce the frontend brand tokens in the
-   Remotion scene layer.
-2. Replace the competition scene with the calm application-sea visualization.
-3. Rebuild the remaining conceptual scenes around visible transformations and
-   pipeline motion; eliminate the subtitle box.
-4. Recreate the front-page/search and result moments in the actual light visual
-   system.
-5. Render a silent review cut. Only after it works muted, optionally add
-   ElevenLabs voiceover and a restrained music/sound layer.
+1. Review the rendered silent cut for timing, line length, and whether the
+   visual transformations read at a glance.
+2. Tighten or replace any copy that asks the viewer to read too much.
+3. Only after the muted edit works, optionally add ElevenLabs voiceover and a
+   restrained music/sound layer.

@@ -19,16 +19,17 @@ Chromium and FFmpeg from the development environment; set
 
 ## What to edit
 
-- `src/script.ts` — all fictional demo data, scene timing, and caption copy.
+- `src/script.ts` — all fictional demo data and scene timing.
 - `src/Video.tsx` — visuals and motion.
 - `src/Root.tsx` — output format and composition duration.
 
 ## Voiceover
 
-The `captions` array is the first narration draft, kept as short, caption-sized
-phrases. Generate an ElevenLabs narration from the same copy and add the audio
-as a separate Remotion asset in a follow-up pass. This means picture edits do
-not require re-recording a browser demo.
+The silent cut tells its story with concise copy integrated into the visual
+scenes; it has no persistent subtitle layer. If voiceover is added, write it
+to support the picture rather than duplicating every on-screen statement, then
+add it as a separate Remotion asset so picture edits do not require
+re-recording a browser demo.
 
 ## Editorial note
 
