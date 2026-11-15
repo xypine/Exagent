@@ -49,6 +49,9 @@ Examples:
   pnpm agent -- match start <job-id> --profile-file ./profile.txt --wait`;
 
 export function parseArguments(argv) {
+  // pnpm forwards the script separator as a positional argument, so support the
+  // documented `pnpm agent -- <command>` invocation as well as direct Node use.
+  const argumentsToParse = argv[0] === "--" ? argv.slice(1) : argv;
   const options = {
     apiUrl: DEFAULT_API_URL,
     clientId: process.env.EXAGENT_CLIENT_ID,
@@ -60,8 +63,8 @@ export function parseArguments(argv) {
   };
   const positionals = [];
 
-  for (let index = 0; index < argv.length; index += 1) {
-    const argument = argv[index];
+  for (let index = 0; index < argumentsToParse.length; index += 1) {
+    const argument = argumentsToParse[index];
     if (!argument.startsWith("--")) {
       positionals.push(argument);
       continue;
@@ -74,7 +77,7 @@ export function parseArguments(argv) {
       continue;
     }
 
-    const value = argv[index + 1];
+    const value = argumentsToParse[index + 1];
     if (value === undefined || value.startsWith("--")) {
       throw new Error(`--${option} requires a value.`);
     }
@@ -210,6 +213,14 @@ async function waitForCompletion(fetchStatus, isComplete, options) {
   return response;
 }
 
+async function waitForOperationCompletion(operationResponse, fetchStatus, isComplete, options) {
+  // A pagination request returns the job as it was queued.  Use that response
+  // first: a terminal response means no new background work was started, while
+  // an in-progress response must be followed until the job is terminal.
+  if (isComplete(operationResponse.status)) return operationResponse;
+  return waitForCompletion(fetchStatus, isComplete, options);
+}
+
 const sleep = (milliseconds) => new Promise((resolveSleep) => setTimeout(resolveSleep, milliseconds));
 const searchComplete = (status) => status === "done" || status === "failed";
 const researchComplete = (status) => status === "done" || status === "failed";
@@ -253,12 +264,22 @@ export async function run(argv, dependencies = {}) {
   } else if (resource === "search" && action === "more-companies" && ids.length === 1) {
     response = await api.searchMoreCompanies(ids[0]);
     if (options.wait) {
-      response = await waitForCompletion(() => api.getSearch(ids[0]), searchComplete, options);
+      response = await waitForOperationCompletion(
+        response,
+        () => api.getSearch(ids[0]),
+        searchComplete,
+        options,
+      );
     }
   } else if (resource === "search" && action === "more-people" && ids.length === 1) {
     response = await api.searchMorePeople(ids[0]);
     if (options.wait) {
-      response = await waitForCompletion(() => api.getSearch(ids[0]), searchComplete, options);
+      response = await waitForOperationCompletion(
+        response,
+        () => api.getSearch(ids[0]),
+        searchComplete,
+        options,
+      );
     }
   } else if (resource === "person" && action === "get" && ids.length === 2) {
     response = await api.getPersonResearch(ids[0], ids[1]);

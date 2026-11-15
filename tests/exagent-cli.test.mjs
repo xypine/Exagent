@@ -145,9 +145,33 @@ test("search more-companies can poll the expanded company search", async () => {
   assert.equal(requests[1].url, "http://localhost:8000/api/v1/searches/job-1");
 });
 
+test("pagination wait returns immediately when the API did not queue more work", async () => {
+  const requests = [];
+  const result = await run(
+    ["search", "more-people", "job-1", "--wait", "--interval", "1"],
+    {
+      getClientId: async () => CLIENT_ID,
+      fetchImpl: async (url, init) => {
+        requests.push({ url, init });
+        return new Response(JSON.stringify({ job_id: "job-1", status: "done", people: [] }), {
+          status: 202,
+        });
+      },
+    },
+  );
+
+  assert.deepEqual(result.response, { job_id: "job-1", status: "done", people: [] });
+  assert.equal(requests.length, 1);
+});
+
 test("argument parsing rejects missing values and validates polling values", () => {
   assert.throws(() => parseArguments(["--api-url"]), /requires a value/);
   assert.throws(() => parseArguments(["--interval", "0"]), /positive integer/);
+});
+
+test("argument parsing accepts pnpm's script separator", () => {
+  assert.deepEqual(parseArguments(["--", "health"]).positionals, ["health"]);
+  assert.deepEqual(parseArguments(["--", "--help"]), { help: true });
 });
 
 test("default polling cadence stays below the local API rate limit", () => {
