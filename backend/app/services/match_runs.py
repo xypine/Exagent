@@ -231,7 +231,7 @@ def _influence_only_match(person: dict[str, Any]) -> ScoredMatch:
             shared_ground=None,
         ),
         reasoning=f"Hiring influence is based on the {title} role at {company}.",
-        outreach_angle="",
+        outreach_approaches=[],
         missing_info=[
             "Background fit and shared ground could not be assessed without your profile."
         ],

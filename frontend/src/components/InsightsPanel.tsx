@@ -48,8 +48,15 @@ function MatchDetails(props: { match: PersonMatch }) {
         </p>
       </div>
       <p class="mt-2 text-sm text-dim">{props.match.reasoning}</p>
-      <Show when={props.match.outreach_angle}>
-        <p class="mt-2 text-xs text-star">Try: {props.match.outreach_angle}</p>
+      <Show when={props.match.outreach_approaches.length > 0}>
+        <div class="mt-4 border-t border-star/20 pt-3">
+          <p class="font-mono text-xs text-dim uppercase">Good approaches</p>
+          <ul class="mt-1 list-disc space-y-1 pl-4 text-xs text-star">
+            <For each={props.match.outreach_approaches}>
+              {(approach) => <li>{approach}</li>}
+            </For>
+          </ul>
+        </div>
       </Show>
       <div class="mt-4 border-t border-star/20 pt-3">
         <p class="font-mono text-xs text-dim uppercase">Score factors</p>

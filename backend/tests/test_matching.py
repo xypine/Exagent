@@ -87,6 +87,13 @@ def test_grounding_keeps_only_evidence_supported_by_the_profile_and_catalog() ->
         or item.fact == "Relevant experience supplied for this run."
         for item in result.evidence
     )
+    assert result.outreach_approaches == [
+        "Use this as the reason for reaching out: Aino Example is CTO at Aurora.",
+        (
+            "Ask one focused question about their current priorities, then make a low-pressure "
+            "request for a brief conversation."
+        ),
+    ]
     assert "Aalto University" not in str(result.model_dump())
 
 

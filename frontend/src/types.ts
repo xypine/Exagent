@@ -119,7 +119,7 @@ export interface PersonMatch {
   confidence: "high" | "medium" | "low";
   breakdown: MatchBreakdown;
   reasoning: string;
-  outreach_angle: string;
+  outreach_approaches: string[];
   missing_info: string[];
   evidence: MatchEvidence[];
 }

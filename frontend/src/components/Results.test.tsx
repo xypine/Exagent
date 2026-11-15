@@ -123,7 +123,7 @@ describe("Results", () => {
         shared_ground: 12,
       },
       reasoning: "Strong hiring influence and relevant company work.",
-      outreach_angle: "Ask about the product team's upcoming work.",
+      outreach_approaches: ["Ask about the product team's upcoming work."],
       missing_info: ["No public evidence of a shared background."],
       evidence: [
         {
@@ -166,7 +166,7 @@ describe("Results", () => {
       screen.queryByText("Strong hiring influence and relevant company work."),
     ).toBeNull();
     expect(
-      screen.queryByText("Try: Ask about the product team's upcoming work."),
+      screen.queryByText("Ask about the product team's upcoming work."),
     ).toBeNull();
     expect(screen.queryByText("Score factors")).toBeNull();
     expect(screen.queryByText("Evidence gaps")).toBeNull();
@@ -182,8 +182,9 @@ describe("Results", () => {
       screen.getByText("Strong hiring influence and relevant company work."),
     ).not.toBeNull();
     expect(
-      screen.getByText("Try: Ask about the product team's upcoming work."),
+      screen.getByText("Ask about the product team's upcoming work."),
     ).not.toBeNull();
+    expect(screen.getByText("Good approaches")).not.toBeNull();
     expect(screen.getByText("32/40")).not.toBeNull();
     expect(screen.getByText("28/40")).not.toBeNull();
     expect(screen.getByText("12/20")).not.toBeNull();
@@ -408,7 +409,7 @@ describe("Results", () => {
         shared_ground: null,
       },
       reasoning: "Hiring influence is based on the VP Product role.",
-      outreach_angle: "",
+      outreach_approaches: [],
       missing_info: [
         "Background fit and shared ground could not be assessed without your profile.",
       ],

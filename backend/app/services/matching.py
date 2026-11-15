@@ -77,7 +77,7 @@ class PersonMatch(BaseModel):
     confidence: Literal["high", "medium", "low"]
     breakdown: Breakdown
     reasoning: str
-    outreach_angle: str
+    outreach_approaches: list[str] = Field(default_factory=list, max_length=3)
     missing_info: list[str] = Field(default_factory=list)
     evidence: list[MatchEvidence] = Field(default_factory=list)
 
@@ -190,7 +190,7 @@ def _ground_match(
         confidence=match.confidence,
         breakdown=breakdown,
         reasoning=_reasoning(safe_evidence, breakdown),
-        outreach_angle=_outreach_angle(safe_evidence, breakdown),
+        outreach_approaches=_good_approaches(safe_evidence, breakdown),
         missing_info=match.missing_info,
         evidence=_unique_evidence(safe_evidence),
     )
@@ -237,16 +237,25 @@ def _reasoning(evidence: list[MatchEvidence], breakdown: Breakdown) -> str:
     )
 
 
-def _outreach_angle(evidence: list[MatchEvidence], breakdown: Breakdown) -> str:
+def _good_approaches(evidence: list[MatchEvidence], breakdown: Breakdown) -> list[str]:
+    """Offer practical outreach guidance without posing as a drafted message."""
     if breakdown.shared_ground:
-        return (
-            "Briefly connect your relevant background to the cited work, then ask whether "
-            "a conversation would be useful."
-        )
+        return [
+            "Open with the shared context, then briefly connect it to your relevant experience.",
+            "Ask for their perspective on a focused topic instead of making a general "
+            "networking request.",
+        ]
     public = next((item for item in evidence if item.source_label != "From your profile"), None)
     if public:
-        return f"Mention {public.fact} and ask whether a conversation would be useful."
-    return "Introduce your background briefly and ask whether a conversation would be useful."
+        return [
+            f"Use this as the reason for reaching out: {public.fact}",
+            "Ask one focused question about their current priorities, then make a low-pressure "
+            "request for a brief conversation.",
+        ]
+    return [
+        "Introduce the most relevant part of your background in one sentence.",
+        "Make a focused, low-pressure request for a brief conversation.",
+    ]
 
 
 def _catalog_for(person: dict[str, object]) -> dict[str, CatalogFact]:

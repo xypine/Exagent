@@ -62,7 +62,7 @@ function match(id: string, score: number): PersonMatch {
     confidence: "high",
     breakdown: { decision_power: 40, background_fit: 40, shared_ground: 20 },
     reasoning: "Good fit",
-    outreach_angle: "Reach out",
+    outreach_approaches: ["Reach out"],
     missing_info: [],
     evidence: [],
   };
