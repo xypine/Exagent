@@ -104,6 +104,54 @@ describe("Results", () => {
     vi.mocked(storeProfile).mockReset();
   });
 
+  it("shows score factors and evidence gaps for a match", async () => {
+    const match = {
+      id: "person-1",
+      score: 72,
+      confidence: "medium" as const,
+      breakdown: {
+        decision_power: 32,
+        background_fit: 28,
+        shared_ground: 12,
+      },
+      reasoning: "Strong hiring influence and relevant company work.",
+      outreach_angle: "Ask about the product team's upcoming work.",
+      missing_info: ["No public evidence of a shared background."],
+    };
+    vi.mocked(startMatchRun).mockResolvedValue({
+      id: "match-1",
+      status: "done",
+      candidate_count: 1,
+      completed_count: 1,
+      results: [match],
+    });
+    vi.mocked(getMatchRun).mockResolvedValue({
+      id: "match-1",
+      status: "done",
+      candidate_count: 1,
+      completed_count: 1,
+      results: [match],
+    });
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(() => (
+      <QueryClientProvider client={queryClient}>
+        <Results jobId="job-1" onReset={() => {}} />
+      </QueryClientProvider>
+    ));
+
+    expect(await screen.findByText("Score factors")).not.toBeNull();
+    expect(screen.getByText("32/40")).not.toBeNull();
+    expect(screen.getByText("28/40")).not.toBeNull();
+    expect(screen.getByText("12/20")).not.toBeNull();
+    expect(screen.getByText("Evidence gaps")).not.toBeNull();
+    expect(
+      screen.getByText("No public evidence of a shared background."),
+    ).not.toBeNull();
+  });
+
   it("shows a compact person row and explains its score in the detail dialog", async () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },

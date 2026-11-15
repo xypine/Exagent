@@ -8,9 +8,6 @@
   of keeping people grouped in company-discovery order.
 - Give every shortlisted person the promised 0–100 score, confidence,
   rationale, outreach angle, and missing-information summary.
-- Render the API's score-factor breakdown and `missing_info` in the results
-  UI, so the claimed transparent rationale and visible evidence gaps are
-  actually visible.
 - Extend public-background research to support publications, talks, and
   interviews, and show those findings alongside work history, education, and
   community activity.

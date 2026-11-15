@@ -119,6 +119,7 @@ function People(props: {
                     <p class="mt-2 text-xs text-star">
                       Try: {match().outreach_angle}
                     </p>
+                    <MatchDetails match={match()} />
                   </div>
                 )}
               </Show>
@@ -126,6 +127,56 @@ function People(props: {
           )}
         </For>
       </ul>
+    </div>
+  );
+}
+
+function MatchDetails(props: { match: PersonMatch }) {
+  const factors = [
+    {
+      label: "Decision power",
+      score: props.match.breakdown.decision_power,
+      maximum: 40,
+    },
+    {
+      label: "Background fit",
+      score: props.match.breakdown.background_fit,
+      maximum: 40,
+    },
+    {
+      label: "Shared ground",
+      score: props.match.breakdown.shared_ground,
+      maximum: 20,
+    },
+  ];
+
+  return (
+    <div class="mt-3 border-t border-star/20 pt-3">
+      <p class="font-mono text-xs text-dim uppercase">Score factors</p>
+      <dl class="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 text-xs sm:grid-cols-3">
+        <For each={factors}>
+          {(factor) => (
+            <div class="flex items-baseline justify-between gap-2 sm:block">
+              <dt class="text-dim">{factor.label}</dt>
+              <dd class="font-mono text-paper">
+                {factor.score === null
+                  ? "Not assessed"
+                  : `${factor.score}/${factor.maximum}`}
+              </dd>
+            </div>
+          )}
+        </For>
+      </dl>
+      <Show when={props.match.missing_info.length > 0}>
+        <div class="mt-3">
+          <p class="font-mono text-xs text-dim uppercase">Evidence gaps</p>
+          <ul class="mt-1 list-disc space-y-1 pl-4 text-xs text-dim">
+            <For each={props.match.missing_info}>
+              {(item) => <li>{item}</li>}
+            </For>
+          </ul>
+        </div>
+      </Show>
     </div>
   );
 }
