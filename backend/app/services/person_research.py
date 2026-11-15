@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Literal
@@ -18,6 +19,8 @@ from app.services.exa_provider import (
     ProviderPerson,
     normalize_website_url,
 )
+
+logger = logging.getLogger(__name__)
 
 ResearchStatus = Literal["not_started", "queued", "researching", "done", "failed"]
 
@@ -89,14 +92,18 @@ async def refresh_person_research(person_id: UUID) -> None:
                 profile_url=cache.profile_url,
             )
             researched_person = _person_for_profile(response.output.people, cache.profile_url)
-        except (ExaProviderError, ValueError):
+        except (ExaProviderError, ValueError) as error:
+            logger.exception("Background research failed for person %s: %s", person_id, error)
             cache.status = "failed"
             cache.error = "Background research failed. Try again."
             cache.work_history = []
             cache.education = []
             cache.volunteer_experience = []
-        except Exception:
-            # Do not surface provider data or internal implementation details.
+        except Exception as error:
+            logger.exception(
+                "Unexpected background-research failure for person %s: %s", person_id, error
+            )
+            # Do not surface provider data or internal implementation details to the client.
             cache.status = "failed"
             cache.error = "Background research failed. Try again."
             cache.work_history = []
@@ -126,13 +133,15 @@ def _person_for_profile(people: tuple[ProviderPerson, ...], profile_url: str) ->
     """Accept only the exact discovered profile; names alone are not safe identity."""
     normalized_profile = normalize_website_url(profile_url)
     if normalized_profile is None:
-        raise ValueError("profile_url must be valid")
+        raise ValueError(f"profile_url must be valid: {profile_url!r}")
 
-    matches = [
-        person
-        for person in people
-        if normalize_website_url(person.profile_url) == normalized_profile
-    ]
+    returned_profiles = tuple(
+        (person.profile_url, normalize_website_url(person.profile_url)) for person in people
+    )
+    matches = [person for person in people if normalize_website_url(person.profile_url) == normalized_profile]
     if len(matches) != 1:
-        raise ValueError("Research did not identify the requested profile")
+        raise ValueError(
+            "Research did not identify the requested profile: "
+            f"requested={normalized_profile!r}, returned={returned_profiles!r}"
+        )
     return matches[0]
