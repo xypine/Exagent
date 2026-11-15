@@ -79,7 +79,7 @@ function People(props: {
                   }`}
             </button>
           </Show>
-          <span>Score</span>
+          <span>Hiring influence</span>
         </div>
       </div>
       <ul>
@@ -89,7 +89,7 @@ function People(props: {
               <button
                 type="button"
                 aria-haspopup="dialog"
-                aria-label={`${person.name}, ${person.title}, score ${person.decision_power_score}`}
+                aria-label={`${person.name}, ${person.title}, hiring influence ${person.decision_power_score}`}
                 onClick={() => props.onSelect(person)}
                 disabled={!person.employer_verified}
                 class="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-5 py-3 text-left transition hover:bg-star/5 disabled:cursor-not-allowed disabled:opacity-65"
@@ -112,19 +112,14 @@ function People(props: {
               >
                 {(match) => (
                   <div class="mt-4 rounded-lg border border-star/30 bg-star/5 p-3 text-sm">
-                    <div class="flex items-baseline justify-between gap-3">
-                      <p class="font-medium text-star">
-                        {match().score}/100 match
-                      </p>
-                      <p class="font-mono text-xs text-dim">
-                        {match().confidence} confidence
-                      </p>
-                    </div>
-                    <p class="mt-2 text-dim">{match().reasoning}</p>
-                    <p class="mt-2 text-xs text-star">
-                      Try: {match().outreach_angle}
-                    </p>
-                    <MatchDetails match={match()} />
+                    <Show
+                      when={isInfluenceOnly(match())}
+                      fallback={<ProfileMatch match={match()} />}
+                    >
+                      <InfluenceOnly
+                        influence={person.decision_power_score}
+                      />
+                    </Show>
                   </div>
                 )}
               </Show>
@@ -133,6 +128,42 @@ function People(props: {
         </For>
       </ul>
     </div>
+  );
+}
+
+function isInfluenceOnly(match: PersonMatch) {
+  return (
+    match.breakdown.background_fit === null &&
+    match.breakdown.shared_ground === null
+  );
+}
+
+function InfluenceOnly(props: { influence: number }) {
+  return (
+    <>
+      <p class="font-medium text-star">
+        {props.influence}/100 hiring influence
+      </p>
+      <p class="mt-2 text-dim">
+        Could not assess background fit or shared ground without your profile.
+      </p>
+    </>
+  );
+}
+
+function ProfileMatch(props: { match: PersonMatch }) {
+  return (
+    <>
+      <div class="flex items-baseline justify-between gap-3">
+        <p class="font-medium text-star">{props.match.score}/100 match</p>
+        <p class="font-mono text-xs text-dim">
+          {props.match.confidence} confidence
+        </p>
+      </div>
+      <p class="mt-2 text-dim">{props.match.reasoning}</p>
+      <p class="mt-2 text-xs text-star">Try: {props.match.outreach_angle}</p>
+      <MatchDetails match={props.match} />
+    </>
   );
 }
 
@@ -577,68 +608,76 @@ export function Results(props: {
             </p>
           </Show>
           <For each={job.data?.companies}>
-            {(company, i) => (
-              <article
-                class="overflow-hidden rounded-2xl border border-line bg-ink-2/60"
-                classList={{
-                  "animate-rise": !enteredCompanyIds().has(company.id),
-                }}
-                style={
-                  enteredCompanyIds().has(company.id)
-                    ? undefined
-                    : { "animation-delay": `${i() * 80}ms` }
-                }
-                onAnimationEnd={() => markCompanyEntered(company.id)}
-              >
-                <div class="flex items-center justify-between gap-4 px-5 py-4">
-                  <button
-                    type="button"
-                    aria-haspopup="dialog"
-                    onClick={() => setSelectedCompany(company)}
-                    class="text-left text-xl font-semibold hover:text-star"
-                  >
-                    {company.name}
-                  </button>
-                  <a
-                    href={company.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    class="text-xs text-dim hover:text-star"
-                  >
-                    visit ↗
-                  </a>
-                </div>
-                <Show
-                  when={
-                    (job.data?.people.filter(
-                      (person) => person.company_id === company.id,
-                    ).length ?? 0) > 0
+            {(company, i) => {
+              const people = () =>
+                job.data?.people.filter(
+                  (person) => person.company_id === company.id,
+                ) ?? [];
+              const isResearchingPeople = () =>
+                job.data?.status === "finding_people" &&
+                i() <
+                  (job.data.people_search_stats.companies_searched ?? 0) +
+                    (job.data.people_search_stats.batch_size ?? 0);
+
+              return (
+                <article
+                  class="group overflow-hidden rounded-2xl border border-line bg-ink-2/60"
+                  classList={{
+                    "animate-rise": !enteredCompanyIds().has(company.id),
+                  }}
+                  style={
+                    enteredCompanyIds().has(company.id)
+                      ? undefined
+                      : { "animation-delay": `${i() * 80}ms` }
                   }
+                  onAnimationEnd={() => markCompanyEntered(company.id)}
                 >
-                  <People
-                    people={
-                      job.data?.people.filter(
-                        (person) => person.company_id === company.id,
-                      ) ?? []
-                    }
-                    onSelect={setSelectedPerson}
-                    matches={matchRun.data?.results ?? []}
-                  />
-                </Show>
-                <Show
-                  when={
-                    job.data?.status === "finding_people" &&
-                    i() <
-                      job.data.people_search_stats.companies_searched +
-                        job.data.people_search_stats.batch_size
-                  }
-                >
-                  <p class="border-t border-line px-5 py-3 font-mono text-xs text-dim animate-pulse">
-                    Researching key people…
-                  </p>
-                </Show>
-              </article>
-            )}
+                  <div class="flex items-center justify-between gap-4 px-5 py-4">
+                    <div>
+                      <h2 class="text-xl font-semibold">{company.name}</h2>
+                      <Show
+                        when={people().length > 0 || !isResearchingPeople()}
+                      >
+                        <button
+                          type="button"
+                          aria-haspopup="dialog"
+                          aria-label={`About ${company.name}`}
+                          onClick={() => setSelectedCompany(company)}
+                          class="mt-1 text-xs text-dim opacity-0 transition hover:text-star group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-star"
+                        >
+                          About
+                        </button>
+                      </Show>
+                    </div>
+                    <a
+                      href={company.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      class="text-xs text-dim hover:text-star"
+                    >
+                      visit ↗
+                    </a>
+                  </div>
+                  <Show when={people().length > 0}>
+                    <People
+                      people={people()}
+                      onSelect={setSelectedPerson}
+                      matches={matchRun.data?.results ?? []}
+                    />
+                  </Show>
+                  <Show when={isResearchingPeople() && people().length === 0}>
+                    <p class="border-t border-line px-5 pt-4 pb-2 text-sm text-dim">
+                      {company.summary}
+                    </p>
+                  </Show>
+                  <Show when={isResearchingPeople()}>
+                    <p class="border-t border-line px-5 py-3 font-mono text-xs text-dim animate-pulse">
+                      Researching key people…
+                    </p>
+                  </Show>
+                </article>
+              );
+            }}
           </For>
         </section>
       </div>

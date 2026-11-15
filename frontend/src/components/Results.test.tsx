@@ -161,7 +161,7 @@ describe("Results", () => {
 
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Maya Chen, VP Product, score 80",
+        name: "Maya Chen, VP Product, hiring influence 80",
       }),
     );
     fireEvent.click(await screen.findByRole("button", { name: "Sources?" }));
@@ -191,7 +191,7 @@ describe("Results", () => {
     ));
 
     const person = await screen.findByRole("button", {
-      name: "Maya Chen, VP Product, score 80",
+      name: "Maya Chen, VP Product, hiring influence 80",
     });
     expect(screen.getByText("Key people")).not.toBeNull();
     expect(screen.queryByText("Climate software company.")).toBeNull();
@@ -203,6 +203,109 @@ describe("Results", () => {
     ).not.toBeNull();
     expect(screen.getByText("80 · Very high")).not.toBeNull();
     expect(screen.getByText("Leads product at Northstar Labs.")).not.toBeNull();
+  });
+
+  it("uses the company summary to fill the people area while research is underway", async () => {
+    vi.mocked(getSearch).mockResolvedValue({
+      ...JOB,
+      status: "finding_people",
+      people: [],
+      people_search_stats: {
+        ...JOB.people_search_stats,
+        companies_searched: 0,
+        requests_in_flight: 1,
+      },
+    });
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(() => (
+      <QueryClientProvider client={queryClient}>
+        <Results jobId="job-1" onReset={() => {}} />
+      </QueryClientProvider>
+    ));
+
+    expect(await screen.findByText("Climate software company.")).not.toBeNull();
+    expect(screen.getByText("Researching key people…")).not.toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "About Northstar Labs" }),
+    ).toBeNull();
+  });
+
+  it("moves the company summary into the About dialog after people arrive", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(() => (
+      <QueryClientProvider client={queryClient}>
+        <Results jobId="job-1" onReset={() => {}} />
+      </QueryClientProvider>
+    ));
+
+    const about = await screen.findByRole("button", {
+      name: "About Northstar Labs",
+    });
+    expect(screen.queryByText("Climate software company.")).toBeNull();
+
+    fireEvent.click(about);
+
+    expect(
+      await screen.findByRole("dialog", { name: "Northstar Labs details" }),
+    ).not.toBeNull();
+    expect(screen.getByText("Climate software company.")).not.toBeNull();
+  });
+
+  it("shows only hiring influence when no profile was provided", async () => {
+    const influenceOnly = {
+      id: "person-1",
+      score: 80,
+      confidence: "medium" as const,
+      breakdown: {
+        decision_power: 32,
+        background_fit: null,
+        shared_ground: null,
+      },
+      reasoning: "Hiring influence is based on the VP Product role.",
+      outreach_angle: "",
+      missing_info: [
+        "Background fit and shared ground could not be assessed without your profile.",
+      ],
+      evidence: [],
+    };
+    vi.mocked(startMatchRun).mockResolvedValue({
+      id: "match-1",
+      status: "done",
+      candidate_count: 1,
+      completed_count: 1,
+      results: [influenceOnly],
+    });
+    vi.mocked(getMatchRun).mockResolvedValue({
+      id: "match-1",
+      status: "done",
+      candidate_count: 1,
+      completed_count: 1,
+      results: [influenceOnly],
+    });
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(() => (
+      <QueryClientProvider client={queryClient}>
+        <Results jobId="job-1" onReset={() => {}} />
+      </QueryClientProvider>
+    ));
+
+    expect(await screen.findByText("80/100 hiring influence")).not.toBeNull();
+    expect(
+      screen.getByText(
+        "Could not assess background fit or shared ground without your profile.",
+      ),
+    ).not.toBeNull();
+    expect(screen.queryByText("80/100 match")).toBeNull();
+    expect(screen.queryByText("Score factors")).toBeNull();
   });
 
   it("states that the company search is complete", async () => {
@@ -307,7 +410,9 @@ describe("Results", () => {
     ).not.toBeNull();
     expect(
       screen
-        .getByRole("button", { name: "Alex Example, VP Product, score 80" })
+        .getByRole("button", {
+          name: "Alex Example, VP Product, hiring influence 80",
+        })
         .hasAttribute("disabled"),
     ).toBe(true);
   });

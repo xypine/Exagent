@@ -15,7 +15,8 @@ from app.core.config import Settings, get_settings
 from app.db.models import MatchRun, PersonResearchCache, SearchJob
 from app.db.session import SessionLocal
 from app.services.gemini_matching import GeminiMatchingError, GeminiMatchingService
-from app.services.people_ranking import hiring_influence_score
+from app.services.matching import Breakdown, MatchEvidence, ScoredMatch
+from app.services.people_ranking import decision_power_score, hiring_influence_score
 from app.services.person_research import (
     PersonResearchSubject,
     queue_person_research,
@@ -97,6 +98,10 @@ async def refresh_match_run(run_id: UUID) -> None:
             return
 
         people_by_id = {str(person.get("id")): person for person in job.people}
+        if not profile.strip():
+            _finish_influence_only_run(session, run, people_by_id)
+            return
+
         run.status = "researching"
         session.commit()
         had_failure = False
@@ -196,6 +201,48 @@ def _match_payload(
             "volunteer_experience": research.volunteer_experience,
         },
     }
+
+
+def _finish_influence_only_run(
+    session: Session, run: MatchRun, people_by_id: dict[str, dict[str, Any]]
+) -> None:
+    """Avoid provider work when there is no profile to assess against."""
+    for person_id in run.candidate_ids:
+        person = people_by_id.get(person_id)
+        if person is not None:
+            run.results = [*run.results, _influence_only_match(person).model_dump(mode="json")]
+        _record_progress(session, run)
+    run.status = "done"
+    run.profile = None
+    run.completed_at = datetime.now(UTC)
+    session.commit()
+
+
+def _influence_only_match(person: dict[str, Any]) -> ScoredMatch:
+    influence = decision_power_score(str(person.get("title", "")))
+    title = str(person.get("title", "their current role"))
+    company = str(person.get("company_name", "their company"))
+    return ScoredMatch(
+        id=str(person["id"]),
+        confidence="medium",
+        breakdown=Breakdown(
+            decision_power=round(influence / 100 * 40),
+            background_fit=None,
+            shared_ground=None,
+        ),
+        reasoning=f"Hiring influence is based on the {title} role at {company}.",
+        outreach_angle="",
+        missing_info=["Background fit and shared ground could not be assessed without your profile."],
+        evidence=[
+            MatchEvidence(
+                factor="decision_power",
+                fact=f"Current role: {title} at {company}.",
+                source_label="Current-role evidence",
+                source_url=str(person.get("evidence_url") or person.get("profile_url") or "") or None,
+            )
+        ],
+        score=influence,
+    )
 
 
 def _record_progress(session: Session, run: MatchRun) -> None:
