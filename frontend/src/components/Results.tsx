@@ -40,6 +40,11 @@ function stepIndex(status: JobStatus | undefined) {
   return 0;
 }
 
+function stepIsComplete(status: JobStatus | undefined, index: number) {
+  if (status === "done") return true;
+  return status === "finding_people" && index === 0;
+}
+
 function People(props: {
   people: Person[];
   onSelect: (person: Person) => void;
@@ -356,8 +361,16 @@ export function Results(props: {
             <li
               class="relative overflow-hidden rounded-lg border px-3 py-2"
               classList={{
-                "border-star text-star": i() <= stepIndex(job.data?.status),
-                "border-line text-dim": i() > stepIndex(job.data?.status),
+                "border-star bg-star/80 text-signal-ink": stepIsComplete(
+                  job.data?.status,
+                  i(),
+                ),
+                "border-star text-star":
+                  !stepIsComplete(job.data?.status, i()) &&
+                  i() === stepIndex(job.data?.status),
+                "border-line text-dim":
+                  !stepIsComplete(job.data?.status, i()) &&
+                  i() > stepIndex(job.data?.status),
               }}
             >
               {step.label}

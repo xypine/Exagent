@@ -196,6 +196,57 @@ describe("Results", () => {
     ).not.toBeNull();
   });
 
+  it("fills every progress block when the search is complete", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(() => (
+      <QueryClientProvider client={queryClient}>
+        <Results jobId="job-1" onReset={() => {}} />
+      </QueryClientProvider>
+    ));
+
+    await screen.findByText(
+      "Company search complete — no more companies to load.",
+    );
+
+    for (const label of ["Finding companies", "Finding key people", "Done"]) {
+      const block = screen.getByText(label).closest("li");
+      expect(block?.classList.contains("bg-star/80")).toBe(true);
+      expect(block?.classList.contains("text-signal-ink")).toBe(true);
+    }
+  });
+
+  it("fills completed progress blocks but not the active one", async () => {
+    vi.mocked(getSearch).mockResolvedValue({
+      ...JOB,
+      status: "finding_people",
+    });
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(() => (
+      <QueryClientProvider client={queryClient}>
+        <Results jobId="job-1" onReset={() => {}} />
+      </QueryClientProvider>
+    ));
+
+    await screen.findByText(
+      "Companies found — researching key people in the background.",
+    );
+
+    const companies = screen.getByText("Finding companies").closest("li");
+    const people = screen.getByText("Finding key people").closest("li");
+    const done = screen.getByText("Done").closest("li");
+
+    expect(companies?.classList.contains("bg-star/80")).toBe(true);
+    expect(people?.classList.contains("bg-star/80")).toBe(false);
+    expect(people?.classList.contains("border-star")).toBe(true);
+    expect(done?.classList.contains("bg-star/80")).toBe(false);
+  });
+
   it("hides people with an unverified employer until requested", async () => {
     vi.mocked(getSearch).mockResolvedValue({
       ...JOB,
