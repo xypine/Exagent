@@ -16,6 +16,10 @@ def test_titles_for_maps_the_frontend_industry_label_to_a_preset() -> None:
     assert "Software Engineer" in titles
 
 
+def test_titles_for_maps_legacy_saas_label_to_the_frontend_preset() -> None:
+    assert titles_for("SaaS") == titles_for("SaaS company")
+
+
 def test_titles_for_rejects_free_text_industries() -> None:
     with pytest.raises(ValueError, match="Key people are unavailable"):
         titles_for("Fintech")

@@ -44,7 +44,7 @@ Commands:
 Examples:
   pnpm agent -- health
   pnpm agent -- client
-  pnpm agent -- search create --area Helsinki --industry SaaS --company-size small --wait
+  pnpm agent -- search create --area Helsinki --industry "SaaS company" --company-size small --wait
   pnpm agent -- person research <job-id> <person-id> --wait --json
   pnpm agent -- match start <job-id> --profile-file ./profile.txt --wait`;
 

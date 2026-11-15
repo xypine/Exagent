@@ -8,6 +8,8 @@ from app.db.models import CompanySearchCache, PeopleSearchCache, SearchJob
 from app.services.company_search import (
     JOB_DONE,
     JOB_FINDING_COMPANIES,
+    JOB_FINDING_PEOPLE,
+    JOB_QUEUED,
     CompanySearchService,
     cache_key_for,
     company_query,
@@ -102,6 +104,43 @@ class MoreCompaniesSession:
 
     def refresh(self, _value: object) -> None:
         pass
+
+
+class RecoverySession:
+    def __init__(
+        self,
+        jobs: list[SearchJob],
+        company_caches: list[CompanySearchCache],
+        people_caches: list[PeopleSearchCache],
+    ) -> None:
+        self.jobs = jobs
+        self.company_caches = {cache.cache_key: cache for cache in company_caches}
+        self.people_caches = {cache.cache_key: cache for cache in people_caches}
+        self.commits = 0
+
+    def scalars(self, _statement: object) -> list[SearchJob]:
+        return self.jobs
+
+    def get(
+        self,
+        model: type[SearchJob] | type[CompanySearchCache] | type[PeopleSearchCache],
+        key: object,
+    ) -> SearchJob | CompanySearchCache | PeopleSearchCache | None:
+        if model is SearchJob:
+            return next((job for job in self.jobs if job.id == key), None)
+        if model is CompanySearchCache:
+            return self.company_caches.get(key)
+        assert model is PeopleSearchCache
+        return self.people_caches.get(key)
+
+    def add(self, value: CompanySearchCache | PeopleSearchCache) -> None:
+        if isinstance(value, CompanySearchCache):
+            self.company_caches[value.cache_key] = value
+        else:
+            self.people_caches[value.cache_key] = value
+
+    def commit(self) -> None:
+        self.commits += 1
 
 
 def test_cache_key_ignores_casing_and_repeated_whitespace() -> None:
@@ -294,6 +333,49 @@ def test_fresh_cache_reuses_completed_key_people_without_scheduling_refresh() ->
     assert job.people_companies_searched == 1
     assert job.people_request_count == 1
     assert len(session.added) == 1
+    assert session.commits == 1
+
+
+def test_recovery_reclaims_one_interrupted_refresh_per_cache_key() -> None:
+    company_job = SearchJob(
+        id=uuid4(),
+        client_id=uuid4(),
+        cache_key="a" * 64,
+        area="Helsinki",
+        industry="SaaS company",
+        company_size="small",
+        status=JOB_FINDING_COMPANIES,
+    )
+    people_job = SearchJob(
+        id=uuid4(),
+        client_id=uuid4(),
+        cache_key="b" * 64,
+        area="Helsinki",
+        industry="SaaS company",
+        company_size="small",
+        status=JOB_FINDING_PEOPLE,
+        companies=[{"id": "company-1", "name": "Example"}],
+    )
+    company_cache = CompanySearchCache(cache_key=company_job.cache_key)
+    people_company_cache = CompanySearchCache(cache_key=people_job.cache_key)
+    people_cache = PeopleSearchCache(cache_key=people_job.cache_key)
+    session = RecoverySession(
+        [company_job, people_job],
+        [company_cache, people_company_cache],
+        [people_cache],
+    )
+    service = CompanySearchService(session)  # type: ignore[arg-type]
+
+    recoveries = service.recover_interrupted_searches()
+
+    assert {(recovery.job_id, recovery.phase) for recovery in recoveries} == {
+        (company_job.id, "companies"),
+        (people_job.id, "people"),
+    }
+    assert company_job.status == JOB_QUEUED
+    assert company_cache.refreshing_job_id == company_job.id
+    assert people_job.status == JOB_FINDING_PEOPLE
+    assert people_cache.refreshing_job_id == people_job.id
     assert session.commits == 1
 
 

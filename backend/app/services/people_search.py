@@ -21,6 +21,9 @@ from app.services.people_ranking import rank_by_hiring_influence
 
 PEOPLE_NAMESPACE = UUID("839f1d5f-f884-4e31-97a0-1a51c4fb2a89")
 JOB_TITLES_PATH = Path(__file__).resolve().parents[2] / "job_titles.json"
+# Keep the concise term used by earlier CLI examples working while the frontend
+# continues to display the more descriptive preset label.
+INDUSTRY_PRESET_ALIASES = {"saas": "saas_company"}
 
 
 @lru_cache
@@ -48,7 +51,8 @@ def job_title_presets() -> dict[str, tuple[str, ...]]:
 
 def preset_key(industry: str) -> str:
     """Convert the frontend's human-readable label to a job_titles.json key."""
-    return re.sub(r"[^a-z0-9]+", "_", industry.casefold()).strip("_")
+    key = re.sub(r"[^a-z0-9]+", "_", industry.casefold()).strip("_")
+    return INDUSTRY_PRESET_ALIASES.get(key, key)
 
 
 def titles_for(industry: str) -> tuple[str, ...]:

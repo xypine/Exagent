@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import hashlib
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID, uuid5
 
 from sqlalchemy import func, select
@@ -39,6 +40,14 @@ COMPANY_INDUSTRY_QUERY: dict[str, str] = {
     # the kinds of companies a recruiter is likely to work for.
     "recruiters": "recruitment agencies, executive-search firms, and staffing companies",
 }
+
+
+@dataclass(frozen=True)
+class SearchRecovery:
+    """One interrupted refresh that should be resumed after application startup."""
+
+    job_id: UUID
+    phase: Literal["companies", "people"]
 
 
 def normalize_criteria(value: str) -> str:
@@ -201,6 +210,63 @@ class CompanySearchService:
         self._session.commit()
         self._session.refresh(job)
         return job, should_start_refresh
+
+    def recover_interrupted_searches(self) -> list[SearchRecovery]:
+        """Reclaim incomplete in-process work after a restart.
+
+        FastAPI background tasks do not survive a reload or process restart.  The
+        cache's ``refreshing_job_id`` is a lease rather than durable execution,
+        so select one nonterminal job per cache key and requeue it here.
+        """
+        jobs = list(
+            self._session.scalars(
+                select(SearchJob)
+                .where(
+                    SearchJob.status.in_((JOB_QUEUED, JOB_FINDING_COMPANIES, JOB_FINDING_PEOPLE))
+                )
+                .order_by(SearchJob.created_at, SearchJob.id)
+            )
+        )
+        selected: dict[str, SearchRecovery] = {}
+        for job in jobs:
+            phase: Literal["companies", "people"] = (
+                "people" if job.status == JOB_FINDING_PEOPLE else "companies"
+            )
+            current = selected.get(job.cache_key)
+            # Resuming people work preserves completed company discovery and is
+            # therefore preferred if a cache has jobs in both phases.
+            if current is None or phase == "people":
+                selected[job.cache_key] = SearchRecovery(job.id, phase)
+
+        recoveries = list(selected.values())
+        for recovery in recoveries:
+            recovery_job = self._session.get(SearchJob, recovery.job_id)
+            if recovery_job is None:
+                continue
+            if recovery.phase == "companies":
+                company_cache = self._session.get(CompanySearchCache, recovery_job.cache_key)
+                if company_cache is None:
+                    company_cache = CompanySearchCache(cache_key=recovery_job.cache_key)
+                    self._session.add(company_cache)
+                company_cache.refreshing_job_id = recovery_job.id
+                # refresh() starts the company phase only from queued.
+                recovery_job.status = JOB_QUEUED
+            else:
+                company_cache = self._session.get(CompanySearchCache, recovery_job.cache_key)
+                people_cache = self._session.get(PeopleSearchCache, recovery_job.cache_key)
+                if people_cache is None:
+                    people_cache = PeopleSearchCache(
+                        cache_key=recovery_job.cache_key,
+                        expires_at=company_cache.expires_at if company_cache is not None else None,
+                    )
+                    self._session.add(people_cache)
+                people_cache.refreshing_job_id = recovery_job.id
+                recovery_job.status = JOB_FINDING_PEOPLE
+            recovery_job.completed_at = None
+
+        if recoveries:
+            self._session.commit()
+        return recoveries
 
     def _new_job(
         self,
@@ -539,6 +605,12 @@ async def refresh_company_search(job_id: UUID) -> None:
     """Background-task entry point; it owns its database session."""
     with SessionLocal() as session:
         await CompanySearchService(session).refresh(job_id)
+
+
+def recover_interrupted_searches() -> list[SearchRecovery]:
+    """Persist recovery leases and return work to resume after startup."""
+    with SessionLocal() as session:
+        return CompanySearchService(session).recover_interrupted_searches()
 
 
 async def refresh_more_companies(job_id: UUID) -> None:

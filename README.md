@@ -69,7 +69,7 @@ pnpm agent -- health
 # Create a search and wait for the background work to finish.
 pnpm agent -- search create \
   --area Helsinki \
-  --industry SaaS \
+  --industry "SaaS company" \
   --company-size small \
   --wait \
   --json
