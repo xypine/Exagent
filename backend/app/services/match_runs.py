@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
@@ -23,6 +24,7 @@ from app.services.person_research import (
 
 MatchRunStatus = str
 _TERMINAL_STATUSES = {"done", "failed"}
+logger = logging.getLogger(__name__)
 
 
 def ranked_people(job: SearchJob, limit: int) -> list[dict[str, Any]]:
@@ -98,17 +100,20 @@ async def refresh_match_run(run_id: UUID) -> None:
         run.status = "researching"
         session.commit()
         had_failure = False
+        failure_messages: list[str] = []
 
         for person_id in run.candidate_ids:
             person = people_by_id.get(person_id)
             if person is None:
                 had_failure = True
+                failure_messages.append("A selected person is no longer available.")
                 _record_progress(session, run)
                 continue
             try:
                 research = await _ensure_research(session, person)
                 if research is None:
                     had_failure = True
+                    failure_messages.append("Background research failed. Try again.")
                     _record_progress(session, run)
                     continue
                 run.status = "matching"
@@ -120,18 +125,18 @@ async def refresh_match_run(run_id: UUID) -> None:
                     people=[payload],
                 )
                 run.results = [*run.results, scored[0].model_dump(mode="json")]
-            except GeminiMatchingError:
+            except GeminiMatchingError as error:
                 had_failure = True
+                logger.warning("Match scoring failed for person %s: %s", person_id, error)
+                failure_messages.append(str(error))
             except Exception:
                 had_failure = True
+                logger.exception("Unexpected match-run failure for person %s", person_id)
+                failure_messages.append("Match scoring failed unexpectedly. Try again.")
             _record_progress(session, run)
 
-        run.status = "done"
-        run.error = (
-            "Some people could not be researched or scored. Try a new run to retry them."
-            if had_failure
-            else None
-        )
+        run.status = "failed" if had_failure and not run.results else "done"
+        run.error = _failure_message(failure_messages) if had_failure else None
         run.completed_at = datetime.now(UTC)
         # The profile was task input, not a stored user profile or a cache key.
         run.profile = None
@@ -204,3 +209,12 @@ def _finish_failed(session: Session, run: MatchRun, message: str) -> None:
     run.profile = None
     run.completed_at = datetime.now(UTC)
     session.commit()
+
+
+def _failure_message(messages: list[str]) -> str:
+    """Expose the safe provider failure instead of masking it with a generic summary."""
+    unique_messages = list(dict.fromkeys(message for message in messages if message))
+    if not unique_messages:
+        return "Some people could not be researched or scored. Try a new run to retry them."
+    detail = " ".join(unique_messages)
+    return f"{detail} Try a new run to retry failed people."[:500]

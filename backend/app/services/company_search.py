@@ -382,7 +382,7 @@ class CompanySearchService:
         return True
 
     async def refresh_more_companies(self, job_id: UUID) -> None:
-        """Merge one user-requested expanded search without starting people research."""
+        """Merge one expanded company search and research its newly added companies."""
         job = self._session.get(SearchJob, job_id)
         if job is None or job.status != JOB_FINDING_COMPANIES:
             return
@@ -422,8 +422,18 @@ class CompanySearchService:
         cache.expires_at = now + timedelta(seconds=self._settings.company_search_cache_ttl_seconds)
         cache.refreshing_job_id = None
         job.companies = companies
-        job.status = JOB_DONE
         job.error = None
+        people_cache = self._session.get(PeopleSearchCache, job.cache_key)
+        if people_cache is not None and people_cache.companies_searched < len(companies):
+            people_cache.people_error = None
+            people_cache.refreshing_job_id = job.id
+            job.status = JOB_FINDING_PEOPLE
+            job.completed_at = None
+            self._session.commit()
+            await self._refresh_people(job)
+            return
+
+        job.status = JOB_DONE
         job.completed_at = now
         self._session.commit()
 

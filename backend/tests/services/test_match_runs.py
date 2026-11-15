@@ -1,7 +1,7 @@
 from uuid import uuid4
 
 from app.db.models import SearchJob
-from app.services.match_runs import ranked_people
+from app.services.match_runs import _failure_message, ranked_people
 
 
 def test_ranked_people_limits_to_top_five_and_keeps_company_order_for_ties() -> None:
@@ -57,3 +57,11 @@ def test_ranked_people_excludes_people_with_an_unverified_employer() -> None:
     )
 
     assert [person["id"] for person in ranked_people(job, 5)] == ["verified"]
+
+
+def test_failure_message_keeps_the_safe_provider_error() -> None:
+    provider_failure = "Gemini returned an invalid match score. Try again."
+    retry_instruction = "Try a new run to retry failed people."
+    expected = f"{provider_failure} {retry_instruction}"
+
+    assert _failure_message([provider_failure]) == expected

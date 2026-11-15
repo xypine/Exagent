@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import Any
 
 import pytest
@@ -67,3 +68,21 @@ def test_score_rejects_unrequested_people(monkeypatch: pytest.MonkeyPatch) -> No
 
     with pytest.raises(GeminiMatchingError, match="requested people"):
         service.score(profile="", people=[{"id": "person-1"}])
+
+
+def test_score_logs_the_actual_provider_error(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    class FailingInteractions:
+        def create(self, **_kwargs: Any) -> Any:
+            raise RuntimeError("HTTP 429: quota exhausted")
+
+    FakeClient.interactions = FailingInteractions()  # type: ignore[assignment]
+    monkeypatch.setattr("app.services.gemini_matching.genai.Client", FakeClient)
+    service = GeminiMatchingService(Settings(gemini_api_key="test-key"))
+
+    with caplog.at_level(logging.ERROR, logger="app.services.gemini_matching"):
+        with pytest.raises(GeminiMatchingError, match="temporarily unavailable"):
+            service.score(profile="", people=[{"id": "person-1"}])
+
+    assert "HTTP 429: quota exhausted" in caplog.text

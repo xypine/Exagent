@@ -27,6 +27,9 @@
 
 ## Reliability
 
+- Audit service and background-task exception handling for swallowed errors;
+  preserve safe API messages while logging the original exception and traceback
+  with enough request context to diagnose provider and processing failures.
 - Bound and evict inactive client buckets in the in-memory rate limiter. Each
   caller-controlled UUID currently creates a bucket that is retained for the
   lifetime of the process.

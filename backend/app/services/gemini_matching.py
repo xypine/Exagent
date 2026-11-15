@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Sequence
 from typing import Any
 
@@ -16,6 +17,8 @@ from app.services.matching import (
     build_user_prompt,
     score_matches,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class GeminiMatchingError(Exception):
@@ -36,6 +39,7 @@ class GeminiMatchingService:
         language: str = "English",
     ) -> list[ScoredMatch]:
         if not self._settings.gemini_api_key:
+            logger.error("Match scoring unavailable: GEMINI_API_KEY is not configured")
             raise GeminiMatchingError(
                 "Match scoring is unavailable because Gemini is not configured."
             )
@@ -61,10 +65,12 @@ class GeminiMatchingService:
                 raise ValueError("Gemini response did not contain JSON text")
             response = MatchResponse.model_validate_json(output_text)
         except (ValidationError, ValueError, TypeError) as error:
+            logger.exception("Gemini returned an invalid match score")
             raise GeminiMatchingError(
                 "Gemini returned an invalid match score. Try again."
             ) from error
         except Exception as error:
+            logger.exception("Gemini matching provider request failed")
             raise GeminiMatchingError(
                 "Gemini match scoring is temporarily unavailable. Try again."
             ) from error
@@ -72,5 +78,10 @@ class GeminiMatchingService:
         expected_ids = {str(person["id"]) for person in people}
         actual_ids = [match.id for match in response.results]
         if len(actual_ids) != len(expected_ids) or set(actual_ids) != expected_ids:
+            logger.error(
+                "Gemini did not score the requested people: expected IDs %s, received IDs %s",
+                sorted(expected_ids),
+                actual_ids,
+            )
             raise GeminiMatchingError("Gemini did not score the requested people. Try again.")
         return score_matches(response)
