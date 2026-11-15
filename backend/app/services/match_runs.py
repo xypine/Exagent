@@ -28,7 +28,11 @@ _TERMINAL_STATUSES = {"done", "failed"}
 def ranked_people(job: SearchJob, limit: int) -> list[dict[str, Any]]:
     """Rank by deterministic hiring influence; preserve Exa company order for ties."""
     company_positions = {company.get("id"): index for index, company in enumerate(job.companies)}
-    indexed = list(enumerate(job.people))
+    indexed = [
+        (index, person)
+        for index, person in enumerate(job.people)
+        if person.get("employer_verified", True) is True
+    ]
     ranked = sorted(
         indexed,
         key=lambda item: (

@@ -41,6 +41,9 @@ Commands:
   match start <job-id> [--profile <text> | --profile-file <path>]
   match get <job-id> <run-id>
 
+Search responses include employer_verified and reported_company_name for each
+person. Use --json to inspect unverified people.
+
 Examples:
   pnpm agent -- health
   pnpm agent -- client
@@ -337,7 +340,16 @@ export function formatResponse(response) {
   if (response === null) return "No response body.";
   if (typeof response !== "object") return String(response);
   const status = typeof response.status === "string" ? ` (${response.status})` : "";
-  if (typeof response.job_id === "string") return `Search ${response.job_id}${status}`;
+  if (typeof response.job_id === "string") {
+    const people = Array.isArray(response.people) ? response.people : [];
+    const unverified = people.filter((person) => person?.employer_verified === false).length;
+    const verified = people.length - unverified;
+    const peopleSummary =
+      people.length === 0
+        ? ""
+        : `\nPeople: ${verified} verified${unverified ? `, ${unverified} unverified` : ""}`;
+    return `Search ${response.job_id}${status}${peopleSummary}`;
+  }
   if (typeof response.person_id === "string") return `Person research ${response.person_id}${status}`;
   if (typeof response.id === "string") return `Match run ${response.id}${status}`;
   if (typeof response.client_id === "string") return `Client ${response.client_id}`;

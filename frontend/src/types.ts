@@ -26,6 +26,8 @@ export interface Person {
   title: string;
   company_id: string;
   company_name: string;
+  reported_company_name: string;
+  employer_verified: boolean;
   matched_job_title: string;
   profile_url: string;
   evidence_url: string;

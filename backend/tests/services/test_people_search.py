@@ -7,7 +7,12 @@ from app.services.exa_provider import (
     ProviderPerson,
     ProviderSearchResponse,
 )
-from app.services.people_search import discover_key_people, normalize_person, titles_for
+from app.services.people_search import (
+    discover_key_people,
+    employer_names_match,
+    normalize_person,
+    titles_for,
+)
 
 
 def test_titles_for_maps_the_frontend_industry_label_to_a_preset() -> None:
@@ -42,6 +47,8 @@ def test_normalize_person_keeps_only_lightweight_discovery_fields() -> None:
         "id": normalized["id"],
         "company_id": "company-1",
         "company_name": "Example Oy",
+        "reported_company_name": "Example Oy",
+        "employer_verified": True,
         "name": "Aino Example",
         "title": "Engineering Manager",
         "matched_job_title": "Engineering Manager",
@@ -49,6 +56,11 @@ def test_normalize_person_keeps_only_lightweight_discovery_fields() -> None:
         "evidence_url": "https://example.fi/team/aino",
         "evidence_summary": "Leads the engineering team.",
     }
+
+
+def test_employer_names_match_ignores_legal_suffixes_but_not_near_matches() -> None:
+    assert employer_names_match("Example Oy", "Example") is True
+    assert employer_names_match("Lyniti", "Syniti") is False
 
 
 class ConcurrentPeopleProvider:

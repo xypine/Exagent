@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createApiClient, parseArguments, run } from "../bin/exagent.mjs";
+import { createApiClient, formatResponse, parseArguments, run } from "../bin/exagent.mjs";
 
 const CLIENT_ID = "11111111-1111-4111-8111-111111111111";
 
@@ -176,4 +176,18 @@ test("argument parsing accepts pnpm's script separator", () => {
 
 test("default polling cadence stays below the local API rate limit", () => {
   assert.equal(parseArguments(["search", "get", "job-1"]).options.interval, 3_000);
+});
+
+test("search output summarizes verified and unverified employers", () => {
+  assert.equal(
+    formatResponse({
+      job_id: "job-1",
+      status: "done",
+      people: [
+        { employer_verified: true },
+        { employer_verified: false, reported_company_name: "Other Company" },
+      ],
+    }),
+    "Search job-1 (done)\nPeople: 1 verified, 1 unverified",
+  );
 });

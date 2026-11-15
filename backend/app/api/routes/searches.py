@@ -71,6 +71,8 @@ class PersonResponse(BaseModel):
     id: str
     company_id: str
     company_name: str
+    reported_company_name: str
+    employer_verified: bool
     name: str
     title: str
     matched_job_title: str
@@ -262,6 +264,11 @@ async def start_person_research(
     db: DbDependency,
 ) -> PersonResearchResponse:
     person = _authorized_person(db, job_id=job_id, client_id=context.client_id, person_id=person_id)
+    if not person.employer_verified:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Employer could not be verified for this person.",
+        )
     cache, should_start = queue_person_research(
         db,
         PersonResearchSubject(
@@ -333,6 +340,10 @@ def _search_response(
             "people": [
                 {
                     **person,
+                    "reported_company_name": person.get(
+                        "reported_company_name", person["company_name"]
+                    ),
+                    "employer_verified": person.get("employer_verified", True),
                     "decision_power_score": decision_power_score(person["title"]),
                 }
                 for person in job.people
@@ -366,6 +377,10 @@ def _authorized_person(
             return PersonResponse.model_validate(
                 {
                     **candidate,
+                    "reported_company_name": candidate.get(
+                        "reported_company_name", candidate["company_name"]
+                    ),
+                    "employer_verified": candidate.get("employer_verified", True),
                     "decision_power_score": decision_power_score(candidate["title"]),
                 }
             )

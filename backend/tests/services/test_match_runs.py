@@ -33,3 +33,27 @@ def test_ranked_people_limits_to_top_five_and_keeps_company_order_for_ties() -> 
         "second-manager",
         "recruiter",
     ]
+
+
+def test_ranked_people_excludes_people_with_an_unverified_employer() -> None:
+    job = SearchJob(
+        id=uuid4(),
+        client_id=uuid4(),
+        cache_key="a" * 64,
+        area="Helsinki",
+        industry="SaaS company",
+        company_size="small",
+        status="done",
+        companies=[{"id": "company-1"}],
+        people=[
+            {"id": "verified", "title": "Engineer", "company_id": "company-1"},
+            {
+                "id": "unverified",
+                "title": "CEO",
+                "company_id": "company-1",
+                "employer_verified": False,
+            },
+        ],
+    )
+
+    assert [person["id"] for person in ranked_people(job, 5)] == ["verified"]

@@ -54,6 +54,8 @@ const JOB: SearchJob = {
       id: "person-1",
       company_id: "company-1",
       company_name: "Northstar Labs",
+      reported_company_name: "Northstar Labs",
+      employer_verified: true,
       name: "Maya Chen",
       title: "VP Product",
       matched_job_title: "VP Product",
@@ -156,6 +158,44 @@ describe("Results", () => {
     await waitFor(() =>
       expect(searchMoreCompanies).toHaveBeenCalledWith("job-1"),
     );
+  });
+
+  it("hides people with an unverified employer until requested", async () => {
+    vi.mocked(getSearch).mockResolvedValue({
+      ...JOB,
+      people: [
+        ...JOB.people,
+        {
+          ...JOB.people[0],
+          id: "person-unverified",
+          name: "Alex Example",
+          reported_company_name: "Different Company",
+          employer_verified: false,
+        },
+      ],
+    });
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(() => (
+      <QueryClientProvider client={queryClient}>
+        <Results jobId="job-1" onReset={() => {}} />
+      </QueryClientProvider>
+    ));
+
+    expect(screen.queryByText("Alex Example")).toBeNull();
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Show 1 unverified employer" }),
+    );
+    expect(
+      await screen.findByText("Unverified employer: Different Company"),
+    ).not.toBeNull();
+    expect(
+      screen
+        .getByRole("button", { name: "Alex Example, VP Product, score 80" })
+        .hasAttribute("disabled"),
+    ).toBe(true);
   });
 
   it("keeps the match-profile form collapsed until requested", async () => {

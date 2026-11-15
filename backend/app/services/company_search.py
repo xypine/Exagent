@@ -29,6 +29,7 @@ JOB_DONE = "done"
 JOB_FAILED = "failed"
 JOB_TERMINAL_STATUSES = (JOB_DONE, JOB_FAILED)
 COMPANY_NAMESPACE = UUID("2fb99d3a-73b9-4b46-89f0-85d6a450850d")
+SEARCH_CACHE_VERSION = "employer-verification-v1"
 COMPANY_SIZE_QUERY: dict[CompanySize, str] = {
     "small": "companies with fewer than 25 employees",
     "medium": "companies with 25–150 employees",
@@ -56,7 +57,7 @@ def normalize_criteria(value: str) -> str:
 
 def cache_key_for(area: str, industry: str, company_size: CompanySize) -> str:
     criteria = (
-        f"{normalize_criteria(area)}\n{normalize_criteria(industry)}\n"
+        f"{SEARCH_CACHE_VERSION}\n{normalize_criteria(area)}\n{normalize_criteria(industry)}\n"
         f"{company_size}\n{COMPANY_SIZE_QUERY[company_size]}"
     )
     return hashlib.sha256(criteria.encode()).hexdigest()

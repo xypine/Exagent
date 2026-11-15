@@ -46,14 +46,40 @@ function People(props: {
   onSelect: (person: Person) => void;
   matches: PersonMatch[];
 }) {
+  const [showUnverified, setShowUnverified] = createSignal(false);
+  const verifiedPeople = () =>
+    props.people.filter((person) => person.employer_verified);
+  const unverifiedPeople = () =>
+    props.people.filter((person) => !person.employer_verified);
+  const visiblePeople = () => [
+    ...verifiedPeople(),
+    ...(showUnverified() ? unverifiedPeople() : []),
+  ];
+
   return (
     <div class="border-t border-line">
       <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-4 bg-ink px-5 py-2 font-mono text-xs text-dim uppercase">
         <span>Key people</span>
-        <span>Score</span>
+        <div class="flex items-center gap-3">
+          <Show when={unverifiedPeople().length > 0}>
+            <button
+              type="button"
+              aria-pressed={showUnverified()}
+              onClick={() => setShowUnverified((shown) => !shown)}
+              class="normal-case text-star hover:underline"
+            >
+              {showUnverified()
+                ? "Hide unverified employers"
+                : `Show ${unverifiedPeople().length} unverified employer${
+                    unverifiedPeople().length === 1 ? "" : "s"
+                  }`}
+            </button>
+          </Show>
+          <span>Score</span>
+        </div>
       </div>
       <ul>
-        <For each={props.people}>
+        <For each={visiblePeople()}>
           {(person) => (
             <li class="border-t border-line/70 first:border-t-0">
               <button
@@ -61,11 +87,17 @@ function People(props: {
                 aria-haspopup="dialog"
                 aria-label={`${person.name}, ${person.title}, score ${person.decision_power_score}`}
                 onClick={() => props.onSelect(person)}
-                class="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-5 py-3 text-left transition hover:bg-star/5"
+                disabled={!person.employer_verified}
+                class="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-5 py-3 text-left transition hover:bg-star/5 disabled:cursor-not-allowed disabled:opacity-65"
               >
                 <span class="min-w-0 truncate">
                   <span class="font-medium">{person.name}</span>
                   <span class="text-dim"> — {person.title}</span>
+                  <Show when={!person.employer_verified}>
+                    <span class="ml-2 text-xs text-bad">
+                      Unverified employer: {person.reported_company_name}
+                    </span>
+                  </Show>
                 </span>
                 <span class="font-mono text-sm font-semibold text-star">
                   {person.decision_power_score}

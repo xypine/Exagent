@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import re
+import unicodedata
 from collections.abc import Awaitable, Callable, Sequence
 from functools import lru_cache
 from pathlib import Path
@@ -150,6 +151,8 @@ def normalize_person(
         "id": str(uuid5(PEOPLE_NAMESPACE, profile_url)),
         "company_id": company_id,
         "company_name": company_name,
+        "reported_company_name": person.company_name,
+        "employer_verified": employer_names_match(company_name, person.company_name),
         "name": person.name,
         "title": person.title,
         "matched_job_title": person.matched_job_title,
@@ -157,3 +160,41 @@ def normalize_person(
         "evidence_url": evidence_url,
         "evidence_summary": person.evidence_summary,
     }
+
+
+_LEGAL_SUFFIXES = {
+    "ab",
+    "as",
+    "co",
+    "corp",
+    "corporation",
+    "gmbh",
+    "inc",
+    "limited",
+    "llc",
+    "ltd",
+    "oy",
+    "plc",
+}
+
+
+def employer_names_match(selected_company: str, reported_company: str) -> bool:
+    """Compare employer names without a company-alias registry.
+
+    Legal entity suffixes and punctuation do not change identity. All other
+    differences remain unverified, including parents, subsidiaries, and stale
+    rebrands.
+    """
+
+    return _company_identity(selected_company) == _company_identity(reported_company)
+
+
+def _company_identity(name: str) -> tuple[str, ...]:
+    normalized = unicodedata.normalize("NFKD", name).casefold()
+    normalized = "".join(
+        character for character in normalized if not unicodedata.combining(character)
+    )
+    words = re.findall(r"[a-z0-9]+", normalized)
+    while words and words[-1] in _LEGAL_SUFFIXES:
+        words.pop()
+    return tuple(words)
