@@ -112,7 +112,7 @@ describe("Results", () => {
     vi.mocked(storeProfile).mockReset();
   });
 
-  it("shows score factors and evidence gaps for a match", async () => {
+  it("keeps match rationale in person details", async () => {
     const match = {
       id: "person-1",
       score: 72,
@@ -158,7 +158,32 @@ describe("Results", () => {
       </QueryClientProvider>
     ));
 
+    expect(await screen.findByLabelText("Overall match score 72")).not.toBeNull();
+    expect(screen.getByLabelText("Decision power subscore 32")).not.toBeNull();
+    expect(screen.getByLabelText("Background fit subscore 28")).not.toBeNull();
+    expect(screen.getByLabelText("Shared ground subscore 12")).not.toBeNull();
+    expect(
+      screen.queryByText("Strong hiring influence and relevant company work."),
+    ).toBeNull();
+    expect(
+      screen.queryByText("Try: Ask about the product team's upcoming work."),
+    ).toBeNull();
+    expect(screen.queryByText("Score factors")).toBeNull();
+    expect(screen.queryByText("Evidence gaps")).toBeNull();
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Maya Chen, VP Product, match score 72",
+      }),
+    );
+
     expect(await screen.findByText("Score factors")).not.toBeNull();
+    expect(
+      screen.getByText("Strong hiring influence and relevant company work."),
+    ).not.toBeNull();
+    expect(
+      screen.getByText("Try: Ask about the product team's upcoming work."),
+    ).not.toBeNull();
     expect(screen.getByText("32/40")).not.toBeNull();
     expect(screen.getByText("28/40")).not.toBeNull();
     expect(screen.getByText("12/20")).not.toBeNull();
@@ -167,11 +192,6 @@ describe("Results", () => {
       screen.getByText("No public evidence of a shared background."),
     ).not.toBeNull();
 
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: "Maya Chen, VP Product, hiring influence 80",
-      }),
-    );
     fireEvent.click(await screen.findByRole("button", { name: "Sources?" }));
 
     expect(
@@ -418,13 +438,12 @@ describe("Results", () => {
       </QueryClientProvider>
     ));
 
-    expect(await screen.findByText("80/100 hiring influence")).not.toBeNull();
     expect(
-      screen.getByText(
-        "Could not assess background fit or shared ground without your profile.",
-      ),
+      await screen.findByRole("button", {
+        name: "Maya Chen, VP Product, hiring influence 80",
+      }),
     ).not.toBeNull();
-    expect(screen.queryByText("80/100 match")).toBeNull();
+    expect(screen.queryByLabelText("Overall match score 80")).toBeNull();
     expect(screen.queryByText("Score factors")).toBeNull();
   });
 

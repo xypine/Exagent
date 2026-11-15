@@ -97,50 +97,88 @@ function People(props: {
                   }`}
             </button>
           </Show>
-          <span>Hiring influence</span>
+          <span>Score</span>
         </div>
       </div>
       <ul>
         <For each={visiblePeople()}>
-          {(person) => (
-            <li class="border-t border-line/70 first:border-t-0">
-              <button
-                type="button"
-                aria-haspopup="dialog"
-                aria-label={`${person.name}, ${person.title}, hiring influence ${person.decision_power_score}`}
-                onClick={() => props.onSelect(person)}
-                disabled={!person.employer_verified}
-                class="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-5 py-3 text-left transition hover:bg-star/5 disabled:cursor-not-allowed disabled:opacity-65"
-              >
-                <span class="min-w-0 truncate">
-                  <span class="font-medium">{person.name}</span>
-                  <span class="text-dim"> — {person.title}</span>
-                  <Show when={!person.employer_verified}>
-                    <span class="ml-2 text-xs text-bad">
-                      Unverified employer: {person.reported_company_name}
-                    </span>
-                  </Show>
-                </span>
-                <span class="font-mono text-sm font-semibold text-star">
-                  {person.decision_power_score}
-                </span>
-              </button>
-              <Show
-                when={props.matches.find((match) => match.id === person.id)}
-              >
-                {(match) => (
-                  <div class="mt-4 rounded-lg border border-star/30 bg-star/5 p-3 text-sm">
-                    <Show
-                      when={isInfluenceOnly(match())}
-                      fallback={<ProfileMatch match={match()} />}
-                    >
-                      <InfluenceOnly influence={person.decision_power_score} />
+          {(person) => {
+            const match = () =>
+              props.matches.find((candidate) => candidate.id === person.id);
+            const researchedMatch = () => {
+              const candidate = match();
+              return candidate && !isInfluenceOnly(candidate)
+                ? candidate
+                : undefined;
+            };
+
+            return (
+              <li class="border-t border-line/70 first:border-t-0">
+                <button
+                  type="button"
+                  aria-haspopup="dialog"
+                  aria-label={`${person.name}, ${person.title}, ${
+                    researchedMatch()
+                      ? `match score ${researchedMatch()?.score}`
+                      : `hiring influence ${person.decision_power_score}`
+                  }`}
+                  onClick={() => props.onSelect(person)}
+                  disabled={!person.employer_verified}
+                  class="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-5 py-3 text-left transition hover:bg-star/5 disabled:cursor-not-allowed disabled:opacity-65"
+                >
+                  <span class="min-w-0 truncate">
+                    <span class="font-medium">{person.name}</span>
+                    <span class="text-dim"> — {person.title}</span>
+                    <Show when={!person.employer_verified}>
+                      <span class="ml-2 text-xs text-bad">
+                        Unverified employer: {person.reported_company_name}
+                      </span>
                     </Show>
-                  </div>
-                )}
-              </Show>
-            </li>
-          )}
+                  </span>
+                  <Show
+                    when={researchedMatch()}
+                    fallback={
+                      <span
+                        aria-label={`Hiring influence ${person.decision_power_score}`}
+                        class="font-mono text-sm font-semibold text-star"
+                      >
+                        {person.decision_power_score}
+                      </span>
+                    }
+                  >
+                    {(scoredMatch) => (
+                      <span class="flex max-w-72 flex-wrap items-center justify-end gap-x-2 gap-y-1 font-mono text-xs">
+                        <span
+                          aria-label={`Decision power subscore ${scoredMatch().breakdown.decision_power}`}
+                          class="text-dim"
+                        >
+                          Power {scoredMatch().breakdown.decision_power}
+                        </span>
+                        <span
+                          aria-label={`Background fit subscore ${scoredMatch().breakdown.background_fit}`}
+                          class="text-dim"
+                        >
+                          Fit {scoredMatch().breakdown.background_fit}
+                        </span>
+                        <span
+                          aria-label={`Shared ground subscore ${scoredMatch().breakdown.shared_ground}`}
+                          class="text-dim"
+                        >
+                          Shared {scoredMatch().breakdown.shared_ground}
+                        </span>
+                        <span
+                          aria-label={`Overall match score ${scoredMatch().score}`}
+                          class="text-sm font-semibold text-star"
+                        >
+                          {scoredMatch().score}
+                        </span>
+                      </span>
+                    )}
+                  </Show>
+                </button>
+              </li>
+            );
+          }}
         </For>
       </ul>
     </div>
@@ -151,85 +189,6 @@ function isInfluenceOnly(match: PersonMatch) {
   return (
     match.breakdown.background_fit === null &&
     match.breakdown.shared_ground === null
-  );
-}
-
-function InfluenceOnly(props: { influence: number }) {
-  return (
-    <>
-      <p class="font-medium text-star">
-        {props.influence}/100 hiring influence
-      </p>
-      <p class="mt-2 text-dim">
-        Could not assess background fit or shared ground without your profile.
-      </p>
-    </>
-  );
-}
-
-function ProfileMatch(props: { match: PersonMatch }) {
-  return (
-    <>
-      <div class="flex items-baseline justify-between gap-3">
-        <p class="font-medium text-star">{props.match.score}/100 match</p>
-        <p class="font-mono text-xs text-dim">
-          {props.match.confidence} confidence
-        </p>
-      </div>
-      <p class="mt-2 text-dim">{props.match.reasoning}</p>
-      <p class="mt-2 text-xs text-star">Try: {props.match.outreach_angle}</p>
-      <MatchDetails match={props.match} />
-    </>
-  );
-}
-
-function MatchDetails(props: { match: PersonMatch }) {
-  const factors = [
-    {
-      label: "Decision power",
-      score: props.match.breakdown.decision_power,
-      maximum: 40,
-    },
-    {
-      label: "Background fit",
-      score: props.match.breakdown.background_fit,
-      maximum: 40,
-    },
-    {
-      label: "Shared ground",
-      score: props.match.breakdown.shared_ground,
-      maximum: 20,
-    },
-  ];
-
-  return (
-    <div class="mt-3 border-t border-star/20 pt-3">
-      <p class="font-mono text-xs text-dim uppercase">Score factors</p>
-      <dl class="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 text-xs sm:grid-cols-3">
-        <For each={factors}>
-          {(factor) => (
-            <div class="flex items-baseline justify-between gap-2 sm:block">
-              <dt class="text-dim">{factor.label}</dt>
-              <dd class="font-mono text-paper">
-                {factor.score === null
-                  ? "Not assessed"
-                  : `${factor.score}/${factor.maximum}`}
-              </dd>
-            </div>
-          )}
-        </For>
-      </dl>
-      <Show when={props.match.missing_info.length > 0}>
-        <div class="mt-3">
-          <p class="font-mono text-xs text-dim uppercase">Evidence gaps</p>
-          <ul class="mt-1 list-disc space-y-1 pl-4 text-xs text-dim">
-            <For each={props.match.missing_info}>
-              {(item) => <li>{item}</li>}
-            </For>
-          </ul>
-        </div>
-      </Show>
-    </div>
   );
 }
 

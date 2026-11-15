@@ -20,6 +20,68 @@ function decisionPowerLabel(score: number) {
   return "Low";
 }
 
+function MatchDetails(props: { match: PersonMatch }) {
+  const factors = [
+    {
+      label: "Decision power",
+      score: props.match.breakdown.decision_power,
+      maximum: 40,
+    },
+    {
+      label: "Background fit",
+      score: props.match.breakdown.background_fit,
+      maximum: 40,
+    },
+    {
+      label: "Shared ground",
+      score: props.match.breakdown.shared_ground,
+      maximum: 20,
+    },
+  ];
+
+  return (
+    <section class="mt-6 border-t border-line pt-5">
+      <div class="flex items-baseline justify-between gap-3">
+        <p class="font-medium text-star">{props.match.score}/100 match</p>
+        <p class="font-mono text-xs text-dim">
+          {props.match.confidence} confidence
+        </p>
+      </div>
+      <p class="mt-2 text-sm text-dim">{props.match.reasoning}</p>
+      <Show when={props.match.outreach_angle}>
+        <p class="mt-2 text-xs text-star">Try: {props.match.outreach_angle}</p>
+      </Show>
+      <div class="mt-4 border-t border-star/20 pt-3">
+        <p class="font-mono text-xs text-dim uppercase">Score factors</p>
+        <dl class="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 text-xs sm:grid-cols-3">
+          <For each={factors}>
+            {(factor) => (
+              <div class="flex items-baseline justify-between gap-2 sm:block">
+                <dt class="text-dim">{factor.label}</dt>
+                <dd class="font-mono text-paper">
+                  {factor.score === null
+                    ? "Not assessed"
+                    : `${factor.score}/${factor.maximum}`}
+                </dd>
+              </div>
+            )}
+          </For>
+        </dl>
+        <Show when={props.match.missing_info.length > 0}>
+          <div class="mt-3">
+            <p class="font-mono text-xs text-dim uppercase">Evidence gaps</p>
+            <ul class="mt-1 list-disc space-y-1 pl-4 text-xs text-dim">
+              <For each={props.match.missing_info}>
+                {(item) => <li>{item}</li>}
+              </For>
+            </ul>
+          </div>
+        </Show>
+      </div>
+    </section>
+  );
+}
+
 export function InsightsPanel(props: {
   jobId: string;
   person: Person;
@@ -107,6 +169,10 @@ export function InsightsPanel(props: {
       >
         current-role evidence ↗
       </a>
+
+      <Show when={props.match}>
+        {(match) => <MatchDetails match={match()} />}
+      </Show>
 
       <Show
         when={research.data?.status === "done"}
