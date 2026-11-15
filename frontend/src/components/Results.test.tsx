@@ -125,4 +125,28 @@ describe("Results", () => {
     expect(screen.getByText("80 · Very high")).not.toBeNull();
     expect(screen.getByText("Leads product at Northstar Labs.")).not.toBeNull();
   });
+
+  it("keeps the match-profile form collapsed until requested", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(() => (
+      <QueryClientProvider client={queryClient}>
+        <Results jobId="job-1" onReset={() => {}} />
+      </QueryClientProvider>
+    ));
+
+    const toggle = await screen.findByRole("button", {
+      name: "Expand Sharpen your matches",
+    });
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+
+    fireEvent.click(toggle);
+
+    expect(
+      screen.queryByRole("button", { name: "Expand Sharpen your matches" }),
+    ).toBeNull();
+    expect(screen.getByRole("button", { name: "Hide" })).not.toBeNull();
+  });
 });

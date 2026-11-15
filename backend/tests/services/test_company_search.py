@@ -112,6 +112,14 @@ def test_company_query_includes_selected_headcount_range() -> None:
     assert "startup" not in small_query.casefold()
 
 
+def test_company_query_uses_company_sector_terms_for_recruiters() -> None:
+    query = company_query("Helsinki, Finland", "Recruiters", "small")
+
+    assert "recruitment agencies, executive-search firms, and staffing companies" in query
+    assert "Recruiters companies" not in query
+    assert "fewer than 25 employees" in query
+
+
 async def test_company_search_does_not_fall_back_when_matches_exist() -> None:
     provider = FallbackProvider([populated_company_response()])
 

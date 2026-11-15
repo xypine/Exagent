@@ -165,6 +165,7 @@ export function Results(props: {
     null,
   );
   const [profile, setProfile] = createSignal(getStoredProfile());
+  const [profileExpanded, setProfileExpanded] = createSignal(false);
   const [matchRunId, setMatchRunId] = createSignal<string | null>(null);
   const [matchStarted, setMatchStarted] = createSignal(false);
   const job = createQuery(() => ({
@@ -343,9 +344,19 @@ export function Results(props: {
         </p>
       </Show>
 
-      <section class="mt-6 rounded-2xl border border-line bg-ink-2/60 p-5">
-        <div class="flex flex-wrap items-baseline justify-between gap-3">
-          <div>
+      <section class="relative mt-6 overflow-hidden rounded-2xl border border-line bg-ink-2/60 p-5">
+        <Show when={!profileExpanded()}>
+          <button
+            type="button"
+            aria-controls="match-profile"
+            aria-expanded="false"
+            aria-label="Expand Sharpen your matches"
+            onClick={() => setProfileExpanded(true)}
+            class="absolute inset-0 z-10 cursor-pointer rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-star"
+          />
+        </Show>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="min-w-0">
             <h2 class="font-semibold">Sharpen your matches</h2>
             <p class="mt-1 max-w-2xl text-sm text-dim">
               We automatically research and score the top 5 people. Add a little
@@ -353,48 +364,89 @@ export function Results(props: {
               scores reflect decision power only.
             </p>
           </div>
-          <Show when={matchRun.data}>
-            {(run) => (
-              <p class="font-mono text-xs text-star">
-                {run().completed_count}/{run().candidate_count} scored ·{" "}
-                {run().status}
-              </p>
-            )}
-          </Show>
+          <div class="flex items-center gap-3">
+            <Show when={matchRun.data}>
+              {(run) => (
+                <p class="font-mono text-xs text-star">
+                  {run().completed_count}/{run().candidate_count} scored ·{" "}
+                  {run().status}
+                </p>
+              )}
+            </Show>
+            <Show
+              when={profileExpanded()}
+              fallback={
+                <span
+                  aria-hidden="true"
+                  class="inline-flex size-5 items-center justify-center leading-none text-star"
+                >
+                  ⌄
+                </span>
+              }
+            >
+              <button
+                type="button"
+                aria-controls="match-profile"
+                aria-expanded="true"
+                onClick={() => setProfileExpanded(false)}
+                class="flex items-center gap-1 rounded-lg px-2 py-1 text-sm text-star transition hover:bg-star/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-star"
+              >
+                Hide
+                <span
+                  aria-hidden="true"
+                  class="inline-flex size-5 rotate-180 items-center justify-center leading-none text-star transition-transform duration-300 motion-reduce:transition-none"
+                >
+                  ⌄
+                </span>
+              </button>
+            </Show>
+          </div>
         </div>
-        <label for="profile" class="mt-4 block">
-          <span class="text-xs font-semibold tracking-wider text-star uppercase">
-            About you (optional)
-          </span>
-          <textarea
-            id="profile"
-            value={profile()}
-            onInput={(event) => {
-              const next = event.currentTarget.value;
-              setProfile(next);
-              storeProfile(next);
-            }}
-            maxlength="4000"
-            rows="3"
-            placeholder="Your role, experience, strengths, and the work you want to do…"
-            class="mt-2 w-full rounded-xl border border-line bg-ink px-3 py-2 text-sm outline-none placeholder:text-dim focus:border-star"
-          />
-        </label>
-        <button
-          type="button"
-          disabled={startMatching.isPending}
-          onClick={() => startMatching.mutate(profile())}
-          class="mt-3 rounded-lg border border-star px-3 py-2 text-sm text-star hover:bg-star/10 disabled:opacity-50"
+        <div
+          id="match-profile"
+          inert={!profileExpanded()}
+          class="grid transition-[grid-template-rows,opacity] duration-300 ease-out motion-reduce:transition-none"
+          classList={{
+            "grid-rows-[1fr] opacity-100": profileExpanded(),
+            "grid-rows-[0fr] opacity-0": !profileExpanded(),
+          }}
         >
-          {startMatching.isPending
-            ? "Starting research…"
-            : "Refresh scores with this profile"}
-        </button>
-        <Show when={startMatching.isError || matchRun.data?.error}>
-          <p class="mt-3 text-sm text-bad">
-            {matchRun.data?.error ?? startMatching.error?.message}
-          </p>
-        </Show>
+          <div class="min-h-0 overflow-hidden">
+            <label for="profile" class="mt-4 block">
+              <span class="text-xs font-semibold tracking-wider text-star uppercase">
+                About you (optional)
+              </span>
+              <textarea
+                id="profile"
+                value={profile()}
+                onInput={(event) => {
+                  const next = event.currentTarget.value;
+                  setProfile(next);
+                  storeProfile(next);
+                }}
+                maxlength="4000"
+                rows="3"
+                placeholder="Your role, experience, strengths, and the work you want to do…"
+                class="mt-2 w-full rounded-xl border border-line bg-ink px-3 py-2 text-sm outline-none placeholder:text-dim focus:border-star"
+              />
+            </label>
+            <button
+              type="button"
+              disabled={startMatching.isPending}
+              onClick={() => startMatching.mutate(profile())}
+              class="mt-3 rounded-lg border border-star px-3 py-2 text-sm text-star hover:bg-star/10 disabled:opacity-50"
+            >
+              {startMatching.isPending
+                ? "Starting research…"
+                : "Refresh scores with this profile"}
+            </button>
+            <Show when={startMatching.isError || matchRun.data?.error}>
+              <p class="mt-3 text-sm text-bad">
+                {matchRun.data?.error ?? startMatching.error?.message}
+              </p>
+            </Show>
+          </div>
+        </div>
       </section>
 
       <div class="mt-8">

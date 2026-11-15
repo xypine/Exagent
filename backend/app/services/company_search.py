@@ -33,6 +33,12 @@ COMPANY_SIZE_QUERY: dict[CompanySize, str] = {
     "medium": "companies with 25–150 employees",
     "large": "companies with 150 or more employees",
 }
+COMPANY_INDUSTRY_QUERY: dict[str, str] = {
+    # "Recruiters" is the UI label for a role preset, not a natural company-sector
+    # phrase. Keep the label for people discovery while using terms that identify
+    # the kinds of companies a recruiter is likely to work for.
+    "recruiters": "recruitment agencies, executive-search firms, and staffing companies",
+}
 
 
 def normalize_criteria(value: str) -> str:
@@ -48,8 +54,10 @@ def cache_key_for(area: str, industry: str, company_size: CompanySize) -> str:
 
 
 def company_query(area: str, industry: str, company_size: CompanySize | None = None) -> str:
+    industry_query = COMPANY_INDUSTRY_QUERY.get(normalize_criteria(industry))
+    company_subject = industry_query or f"{industry} companies"
     query = (
-        f"Official websites of {industry} companies with a headquarters, office, or other "
+        f"Official websites of {company_subject} with a headquarters, office, or other "
         f"substantial business operations in {area}."
     )
     if company_size is not None:

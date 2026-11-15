@@ -19,6 +19,11 @@ make test
 
 - Prefer the project aliases to long command chains: `make check`, `make test`,
   `make verify`, `make compose-config`, and `make dev`.
+- For agent-driven API testing, prefer `pnpm agent -- <command>` over direct
+  database or provider access. It uses the same `/api/v1` endpoints and
+  anonymous-client header as the frontend; its gitignored state file preserves
+  that client identity so searches can be resumed. Run `pnpm agent -- --help`
+  for the supported search, person-research, and match-run commands.
 - `make verify` validates Compose, runs frontend checks/tests in the Compose
   container, then runs backend checks/tests. Use the narrower targets when
   only one area changed.

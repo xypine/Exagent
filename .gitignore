@@ -9,6 +9,7 @@
 node_modules/
 dist/
 coverage/
+.exagent-cli.json
 
 # Python
 __pycache__/

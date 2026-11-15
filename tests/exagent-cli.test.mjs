@@ -1,0 +1,116 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+
+import { createApiClient, parseArguments, run } from "../bin/exagent.mjs";
+
+const CLIENT_ID = "11111111-1111-4111-8111-111111111111";
+
+test("API client uses the frontend's API paths, payloads, and client header", async () => {
+  const calls = [];
+  const api = createApiClient({
+    apiUrl: "http://localhost:8000/",
+    clientId: CLIENT_ID,
+    fetchImpl: async (url, init) => {
+      calls.push({ url, init });
+      return new Response(JSON.stringify({ job_id: "job-1", status: "queued" }), { status: 202 });
+    },
+  });
+
+  await api.getClient();
+  await api.createSearch({ area: "Helsinki", industry: "SaaS", company_size: "small" });
+  await api.getSearch("job id");
+  await api.searchMorePeople("job id");
+  await api.getPersonResearch("job id", "person/id");
+  await api.startPersonResearch("job id", "person/id");
+  await api.startMatchRun("job id", "Profile text");
+  await api.getMatchRun("job id", "run/id");
+
+  assert.deepEqual(
+    calls.map(({ url, init }) => ({ url, method: init.method, body: init.body })),
+    [
+      {
+        url: "http://localhost:8000/api/v1/client",
+        method: undefined,
+        body: undefined,
+      },
+      {
+        url: "http://localhost:8000/api/v1/searches",
+        method: "POST",
+        body: '{"area":"Helsinki","industry":"SaaS","company_size":"small"}',
+      },
+      {
+        url: "http://localhost:8000/api/v1/searches/job%20id",
+        method: undefined,
+        body: undefined,
+      },
+      {
+        url: "http://localhost:8000/api/v1/searches/job%20id/people",
+        method: "POST",
+        body: undefined,
+      },
+      {
+        url: "http://localhost:8000/api/v1/searches/job%20id/people/person%2Fid/research",
+        method: undefined,
+        body: undefined,
+      },
+      {
+        url: "http://localhost:8000/api/v1/searches/job%20id/people/person%2Fid/research",
+        method: "POST",
+        body: undefined,
+      },
+      {
+        url: "http://localhost:8000/api/v1/searches/job%20id/matches",
+        method: "POST",
+        body: '{"profile":"Profile text"}',
+      },
+      {
+        url: "http://localhost:8000/api/v1/searches/job%20id/matches/run%2Fid",
+        method: undefined,
+        body: undefined,
+      },
+    ],
+  );
+  assert.ok(calls.every(({ init }) => init.headers["X-Client-Id"] === CLIENT_ID));
+  assert.ok(calls.every(({ init }) => init.headers["Content-Type"] === "application/json"));
+});
+
+test("search create sends the same input shape and can poll its job", async () => {
+  const requests = [];
+  const responses = [
+    { job_id: "job-1", status: "queued" },
+    { job_id: "job-1", status: "finding_people" },
+    { job_id: "job-1", status: "done", people: [] },
+  ];
+  const result = await run(
+    [
+      "search",
+      "create",
+      "--area",
+      "Helsinki",
+      "--industry",
+      "SaaS",
+      "--company-size",
+      "small",
+      "--wait",
+      "--interval",
+      "1",
+    ],
+    {
+      getClientId: async () => CLIENT_ID,
+      fetchImpl: async (url, init) => {
+        requests.push({ url, init });
+        return new Response(JSON.stringify(responses.shift()), { status: 200 });
+      },
+    },
+  );
+
+  assert.deepEqual(result.response, { job_id: "job-1", status: "done", people: [] });
+  assert.equal(requests.length, 3);
+  assert.equal(requests[0].init.body, '{"area":"Helsinki","industry":"SaaS","company_size":"small"}');
+  assert.equal(requests[1].url, "http://localhost:8000/api/v1/searches/job-1");
+});
+
+test("argument parsing rejects missing values and validates polling values", () => {
+  assert.throws(() => parseArguments(["--api-url"]), /requires a value/);
+  assert.throws(() => parseArguments(["--interval", "0"]), /positive integer/);
+});

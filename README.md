@@ -51,6 +51,40 @@ nix run .#compose-config
 nix run .#dev
 ```
 
+## Agent CLI
+
+Use the Node CLI to test the application through the same HTTP API as the
+frontend. It defaults to the local backend at `http://localhost:8000` and
+creates a local, gitignored `.exagent-cli.json` containing its anonymous client
+UUID. Reusing that UUID is important: the API only lets a client read jobs that
+it created.
+
+```bash
+# Confirm the backend accepts the CLI's client identity.
+pnpm agent -- client
+
+# Create a search and wait for the background work to finish.
+pnpm agent -- search create \
+  --area Helsinki \
+  --industry SaaS \
+  --company-size small \
+  --wait \
+  --json
+
+# Continue a completed search or inspect its people.
+pnpm agent -- search get <job-id> --json
+pnpm agent -- search more-people <job-id> --wait --json
+pnpm agent -- person research <job-id> <person-id> --wait --json
+
+# Start and poll a match run with a profile stored outside the command history.
+pnpm agent -- match start <job-id> --profile-file ./profile.txt --wait --json
+```
+
+Pass `--api-url https://your-app.example` to test a deployed API or
+`--client-id <uuid>` to use an explicit identity in a scripted environment.
+Run `pnpm agent -- --help` for all commands. The CLI test suite is available as
+`pnpm agent:test`.
+
 ## Exa company and people search
 
 Set `EXA_API_KEY` in `.env`, then discover companies by industry and area:

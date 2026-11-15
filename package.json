@@ -1,1 +1,8 @@
-{}
+{
+  "name": "prospecting-workspace",
+  "private": true,
+  "scripts": {
+    "agent": "node bin/exagent.mjs",
+    "agent:test": "node --test tests/exagent-cli.test.mjs"
+  }
+}
