@@ -15,6 +15,7 @@ from app.services.matching import (
     MatchResponse,
     ScoredMatch,
     build_user_prompt,
+    ground_matches,
     score_matches,
 )
 
@@ -84,4 +85,4 @@ class GeminiMatchingService:
                 actual_ids,
             )
             raise GeminiMatchingError("Gemini did not score the requested people. Try again.")
-        return score_matches(response)
+        return score_matches(ground_matches(response, list(people), profile))

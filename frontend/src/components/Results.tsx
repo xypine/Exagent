@@ -656,6 +656,9 @@ export function Results(props: {
                 jobId={props.jobId}
                 person={person()}
                 score={person().decision_power_score}
+                match={matchRun.data?.results.find(
+                  (match) => match.id === person().id,
+                )}
                 onClose={() => setSelectedPerson(null)}
               />
             </div>

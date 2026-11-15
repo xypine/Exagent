@@ -2,7 +2,7 @@ import { createMutation, createQuery } from "@tanstack/solid-query";
 import { createEffect, createSignal, For, Show } from "solid-js";
 
 import { getPersonResearch, startPersonResearch } from "../api";
-import type { Person } from "../types";
+import type { Person, PersonMatch } from "../types";
 
 type Tab = "work_history" | "education" | "volunteer_experience";
 
@@ -23,10 +23,12 @@ export function InsightsPanel(props: {
   jobId: string;
   person: Person;
   score: number;
+  match?: PersonMatch;
   onClose: () => void;
 }) {
   const [tab, setTab] = createSignal<Tab>("work_history");
   const [requested, setRequested] = createSignal(false);
+  const [sourcesOpen, setSourcesOpen] = createSignal(false);
   const research = createQuery(() => ({
     queryKey: ["person-research", props.jobId, props.person.id],
     queryFn: () => getPersonResearch(props.jobId, props.person.id),
@@ -62,6 +64,15 @@ export function InsightsPanel(props: {
               {props.score} · {decisionPowerLabel(props.score)}
             </p>
           </div>
+          <Show when={props.match && props.match.evidence.length > 0}>
+            <button
+              type="button"
+              onClick={() => setSourcesOpen(true)}
+              class="rounded-lg border border-star/60 px-2 py-1 text-xs text-star hover:bg-star/10"
+            >
+              Sources?
+            </button>
+          </Show>
           <button
             type="button"
             aria-label="Close"
@@ -191,6 +202,78 @@ export function InsightsPanel(props: {
             </For>
           </ul>
         </Show>
+      </Show>
+
+      <Show when={sourcesOpen() && props.match}>
+        {(match) => (
+          <div class="fixed inset-0 z-[60] grid place-items-center bg-paper/50 p-5">
+            <section
+              class="max-h-[calc(100vh-2.5rem)] w-full max-w-3xl overflow-y-auto rounded-2xl border border-star/50 bg-ink-2 p-5 shadow-2xl"
+              role="dialog"
+              aria-modal="true"
+              aria-label={`Sources for ${props.person.name}'s match`}
+            >
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <p class="font-accent text-2xl text-star">Match sources</p>
+                  <p class="mt-1 text-sm text-dim">
+                    Facts used in the displayed score and guidance.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  aria-label="Close sources"
+                  onClick={() => setSourcesOpen(false)}
+                  class="text-dim hover:text-paper"
+                >
+                  ✕
+                </button>
+              </div>
+              <div class="mt-5 overflow-x-auto">
+                <table class="w-full min-w-[36rem] border-collapse text-left text-sm">
+                  <thead class="border-b border-line font-mono text-xs text-dim uppercase">
+                    <tr>
+                      <th class="px-2 py-2 font-normal">Fact</th>
+                      <th class="px-2 py-2 font-normal">Supports</th>
+                      <th class="px-2 py-2 font-normal">Source</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <For each={match().evidence}>
+                      {(evidence) => (
+                        <tr class="border-b border-line/70 align-top">
+                          <td class="px-2 py-3 text-paper">{evidence.fact}</td>
+                          <td class="px-2 py-3 text-dim">
+                            {evidence.factor.replaceAll("_", " ")}
+                          </td>
+                          <td class="px-2 py-3">
+                            <Show
+                              when={evidence.source_url}
+                              fallback={
+                                <span class="text-dim">
+                                  {evidence.source_label}
+                                </span>
+                              }
+                            >
+                              <a
+                                href={evidence.source_url ?? undefined}
+                                target="_blank"
+                                rel="noreferrer"
+                                class="text-star hover:underline"
+                              >
+                                {evidence.source_label} ↗
+                              </a>
+                            </Show>
+                          </td>
+                        </tr>
+                      )}
+                    </For>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        )}
       </Show>
     </div>
   );

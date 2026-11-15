@@ -106,6 +106,13 @@ export interface MatchBreakdown {
   shared_ground: number | null;
 }
 
+export interface MatchEvidence {
+  factor: "decision_power" | "background_fit" | "shared_ground";
+  fact: string;
+  source_label: string;
+  source_url?: string | null;
+}
+
 export interface PersonMatch {
   id: string;
   score: number;
@@ -114,6 +121,7 @@ export interface PersonMatch {
   reasoning: string;
   outreach_angle: string;
   missing_info: string[];
+  evidence: MatchEvidence[];
 }
 
 export type MatchRunStatus =

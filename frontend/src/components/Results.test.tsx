@@ -117,6 +117,14 @@ describe("Results", () => {
       reasoning: "Strong hiring influence and relevant company work.",
       outreach_angle: "Ask about the product team's upcoming work.",
       missing_info: ["No public evidence of a shared background."],
+      evidence: [
+        {
+          factor: "decision_power" as const,
+          fact: "Aino leads product at Aurora Robotics.",
+          source_label: "Current-role evidence",
+          source_url: "https://example.com/aurora/team",
+        },
+      ],
     };
     vi.mocked(startMatchRun).mockResolvedValue({
       id: "match-1",
@@ -149,6 +157,25 @@ describe("Results", () => {
     expect(screen.getByText("Evidence gaps")).not.toBeNull();
     expect(
       screen.getByText("No public evidence of a shared background."),
+    ).not.toBeNull();
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Maya Chen, VP Product, score 80",
+      }),
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "Sources?" }));
+
+    expect(
+      await screen.findByRole("dialog", {
+        name: "Sources for Maya Chen's match",
+      }),
+    ).not.toBeNull();
+    expect(
+      screen.getByText("Aino leads product at Aurora Robotics."),
+    ).not.toBeNull();
+    expect(
+      screen.getByRole("link", { name: "Current-role evidence ↗" }),
     ).not.toBeNull();
   });
 

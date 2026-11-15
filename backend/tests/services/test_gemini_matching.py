@@ -38,8 +38,12 @@ def _response(person_id: str) -> str:
                         "background_fit": None,
                         "shared_ground": None,
                     },
-                    "reasoning": "Current title is relevant (company page).",
-                    "outreach_angle": "Mention the role (company page).",
+                    "evidence": [
+                        {
+                            "factor": "decision_power",
+                            "fact_id": "current_role",
+                        }
+                    ],
                     "missing_info": ["profile missing"],
                 }
             ]
