@@ -21,6 +21,7 @@ export const demo = {
   person: "Matti Meikäläinen",
   title: "CTO",
   score: 92,
+  profile: "Recent software graduate · TypeScript · developer tools",
   evidence: "Current role verified · public source available",
   outreach: "Ask about the engineering challenges behind their next stage of growth.",
 };

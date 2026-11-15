@@ -67,9 +67,8 @@ function Brand({ small = false }: { small?: boolean }) {
 }
 
 function Header() {
-  return <div style={{ position: "absolute", left: 72, right: 72, top: 44, display: "flex", alignItems: "center", justifyContent: "space-between", zIndex: 10 }}>
+  return <div style={{ position: "absolute", left: 72, top: 44, zIndex: 10 }}>
     <Brand small />
-    <div style={{ color: muted, fontSize: 16, fontWeight: 600 }}>Research-led opportunity discovery</div>
   </div>;
 }
 
@@ -203,10 +202,11 @@ function Workflow() {
       <Card style={{ height: "100%", padding: 42, boxSizing: "border-box", borderColor: "rgb(67 56 202 / .35)", background: "linear-gradient(180deg, #fff, #f9faff)" }}>
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 5, background: `linear-gradient(90deg, ${signal}, ${star})`, borderRadius: "24px 24px 0 0" }} />
         <div style={{ display: "grid", gridTemplateColumns: "0.92fr 1.08fr", gap: 52, height: "100%", alignItems: "center" }}>
-          <div><Eyebrow>The hidden job market — unlocked</Eyebrow><h2 style={{ margin: "13px 0 16px", fontSize: 50, lineHeight: 1.02, letterSpacing: -2.7 }}>Find who matters.<br /><span style={{ color: star }}>Say what works.</span></h2><p style={{ margin: 0, color: muted, fontSize: 20, lineHeight: 1.45 }}>Tell us where you want to work. We will find the companies and people worth knowing.</p></div>
+          <div><Eyebrow>First pass</Eyebrow><h2 style={{ margin: "13px 0 16px", fontSize: 50, lineHeight: 1.02, letterSpacing: -2.7 }}>Start with what you <span style={{ color: star }}>know.</span></h2><p style={{ margin: 0, color: muted, fontSize: 20, lineHeight: 1.45 }}>First: companies. Then: people inside them. A clear path from a city and industry to a shortlist.</p></div>
           <div style={{ border: `1px solid ${line}`, borderRadius: 18, padding: 25, background: surface, boxShadow: "0 16px 35px -25px rgb(11 27 63 / .35)" }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>{[["Area", demo.city.slice(0, typed)], ["Industry", local > 240 ? demo.industry : ""]].map(([label, value], i) => <div key={label}><div style={{ color: star, fontSize: 13, fontWeight: 750, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>{label}</div><div style={{ height: 55, borderRadius: 11, boxSizing: "border-box", background: surface, border: `1px solid ${i === 0 && typed > 0 ? "rgb(67 56 202 / .65)" : line}`, padding: "15px 14px", fontSize: 17, color: value ? navy : muted }}>{value || "SaaS, Marketing…"}{i === 0 && typed > 0 && typed < demo.city.length ? <span style={{ color: star }}>|</span> : null}</div></div>)}</div>
             <div style={{ color: star, fontSize: 13, fontWeight: 750, textTransform: "uppercase", letterSpacing: 1, margin: "19px 0 8px" }}>Company size</div><div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>{["Startup", "Mid-size", "Enterprise"].map((size, i) => <div key={size} style={{ padding: "12px 8px", borderRadius: 11, textAlign: "center", color: i === 0 ? star : muted, border: `1px solid ${i === 0 ? star : line}`, background: i === 0 ? "rgb(67 56 202 / .08)" : surface, fontSize: 14, fontWeight: 650 }}>{size}</div>)}</div>
+            <div style={{ marginTop: 15, borderRadius: 10, border: `1px dashed ${line}`, padding: "10px 12px", color: muted, fontSize: 14 }}><span style={{ color: star, fontWeight: 750 }}>About you · optional</span><span style={{ marginLeft: 9 }}>Add details to sharpen the match</span></div>
             <div style={{ marginTop: 17, borderRadius: 12, background: signal, color: "#fff", padding: "15px 18px", textAlign: "center", fontWeight: 750, fontSize: 17, boxShadow: "0 11px 22px -12px rgb(30 58 138 / .7)", transform: `scale(${0.96 + start * .04})` }}>Search</div>
           </div>
         </div>
@@ -220,30 +220,41 @@ function Score({ value, color = star }: { value: number; color?: string }) {
   return <div style={{ width: 48, height: 48, borderRadius: "50%", display: "grid", placeItems: "center", background: `conic-gradient(${color} ${value}%, #e9edf7 0)`, color: navy, fontSize: 13, fontWeight: 800 }}><div style={{ width: 36, height: 36, background: surface, borderRadius: "50%", display: "grid", placeItems: "center" }}>{value}</div></div>;
 }
 
+function FactorScore({ label, value, color, visible }: { label: string; value: number; color: string; visible: number }) {
+  return <div style={{ minWidth: 57, textAlign: "center" }}><div style={{ color: muted, fontSize: 10, fontWeight: 750, textTransform: "uppercase", letterSpacing: 0.4 }}>{label}</div><div style={{ color, fontSize: 16, fontWeight: 800, marginTop: 3 }}>{visible > 0.08 ? Math.round(value * visible) : "—"}</div></div>;
+}
+
 function Results() {
   const frame = useCurrentFrame();
   const local = frame - scenes.results.from;
   const reveal = spring({ frame: Math.max(0, local - 26), fps: 30, config: { damping: 18, mass: 0.7 } });
   const personReveal = spring({ frame: Math.max(0, local - 120), fps: 30, config: { damping: 19, mass: 0.7 } });
+  const refine = enter(local, 315, 24);
   const screenTilt = interpolate(local, [0, 105, 250], [4, -2.5, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) });
   const matches = [
     ["Dream Company", "SaaS · Helsinki", 92, star], ["Orbit Labs", "Climate tech · Helsinki", 84, teal], ["Northstar Systems", "Developer tools · Helsinki", 79, signal], ["Signal Works", "B2B software · Helsinki", 74, amber],
   ] as const;
-  const people = [[demo.person, demo.title, 92], ["Jane Smith", "Head of Product", 76], ["Alex Johnson", "Engineering Manager", 72], ["Taylor Brown", "People Lead", 64]] as const;
+  const people = [
+    { name: demo.person, title: demo.title, final: 92, decision: 75, fit: 98, shared: 80 },
+    { name: "Jane Smith", title: "Head of Product", final: 76, decision: 88, fit: 68, shared: 45 },
+    { name: "Alex Johnson", title: "Engineering Manager", final: 72, decision: 82, fit: 65, shared: 40 },
+    { name: "Taylor Brown", title: "People Lead", final: 64, decision: 63, fit: 70, shared: 55 },
+  ] as const;
   return <Scene {...scenes.results}>
     <Background /><Header />
     <div style={{ position: "absolute", left: 125, top: 150, right: 125 }}>
-      <Eyebrow>From a wide field to a few good leads.</Eyebrow>
-      <h2 style={{ margin: "9px 0 0", fontSize: 53, letterSpacing: -2.7 }}>See the companies worth exploring — then the people who matter.</h2>
+      <Eyebrow>One search, then a sharper second pass.</Eyebrow>
+      <h2 style={{ margin: "9px 0 0", fontSize: 53, letterSpacing: -2.7 }}>Companies → people → public research → a transparent shortlist.</h2>
     </div>
     <div style={{ position: "absolute", left: 125, right: 125, top: 315, bottom: 115, display: "grid", gridTemplateColumns: "0.9fr 1.28fr", gap: 28, transform: `perspective(2200px) rotateY(${screenTilt}deg) rotateX(1deg)`, transformOrigin: "50% 52%" }}>
       <Card style={{ padding: 28, opacity: reveal, transform: `translateX(${(1 - reveal) * -45}px)` }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><div><div style={{ color: muted, fontSize: 14, fontWeight: 750, letterSpacing: 1, textTransform: "uppercase" }}>Matched companies</div><h3 style={{ margin: "8px 0 0", fontSize: 29, letterSpacing: -1.2 }}>Worth exploring</h3></div><div style={{ color: star, fontWeight: 750 }}>4 found</div></div>
         <div style={{ marginTop: 22 }}>{matches.map(([name, detail, score, color], i) => { const p = enter(local, 75 + i * 27, 18); return <div key={name} style={{ display: "flex", alignItems: "center", gap: 14, borderTop: `1px solid ${line}`, padding: "17px 2px", opacity: p, transform: `translateX(${(1 - p) * -22}px)` }}><Score value={score} color={color} /><div style={{ flex: 1 }}><div style={{ fontSize: 18, fontWeight: 750 }}>{name}</div><div style={{ color: muted, fontSize: 14, marginTop: 3 }}>{detail}</div></div>{i === 0 && <div style={{ color: star, fontSize: 13, fontWeight: 800 }}>SELECTED</div>}</div>; })}</div>
+        <div style={{ marginTop: 12, padding: "13px 14px", borderRadius: 13, border: "1px solid rgb(67 56 202 / .22)", background: "rgb(67 56 202 / .05)", opacity: refine, transform: `translateY(${(1 - refine) * 18}px)` }}><div style={{ color: star, fontSize: 12, fontWeight: 800, letterSpacing: 0.8, textTransform: "uppercase" }}>Second pass · profile added</div><div style={{ marginTop: 5, fontSize: 14, fontWeight: 650 }}>{demo.profile}</div><div style={{ marginTop: 4, color: muted, fontSize: 13 }}>Now includes background fit and common ground.</div></div>
       </Card>
       <Card style={{ overflow: "hidden", borderColor: "rgb(67 56 202 / .35)", opacity: personReveal, transform: `translateY(${(1 - personReveal) * 36}px)` }}>
-        <div style={{ padding: "27px 30px 22px", background: "linear-gradient(90deg, rgb(67 56 202 / .08), transparent)" }}><div style={{ color: star, fontSize: 14, fontWeight: 800, letterSpacing: 1, textTransform: "uppercase" }}>{demo.company}</div><h3 style={{ margin: "8px 0 7px", fontSize: 32, letterSpacing: -1.5 }}>People who can open a conversation</h3><p style={{ margin: 0, color: muted, fontSize: 16 }}>Ranked by relevance and ability to influence a hiring decision.</p></div>
-        {people.map(([name, title, score], i) => { const p = enter(local, 150 + i * 30, 15); const active = i === 0; return <div key={name} style={{ display: "flex", alignItems: "center", gap: 18, padding: "16px 30px", borderTop: `1px solid ${line}`, background: active ? "rgb(67 56 202 / .06)" : surface, opacity: p, transform: `translateX(${(1 - p) * 32}px)` }}><div style={{ width: 39, height: 39, borderRadius: "50%", background: active ? star : "#e9edf7", color: active ? "#fff" : signal, display: "grid", placeItems: "center", fontWeight: 750 }}>{name.split(" ").map((part) => part[0]).join("")}</div><div style={{ flex: 1 }}><div style={{ fontSize: 19, fontWeight: 750 }}>{name}</div><div style={{ color: muted, marginTop: 2, fontSize: 15 }}>{title}</div></div><div style={{ color: active ? star : muted, fontWeight: 800, fontSize: 20 }}>{score}</div></div>; })}
+        <div style={{ padding: "24px 30px 17px", background: "linear-gradient(90deg, rgb(67 56 202 / .08), transparent)" }}><div style={{ color: star, fontSize: 14, fontWeight: 800, letterSpacing: 1, textTransform: "uppercase" }}>{demo.company}</div><h3 style={{ margin: "8px 0 5px", fontSize: 31, letterSpacing: -1.5 }}>People who can open a conversation</h3><p style={{ margin: 0, color: muted, fontSize: 15 }}>{refine > 0.08 ? "Profile-aware scores · every point has a reason." : "First pass · decision power only."}</p></div>
+        {people.map((person, i) => { const p = enter(local, 150 + i * 30, 15); const active = person.name === demo.person; const final = Math.round(person.decision + (person.final - person.decision) * refine); return <div key={person.name} style={{ display: "flex", alignItems: "center", gap: 14, padding: "13px 24px", borderTop: `1px solid ${line}`, background: active ? "rgb(67 56 202 / .06)" : surface, opacity: p, transform: `translateX(${(1 - p) * 32}px)` }}><div style={{ width: 36, height: 36, borderRadius: "50%", background: active ? star : "#e9edf7", color: active ? "#fff" : signal, display: "grid", placeItems: "center", fontWeight: 750, fontSize: 13 }}>{person.name.split(" ").map((part) => part[0]).join("")}</div><div style={{ width: 170 }}><div style={{ fontSize: 17, fontWeight: 750 }}>{person.name}</div><div style={{ color: muted, marginTop: 2, fontSize: 13 }}>{person.title}</div></div><div style={{ display: "flex", flex: 1, justifyContent: "flex-end", gap: 7 }}><FactorScore label="Decision" value={person.decision} color={signal} visible={1} /><FactorScore label="Fit" value={person.fit} color={teal} visible={refine} /><FactorScore label="Shared" value={person.shared} color={amber} visible={refine} /></div><div style={{ width: 49, textAlign: "right", color: active ? star : navy, fontWeight: 800, fontSize: 22 }}>{final}</div></div>; })}
       </Card>
     </div>
   </Scene>;
