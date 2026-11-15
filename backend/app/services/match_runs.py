@@ -232,13 +232,17 @@ def _influence_only_match(person: dict[str, Any]) -> ScoredMatch:
         ),
         reasoning=f"Hiring influence is based on the {title} role at {company}.",
         outreach_angle="",
-        missing_info=["Background fit and shared ground could not be assessed without your profile."],
+        missing_info=[
+            "Background fit and shared ground could not be assessed without your profile."
+        ],
         evidence=[
             MatchEvidence(
                 factor="decision_power",
                 fact=f"Current role: {title} at {company}.",
                 source_label="Current-role evidence",
-                source_url=str(person.get("evidence_url") or person.get("profile_url") or "") or None,
+                source_url=(
+                    str(person.get("evidence_url") or person.get("profile_url") or "") or None
+                ),
             )
         ],
         score=influence,

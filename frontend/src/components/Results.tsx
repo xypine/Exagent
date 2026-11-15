@@ -116,9 +116,7 @@ function People(props: {
                       when={isInfluenceOnly(match())}
                       fallback={<ProfileMatch match={match()} />}
                     >
-                      <InfluenceOnly
-                        influence={person.decision_power_score}
-                      />
+                      <InfluenceOnly influence={person.decision_power_score} />
                     </Show>
                   </div>
                 )}
