@@ -3,6 +3,7 @@ import { createEffect, createSignal, For, Show } from "solid-js";
 
 import { getPersonResearch, startPersonResearch } from "../api";
 import type { Person, PersonMatch } from "../types";
+import { Modal } from "./Modal";
 
 type Tab = "work_history" | "education" | "volunteer_experience";
 
@@ -206,73 +207,71 @@ export function InsightsPanel(props: {
 
       <Show when={sourcesOpen() && props.match}>
         {(match) => (
-          <div class="fixed inset-0 z-[60] grid place-items-center bg-paper/50 p-5">
-            <section
-              class="max-h-[calc(100vh-2.5rem)] w-full max-w-3xl overflow-y-auto rounded-2xl border border-star/50 bg-ink-2 p-5 shadow-2xl"
-              role="dialog"
-              aria-modal="true"
-              aria-label={`Sources for ${props.person.name}'s match`}
-            >
-              <div class="flex items-start justify-between gap-4">
-                <div>
-                  <p class="font-accent text-2xl text-star">Match sources</p>
-                  <p class="mt-1 text-sm text-dim">
-                    Facts used in the displayed score and guidance.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  aria-label="Close sources"
-                  onClick={() => setSourcesOpen(false)}
-                  class="text-dim hover:text-paper"
-                >
-                  ✕
-                </button>
+          <Modal
+            ariaLabel={`Sources for ${props.person.name}'s match`}
+            contentClass="max-h-[calc(100vh-2.5rem)] w-full max-w-3xl overflow-y-auto rounded-2xl border border-star/50 bg-ink-2 p-5 shadow-2xl"
+            overlayClass="z-[60] bg-paper/50"
+            onClose={() => setSourcesOpen(false)}
+          >
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <p class="font-accent text-2xl text-star">Match sources</p>
+                <p class="mt-1 text-sm text-dim">
+                  Facts used in the displayed score and guidance.
+                </p>
               </div>
-              <div class="mt-5 overflow-x-auto">
-                <table class="w-full min-w-[36rem] border-collapse text-left text-sm">
-                  <thead class="border-b border-line font-mono text-xs text-dim uppercase">
-                    <tr>
-                      <th class="px-2 py-2 font-normal">Fact</th>
-                      <th class="px-2 py-2 font-normal">Supports</th>
-                      <th class="px-2 py-2 font-normal">Source</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <For each={match().evidence}>
-                      {(evidence) => (
-                        <tr class="border-b border-line/70 align-top">
-                          <td class="px-2 py-3 text-paper">{evidence.fact}</td>
-                          <td class="px-2 py-3 text-dim">
-                            {evidence.factor.replaceAll("_", " ")}
-                          </td>
-                          <td class="px-2 py-3">
-                            <Show
-                              when={evidence.source_url}
-                              fallback={
-                                <span class="text-dim">
-                                  {evidence.source_label}
-                                </span>
-                              }
+              <button
+                type="button"
+                aria-label="Close sources"
+                onClick={() => setSourcesOpen(false)}
+                class="text-dim hover:text-paper"
+              >
+                ✕
+              </button>
+            </div>
+            <div class="mt-5 overflow-x-auto">
+              <table class="w-full min-w-[36rem] border-collapse text-left text-sm">
+                <thead class="border-b border-line font-mono text-xs text-dim uppercase">
+                  <tr>
+                    <th class="px-2 py-2 font-normal">Fact</th>
+                    <th class="px-2 py-2 font-normal">Supports</th>
+                    <th class="px-2 py-2 font-normal">Source</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <For each={match().evidence}>
+                    {(evidence) => (
+                      <tr class="border-b border-line/70 align-top">
+                        <td class="px-2 py-3 text-paper">{evidence.fact}</td>
+                        <td class="px-2 py-3 text-dim">
+                          {evidence.factor.replaceAll("_", " ")}
+                        </td>
+                        <td class="px-2 py-3">
+                          <Show
+                            when={evidence.source_url}
+                            fallback={
+                              <span class="text-dim">
+                                {evidence.source_label}
+                              </span>
+                            }
+                          >
+                            <a
+                              href={evidence.source_url ?? undefined}
+                              target="_blank"
+                              rel="noreferrer"
+                              class="text-star hover:underline"
                             >
-                              <a
-                                href={evidence.source_url ?? undefined}
-                                target="_blank"
-                                rel="noreferrer"
-                                class="text-star hover:underline"
-                              >
-                                {evidence.source_label} ↗
-                              </a>
-                            </Show>
-                          </td>
-                        </tr>
-                      )}
-                    </For>
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          </div>
+                              {evidence.source_label} ↗
+                            </a>
+                          </Show>
+                        </td>
+                      </tr>
+                    )}
+                  </For>
+                </tbody>
+              </table>
+            </div>
+          </Modal>
         )}
       </Show>
     </div>

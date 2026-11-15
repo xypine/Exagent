@@ -67,6 +67,14 @@ const JOB: SearchJob = {
   },
 };
 
+function backdropFor(dialog: HTMLElement) {
+  const backdrop = dialog.previousElementSibling;
+  if (!(backdrop instanceof HTMLButtonElement)) {
+    throw new Error("Expected a modal backdrop button.");
+  }
+  return backdrop;
+}
+
 describe("Results", () => {
   afterEach(cleanup);
 
@@ -177,6 +185,35 @@ describe("Results", () => {
     expect(
       screen.getByRole("link", { name: "Current-role evidence ↗" }),
     ).not.toBeNull();
+
+    const sourcesDialog = screen.getByRole("dialog", {
+      name: "Sources for Maya Chen's match",
+    });
+    fireEvent.keyDown(sourcesDialog, { key: "Escape" });
+
+    expect(
+      screen.queryByRole("dialog", {
+        name: "Sources for Maya Chen's match",
+      }),
+    ).toBeNull();
+    expect(
+      screen.getByRole("dialog", { name: "Maya Chen details" }),
+    ).not.toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Sources?" }));
+    const reopenedSourcesDialog = await screen.findByRole("dialog", {
+      name: "Sources for Maya Chen's match",
+    });
+    fireEvent.click(backdropFor(reopenedSourcesDialog));
+
+    expect(
+      screen.queryByRole("dialog", {
+        name: "Sources for Maya Chen's match",
+      }),
+    ).toBeNull();
+    expect(
+      screen.getByRole("dialog", { name: "Maya Chen details" }),
+    ).not.toBeNull();
   });
 
   it("shows a compact person row and explains its score in the detail dialog", async () => {
@@ -255,6 +292,85 @@ describe("Results", () => {
       await screen.findByRole("dialog", { name: "Northstar Labs details" }),
     ).not.toBeNull();
     expect(screen.getByText("Climate software company.")).not.toBeNull();
+  });
+
+  it("closes the company dialog with Escape or its backdrop and restores focus", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(() => (
+      <QueryClientProvider client={queryClient}>
+        <Results jobId="job-1" onReset={() => {}} />
+      </QueryClientProvider>
+    ));
+
+    const about = await screen.findByRole("button", {
+      name: "About Northstar Labs",
+    });
+    about.focus();
+    fireEvent.click(about);
+
+    const dialog = await screen.findByRole("dialog", {
+      name: "Northstar Labs details",
+    });
+    expect(document.activeElement).toBe(dialog);
+
+    const close = screen.getByRole("button", { name: "Close" });
+    const visit = screen.getByRole("link", { name: "Visit company website ↗" });
+    close.focus();
+    fireEvent.keyDown(close, { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(visit);
+    fireEvent.keyDown(visit, { key: "Tab" });
+    expect(document.activeElement).toBe(close);
+
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    expect(
+      screen.queryByRole("dialog", { name: "Northstar Labs details" }),
+    ).toBeNull();
+    expect(document.activeElement).toBe(about);
+
+    fireEvent.click(about);
+    const reopenedDialog = await screen.findByRole("dialog", {
+      name: "Northstar Labs details",
+    });
+    fireEvent.click(backdropFor(reopenedDialog));
+    expect(
+      screen.queryByRole("dialog", { name: "Northstar Labs details" }),
+    ).toBeNull();
+  });
+
+  it("closes the person dialog with Escape or its backdrop", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(() => (
+      <QueryClientProvider client={queryClient}>
+        <Results jobId="job-1" onReset={() => {}} />
+      </QueryClientProvider>
+    ));
+
+    const person = await screen.findByRole("button", {
+      name: "Maya Chen, VP Product, hiring influence 80",
+    });
+    fireEvent.click(person);
+    const dialog = await screen.findByRole("dialog", {
+      name: "Maya Chen details",
+    });
+    fireEvent.click(backdropFor(dialog));
+    expect(
+      screen.queryByRole("dialog", { name: "Maya Chen details" }),
+    ).toBeNull();
+
+    fireEvent.click(person);
+    const reopenedDialog = await screen.findByRole("dialog", {
+      name: "Maya Chen details",
+    });
+    fireEvent.keyDown(reopenedDialog, { key: "Escape" });
+    expect(
+      screen.queryByRole("dialog", { name: "Maya Chen details" }),
+    ).toBeNull();
   });
 
   it("shows only hiring influence when no profile was provided", async () => {

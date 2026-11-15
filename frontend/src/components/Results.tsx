@@ -21,6 +21,7 @@ import type {
   SearchInput,
 } from "../types";
 import { InsightsPanel } from "./InsightsPanel";
+import { Modal } from "./Modal";
 
 const STEPS: { key: JobStatus; label: string }[] = [
   { key: "finding_companies", label: "Finding companies" },
@@ -217,59 +218,56 @@ function MatchDetails(props: { match: PersonMatch }) {
 
 function CompanyDetailsModal(props: { company: Company; onClose: () => void }) {
   return (
-    <div class="fixed inset-0 z-50 grid place-items-center bg-paper/35 p-5">
-      <section
-        class="max-h-[calc(100vh-2.5rem)] w-full max-w-lg overflow-y-auto animate-rise rounded-2xl border border-star/50 bg-ink-2 p-6 shadow-2xl"
-        role="dialog"
-        aria-modal="true"
-        aria-label={`${props.company.name} details`}
-      >
-        <div class="flex items-start justify-between gap-4">
-          <div>
-            <p class="text-xs tracking-widest text-star uppercase">Company</p>
-            <h2 class="mt-1 text-2xl font-semibold">{props.company.name}</h2>
-          </div>
-          <button
-            type="button"
-            aria-label="Close"
-            onClick={props.onClose}
-            class="text-dim hover:text-paper"
-          >
-            ✕
-          </button>
+    <Modal
+      ariaLabel={`${props.company.name} details`}
+      contentClass="max-h-[calc(100vh-2.5rem)] w-full max-w-lg overflow-y-auto animate-rise rounded-2xl border border-star/50 bg-ink-2 p-6 shadow-2xl"
+      onClose={props.onClose}
+    >
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <p class="text-xs tracking-widest text-star uppercase">Company</p>
+          <h2 class="mt-1 text-2xl font-semibold">{props.company.name}</h2>
         </div>
-        <p class="mt-5 text-sm text-dim">{props.company.summary}</p>
-        <a
-          href={props.company.url}
-          target="_blank"
-          rel="noreferrer"
-          class="mt-4 inline-block text-sm text-star hover:underline"
+        <button
+          type="button"
+          aria-label="Close"
+          onClick={props.onClose}
+          class="text-dim hover:text-paper"
         >
-          Visit company website ↗
-        </a>
-        <Show when={props.company.sources.length > 0}>
-          <div class="mt-6 border-t border-line pt-4">
-            <p class="font-mono text-xs text-dim uppercase">Sources</p>
-            <ul class="mt-2 space-y-2 text-sm">
-              <For each={props.company.sources}>
-                {(source) => (
-                  <li>
-                    <a
-                      href={source.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      class="text-dim hover:text-star"
-                    >
-                      {source.title ?? source.url} ↗
-                    </a>
-                  </li>
-                )}
-              </For>
-            </ul>
-          </div>
-        </Show>
-      </section>
-    </div>
+          ✕
+        </button>
+      </div>
+      <p class="mt-5 text-sm text-dim">{props.company.summary}</p>
+      <a
+        href={props.company.url}
+        target="_blank"
+        rel="noreferrer"
+        class="mt-4 inline-block text-sm text-star hover:underline"
+      >
+        Visit company website ↗
+      </a>
+      <Show when={props.company.sources.length > 0}>
+        <div class="mt-6 border-t border-line pt-4">
+          <p class="font-mono text-xs text-dim uppercase">Sources</p>
+          <ul class="mt-2 space-y-2 text-sm">
+            <For each={props.company.sources}>
+              {(source) => (
+                <li>
+                  <a
+                    href={source.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    class="text-dim hover:text-star"
+                  >
+                    {source.title ?? source.url} ↗
+                  </a>
+                </li>
+              )}
+            </For>
+          </ul>
+        </div>
+      </Show>
+    </Modal>
   );
 }
 
@@ -682,24 +680,21 @@ export function Results(props: {
 
       <Show when={selectedPerson()}>
         {(person) => (
-          <div class="fixed inset-0 z-50 grid place-items-center bg-paper/35 p-5">
-            <div
-              class="max-h-[calc(100vh-2.5rem)] w-full max-w-2xl overflow-y-auto"
-              role="dialog"
-              aria-modal="true"
-              aria-label={`${person().name} details`}
-            >
-              <InsightsPanel
-                jobId={props.jobId}
-                person={person()}
-                score={person().decision_power_score}
-                match={matchRun.data?.results.find(
-                  (match) => match.id === person().id,
-                )}
-                onClose={() => setSelectedPerson(null)}
-              />
-            </div>
-          </div>
+          <Modal
+            ariaLabel={`${person().name} details`}
+            contentClass="max-h-[calc(100vh-2.5rem)] w-full max-w-2xl overflow-y-auto"
+            onClose={() => setSelectedPerson(null)}
+          >
+            <InsightsPanel
+              jobId={props.jobId}
+              person={person()}
+              score={person().decision_power_score}
+              match={matchRun.data?.results.find(
+                (match) => match.id === person().id,
+              )}
+              onClose={() => setSelectedPerson(null)}
+            />
+          </Modal>
         )}
       </Show>
       <Show when={selectedCompany()}>
