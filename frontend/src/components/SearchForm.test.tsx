@@ -19,9 +19,14 @@ const createSearchMock = vi.mocked(createSearch);
 describe("SearchForm", () => {
   afterEach(cleanup);
 
+  afterEach(() => vi.useRealTimers());
+
   beforeEach(() => {
     createSearchMock.mockReset();
-    createSearchMock.mockResolvedValue({ job_id: "job-1" });
+    createSearchMock.mockResolvedValue({
+      job_id: "job-1",
+      status: "queued",
+    });
   });
 
   it("submits with the prefilled area and company size", async () => {
@@ -69,6 +74,33 @@ describe("SearchForm", () => {
         company_size: "small",
       }),
     );
+  });
+
+  it("briefly holds cached results before opening them", async () => {
+    vi.useFakeTimers();
+    createSearchMock.mockResolvedValue({ job_id: "job-1", status: "done" });
+    const queryClient = new QueryClient();
+    const onStarted = vi.fn();
+    render(() => (
+      <QueryClientProvider client={queryClient}>
+        <SearchForm onStarted={onStarted} />
+      </QueryClientProvider>
+    ));
+
+    fireEvent.input(screen.getByRole("combobox", { name: "Industry" }), {
+      target: { value: "Fintech" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+
+    await vi.advanceTimersByTimeAsync(499);
+    expect(onStarted).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(1);
+    expect(onStarted).toHaveBeenCalledWith("job-1", {
+      area: "Helsinki, Finland",
+      industry: "Fintech",
+      company_size: "small",
+    });
   });
 
   it("shows all industry options on focus and filters them when typing", () => {

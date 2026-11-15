@@ -12,6 +12,11 @@ const COMPANY_SIZES = [
   { value: "medium", label: "Mid-size" },
   { value: "large", label: "Enterprise" },
 ] as const;
+const CACHED_SEARCH_TRANSITION_MS = 500;
+
+function wait(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
 
 export function SearchForm(props: {
   onStarted: (jobId: string, input: SearchInput) => void;
@@ -22,7 +27,12 @@ export function SearchForm(props: {
 
   const mutation = createMutation(() => ({
     mutationFn: createSearch,
-    onSuccess: (res, input) => props.onStarted(res.job_id, input),
+    onSuccess: async (res, input) => {
+      if (res.status === "done") {
+        await wait(CACHED_SEARCH_TRANSITION_MS);
+      }
+      props.onStarted(res.job_id, input);
+    },
   }));
 
   const canSubmit = () =>

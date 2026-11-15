@@ -116,6 +116,7 @@ class StartMatchRunRequest(BaseModel):
 class MatchRunResponse(BaseModel):
     id: UUID
     status: Literal["queued", "researching", "matching", "done", "failed"]
+    candidate_ids: list[str] = Field(default_factory=list)
     candidate_count: int
     completed_count: int
     results: list[ScoredMatch] = Field(default_factory=list)
@@ -369,6 +370,7 @@ def _match_run_response(run: MatchRun) -> MatchRunResponse:
         {
             "id": run.id,
             "status": run.status,
+            "candidate_ids": run.candidate_ids,
             "candidate_count": len(run.candidate_ids),
             "completed_count": run.completed_count,
             "results": run.results,

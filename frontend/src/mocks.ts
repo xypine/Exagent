@@ -1,5 +1,6 @@
 import type {
   Company,
+  JobStatus,
   MatchRun,
   Person,
   PersonResearch,
@@ -132,11 +133,13 @@ const matchRuns = new Map<string, MatchRun>();
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export const mockApi = {
-  async createSearch(_input: SearchInput): Promise<{ job_id: string }> {
+  async createSearch(
+    _input: SearchInput,
+  ): Promise<{ job_id: string; status: JobStatus }> {
     await wait(300);
     const id = crypto.randomUUID();
     started.set(id, Date.now());
-    return { job_id: id };
+    return { job_id: id, status: "queued" };
   },
   async getSearch(jobId: string): Promise<SearchJob> {
     await wait(200);

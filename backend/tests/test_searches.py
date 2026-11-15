@@ -1,7 +1,12 @@
 from uuid import uuid4
 
-from app.api.routes.searches import CompanyResponse, _authorized_person, _search_response
-from app.db.models import SearchJob
+from app.api.routes.searches import (
+    CompanyResponse,
+    _authorized_person,
+    _match_run_response,
+    _search_response,
+)
+from app.db.models import MatchRun, SearchJob
 
 
 def company_response(summary: str) -> CompanyResponse:
@@ -99,3 +104,20 @@ def test_authorized_person_adds_derived_decision_power_score() -> None:
     )
 
     assert person.decision_power_score == 80
+
+
+def test_match_run_response_exposes_research_candidates() -> None:
+    candidates = ["person-1", "person-2"]
+    run = MatchRun(
+        id=uuid4(),
+        job_id=uuid4(),
+        client_id=uuid4(),
+        candidate_ids=candidates,
+        status="researching",
+        completed_count=1,
+        results=[],
+    )
+
+    response = _match_run_response(run)
+
+    assert response.candidate_ids == candidates

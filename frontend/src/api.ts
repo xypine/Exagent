@@ -1,5 +1,11 @@
 import { mockApi } from "./mocks";
-import type { MatchRun, PersonResearch, SearchInput, SearchJob } from "./types";
+import type {
+  JobStatus,
+  MatchRun,
+  PersonResearch,
+  SearchInput,
+  SearchJob,
+} from "./types";
 
 const CLIENT_ID_STORAGE_KEY = "prospecting.client-id";
 const PROFILE_STORAGE_KEY = "prospecting.profile";
@@ -76,7 +82,7 @@ export async function getClient(): Promise<{ client_id: string }> {
 /** Request chain step 1: create job -> job id. */
 export async function createSearch(
   input: SearchInput,
-): Promise<{ job_id: string }> {
+): Promise<{ job_id: string; status: JobStatus }> {
   if (USE_MOCKS) return mockApi.createSearch(input);
   return request("/api/v1/searches", {
     method: "POST",

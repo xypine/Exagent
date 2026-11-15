@@ -158,10 +158,12 @@ describe("Results", () => {
       </QueryClientProvider>
     ));
 
-    expect(await screen.findByLabelText("Overall match score 72")).not.toBeNull();
-    expect(screen.getByLabelText("Decision power subscore 32")).not.toBeNull();
-    expect(screen.getByLabelText("Background fit subscore 28")).not.toBeNull();
-    expect(screen.getByLabelText("Shared ground subscore 12")).not.toBeNull();
+    expect(
+      await screen.findByLabelText("Overall match score 72"),
+    ).not.toBeNull();
+    expect(screen.queryByText("Power 32")).toBeNull();
+    expect(screen.queryByText("Fit 28")).toBeNull();
+    expect(screen.queryByText("Shared 12")).toBeNull();
     expect(
       screen.queryByText("Strong hiring influence and relevant company work."),
     ).toBeNull();
@@ -173,7 +175,7 @@ describe("Results", () => {
 
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Maya Chen, VP Product, match score 72",
+        name: "Maya Chen, VP Product, overall match score 72",
       }),
     );
 
@@ -446,6 +448,38 @@ describe("Results", () => {
     ).not.toBeNull();
     expect(screen.queryByLabelText("Overall match score 80")).toBeNull();
     expect(screen.queryByText("Score factors")).toBeNull();
+  });
+
+  it("shows a spinner beside the person currently being researched", async () => {
+    vi.mocked(startMatchRun).mockResolvedValue({
+      id: "match-1",
+      status: "researching",
+      candidate_ids: ["person-1"],
+      candidate_count: 1,
+      completed_count: 0,
+      results: [],
+    });
+    vi.mocked(getMatchRun).mockResolvedValue({
+      id: "match-1",
+      status: "researching",
+      candidate_ids: ["person-1"],
+      candidate_count: 1,
+      completed_count: 0,
+      results: [],
+    });
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(() => (
+      <QueryClientProvider client={queryClient}>
+        <Results jobId="job-1" onReset={() => {}} />
+      </QueryClientProvider>
+    ));
+
+    expect(
+      await screen.findByRole("status", { name: "Researching Maya Chen" }),
+    ).not.toBeNull();
   });
 
   it("states that the company search is complete", async () => {

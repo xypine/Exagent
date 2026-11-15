@@ -134,6 +134,7 @@ export type MatchRunStatus =
 export interface MatchRun {
   id: string;
   status: MatchRunStatus;
+  candidate_ids?: string[];
   candidate_count: number;
   completed_count: number;
   results: PersonMatch[];

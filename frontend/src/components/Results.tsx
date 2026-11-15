@@ -67,6 +67,7 @@ function People(props: {
   people: Person[];
   onSelect: (person: Person) => void;
   matches: PersonMatch[];
+  researchingPersonId?: string;
 }) {
   const [showUnverified, setShowUnverified] = createSignal(false);
   const verifiedPeople = () =>
@@ -111,17 +112,19 @@ function People(props: {
                 ? candidate
                 : undefined;
             };
+            const score = () =>
+              researchedMatch()?.score ?? person.decision_power_score;
+            const scoreLabel = () =>
+              researchedMatch()
+                ? `Overall match score ${score()}`
+                : `Hiring influence ${score()}`;
 
             return (
               <li class="border-t border-line/70 first:border-t-0">
                 <button
                   type="button"
                   aria-haspopup="dialog"
-                  aria-label={`${person.name}, ${person.title}, ${
-                    researchedMatch()
-                      ? `match score ${researchedMatch()?.score}`
-                      : `hiring influence ${person.decision_power_score}`
-                  }`}
+                  aria-label={`${person.name}, ${person.title}, ${scoreLabel().toLowerCase()}`}
                   onClick={() => props.onSelect(person)}
                   disabled={!person.employer_verified}
                   class="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-5 py-3 text-left transition hover:bg-star/5 disabled:cursor-not-allowed disabled:opacity-65"
@@ -135,46 +138,30 @@ function People(props: {
                       </span>
                     </Show>
                   </span>
-                  <Show
-                    when={researchedMatch()}
-                    fallback={
+                  <span class="flex items-center gap-2">
+                    <span
+                      aria-label={scoreLabel()}
+                      class="font-mono text-sm font-semibold text-star"
+                    >
+                      {score()}
+                    </span>
+                    <Show when={props.researchingPersonId === person.id}>
                       <span
-                        aria-label={`Hiring influence ${person.decision_power_score}`}
-                        class="font-mono text-sm font-semibold text-star"
-                      >
-                        {person.decision_power_score}
-                      </span>
-                    }
-                  >
-                    {(scoredMatch) => (
-                      <span class="flex max-w-72 flex-wrap items-center justify-end gap-x-2 gap-y-1 font-mono text-xs">
-                        <span
-                          aria-label={`Decision power subscore ${scoredMatch().breakdown.decision_power}`}
-                          class="text-dim"
-                        >
-                          Power {scoredMatch().breakdown.decision_power}
-                        </span>
-                        <span
-                          aria-label={`Background fit subscore ${scoredMatch().breakdown.background_fit}`}
-                          class="text-dim"
-                        >
-                          Fit {scoredMatch().breakdown.background_fit}
-                        </span>
-                        <span
-                          aria-label={`Shared ground subscore ${scoredMatch().breakdown.shared_ground}`}
-                          class="text-dim"
-                        >
-                          Shared {scoredMatch().breakdown.shared_ground}
-                        </span>
-                        <span
-                          aria-label={`Overall match score ${scoredMatch().score}`}
-                          class="text-sm font-semibold text-star"
-                        >
-                          {scoredMatch().score}
-                        </span>
-                      </span>
-                    )}
-                  </Show>
+                        role="status"
+                        aria-label={`Researching ${person.name}`}
+                        class="size-3 animate-spin rounded-full border-2 border-star border-t-transparent"
+                      />
+                    </Show>
+                    <span
+                      aria-hidden="true"
+                      class="h-1.5 w-24 overflow-hidden rounded-full bg-line"
+                    >
+                      <span
+                        class="block h-full rounded-full bg-signal transition-[width] duration-300"
+                        style={{ width: `${score()}%` }}
+                      />
+                    </span>
+                  </span>
                 </button>
               </li>
             );
@@ -345,6 +332,13 @@ export function Results(props: {
       companyRankingStage(),
     ),
   );
+  const researchingPersonId = createMemo(() => {
+    const run = matchRun.data;
+    if (!run || !["researching", "matching"].includes(run.status)) {
+      return undefined;
+    }
+    return run.candidate_ids?.[run.completed_count];
+  });
   const companyRankingLabel = () => {
     switch (companyRankingStage()) {
       case "people":
@@ -736,6 +730,7 @@ export function Results(props: {
                       people={people()}
                       onSelect={setSelectedPerson}
                       matches={matchRun.data?.results ?? []}
+                      researchingPersonId={researchingPersonId()}
                     />
                   </Show>
                   <Show when={isResearchingPeople() && people().length === 0}>
