@@ -76,6 +76,7 @@ pnpm agent -- search create \
 
 # Continue a completed search or inspect its people.
 pnpm agent -- search get <job-id> --json
+pnpm agent -- search more-companies <job-id> --wait --json
 pnpm agent -- search more-people <job-id> --wait --json
 pnpm agent -- person research <job-id> <person-id> --wait --json
 

@@ -34,6 +34,7 @@ Commands:
   client
   search create --area <area> --industry <industry> --company-size <small|medium|large>
   search get <job-id>
+  search more-companies <job-id>
   search more-people <job-id>
   person get <job-id> <person-id>
   person research <job-id> <person-id>
@@ -163,6 +164,8 @@ export function createApiClient({ apiUrl, clientId, fetchImpl = fetch }) {
     createSearch: (input) =>
       request("/api/v1/searches", { method: "POST", body: JSON.stringify(input) }),
     getSearch: (jobId) => request(`/api/v1/searches/${encodeURIComponent(jobId)}`),
+    searchMoreCompanies: (jobId) =>
+      request(`/api/v1/searches/${encodeURIComponent(jobId)}/companies`, { method: "POST" }),
     searchMorePeople: (jobId) =>
       request(`/api/v1/searches/${encodeURIComponent(jobId)}/people`, { method: "POST" }),
     getPersonResearch: (jobId, personId) =>
@@ -247,6 +250,11 @@ export async function run(argv, dependencies = {}) {
     }
   } else if (resource === "search" && action === "get" && ids.length === 1) {
     response = await api.getSearch(ids[0]);
+  } else if (resource === "search" && action === "more-companies" && ids.length === 1) {
+    response = await api.searchMoreCompanies(ids[0]);
+    if (options.wait) {
+      response = await waitForCompletion(() => api.getSearch(ids[0]), searchComplete, options);
+    }
   } else if (resource === "search" && action === "more-people" && ids.length === 1) {
     response = await api.searchMorePeople(ids[0]);
     if (options.wait) {
