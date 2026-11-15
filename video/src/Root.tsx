@@ -3,7 +3,7 @@ import { Composition } from "remotion";
 import { ExagentDemo } from "./Video";
 
 export const FPS = 30;
-export const DURATION = 70 * FPS;
+export const DURATION = 50 * FPS;
 
 export const RemotionRoot = () => {
   return (

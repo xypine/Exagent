@@ -114,6 +114,7 @@ function Competition() {
   const frame = useCurrentFrame();
   const local = frame - scenes.competition.from;
   const words = enter(local, 20, 22);
+  const visual = enter(local, 48, 14);
   return <Scene {...scenes.competition}>
     <Background /><Header />
     <div style={{ position: "absolute", left: 128, top: 185, width: 710, opacity: words, transform: `translateY(${(1 - words) * 28}px)` }}>
@@ -121,7 +122,7 @@ function Competition() {
       <h1 style={{ fontSize: 74, letterSpacing: -4.4, lineHeight: 0.98, margin: "18px 0 20px" }}>When every application looks alike, it is hard to <span style={{ color: signal }}>stand out.</span></h1>
       <p style={{ color: muted, fontSize: 23, lineHeight: 1.45, margin: 0, width: 610 }}>A capable applicant can disappear into an existing pool before a conversation even begins.</p>
     </div>
-    <div style={{ position: "absolute", left: 870, right: 90, top: 170, bottom: 132 }}>
+    <div style={{ position: "absolute", left: 870, right: 90, top: 170, bottom: 132, opacity: visual, transform: `translateY(${(1 - visual) * 20}px)` }}>
       <div style={{ position: "absolute", inset: 0, borderRadius: 38, background: "linear-gradient(140deg, rgb(255 255 255 / .92), rgb(235 239 252 / .65))", border: "1px solid rgb(67 56 202 / .18)", overflow: "hidden", boxShadow: "0 30px 70px -32px rgb(30 58 138 / .38)" }}>
         <div style={{ position: "absolute", left: 42, top: 38, color: muted, fontSize: 16, fontWeight: 700, letterSpacing: 1.1, textTransform: "uppercase" }}>Application sea</div>
         {seaDots.map((dot, i) => <SeaDot key={i} {...dot} i={i} local={local} featured={i === 54} />)}
@@ -139,7 +140,8 @@ const companies = ["Dream Company", "Orbit Labs", "Northstar Systems", "Signal W
 function Reframe() {
   const frame = useCurrentFrame();
   const local = frame - scenes.reframe.from;
-  const t = enter(local, 18, 26);
+  const t = enter(local, 14, 22);
+  const visual = enter(local, 48, 14);
   const route = enter(local, 58, 46);
   return <Scene {...scenes.reframe}>
     <Background /><Header />
@@ -148,7 +150,7 @@ function Reframe() {
       <h2 style={{ fontSize: 76, letterSpacing: -4.1, lineHeight: 0.98, margin: "17px 0 20px" }}>Find a company where you could <span style={{ color: star }}>contribute.</span></h2>
       <p style={{ fontSize: 24, lineHeight: 1.42, color: muted, margin: 0 }}>The right opportunity may not be posted yet.</p>
     </div>
-    <div style={{ position: "absolute", left: 790, right: 78, top: 175, bottom: 128 }}>
+    <div style={{ position: "absolute", left: 790, right: 78, top: 175, bottom: 128, opacity: visual, transform: `translateY(${(1 - visual) * 20}px)` }}>
       <Card style={{ position: "absolute", inset: 0, overflow: "hidden", background: "radial-gradient(circle at 52% 75%, rgb(67 56 202 / .14), transparent 34%), #fff" }}>
         <div style={{ position: "absolute", left: 45, top: 38, fontSize: 16, textTransform: "uppercase", letterSpacing: 1.1, color: muted, fontWeight: 700 }}>Opportunity landscape</div>
         <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
@@ -159,13 +161,42 @@ function Reframe() {
           const y = 24 + ((i * 31) % 3) * 18;
           const selected = i === 0;
           const scale = selected ? 0.7 + route * 0.3 : 0.75 + route * 0.25;
-          return <div key={company} style={{ position: "absolute", left: `${x}%`, top: `${y}%`, padding: selected ? "18px 22px" : "13px 16px", borderRadius: 17, background: selected ? star : surface, color: selected ? "#fff" : navy, border: `1px solid ${selected ? star : line}`, boxShadow: selected ? "0 18px 36px -14px rgb(67 56 202 / .55)" : "0 8px 18px -12px rgb(11 27 63 / .26)", fontWeight: 700, fontSize: selected ? 21 : 16, transform: `translate(-50%, -50%) scale(${scale})`, opacity: t }}>
+          return <div key={company} style={{ position: "absolute", left: `${x}%`, top: `${y}%`, padding: selected ? "18px 22px" : "13px 16px", borderRadius: 17, background: selected ? star : surface, color: selected ? "#fff" : navy, border: `1px solid ${selected ? star : line}`, boxShadow: selected ? "0 18px 36px -14px rgb(67 56 202 / .55)" : "0 8px 18px -12px rgb(11 27 63 / .26)", fontWeight: 700, fontSize: selected ? 21 : 16, transform: `translate(-50%, -50%) scale(${scale})`, opacity: visual }}>
             {selected && <div style={{ fontFamily: serif, fontStyle: "italic", fontWeight: 400, fontSize: 16, marginBottom: 3 }}>potential fit</div>}{company}
           </div>;
         })}
         <div style={{ position: "absolute", left: "50%", top: "81%", transform: `translate(-50%, -50%) scale(${0.8 + route * 0.2})`, width: 96, height: 96, borderRadius: "50%", border: `3px solid ${star}`, background: surface, display: "grid", placeItems: "center", color: star, fontWeight: 800, fontSize: 16, boxShadow: "0 0 0 11px rgb(67 56 202 / .09)" }}>YOU</div>
       </Card>
     </div>
+  </Scene>;
+}
+
+function Pipeline() {
+  const frame = useCurrentFrame();
+  const local = frame - scenes.pipeline.from;
+  const visual = enter(local, 36, 16);
+  const companiesIn = enter(local, 54, 14);
+  const peopleIn = enter(local, 88, 14);
+  const researchIn = enter(local, 120, 14);
+  const scoreIn = enter(local, 150, 14);
+  const companyX = [22, 40, 60, 78];
+  return <Scene {...scenes.pipeline}>
+    <Background /><Header />
+    <div style={{ position: "absolute", left: 180, right: 180, top: 154, textAlign: "center", opacity: 1 - visual * 0.55 }}><Eyebrow>A search becomes a pipeline.</Eyebrow><h2 style={{ margin: "12px 0 0", fontSize: 58, letterSpacing: -3 }}>Companies. People. Research. <span style={{ color: star }}>A shortlist you can inspect.</span></h2></div>
+    <Card style={{ position: "absolute", left: 165, right: 165, top: 303, bottom: 125, overflow: "hidden", opacity: visual, transform: `translateY(${(1 - visual) * 22}px)` }}>
+      <div style={{ position: "absolute", left: 35, top: 25, color: star, fontFamily: serif, fontStyle: "italic", fontSize: 24 }}>How Exagent works</div>
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+        {companyX.map((x) => <path key={x} d={`M 50 84 L ${x} 35`} fill="none" stroke={star} strokeWidth="0.34" pathLength="1" strokeDashoffset={1 - companiesIn} opacity={companiesIn * 0.75} />)}
+        {companyX.map((x) => <path key={x} d={`M ${x} 40 L ${x} 58`} fill="none" stroke={signal} strokeWidth="0.3" pathLength="1" strokeDashoffset={1 - peopleIn} opacity={peopleIn * 0.75} />)}
+        {companyX.map((x) => <path key={x} d={`M ${x} 62 Q ${x + 6} 72 87 72`} fill="none" stroke={teal} strokeWidth="0.3" pathLength="1" strokeDashoffset={1 - scoreIn} opacity={scoreIn * 0.8} />)}
+      </svg>
+      {companyX.map((x, i) => <div key={x} style={{ position: "absolute", left: `${x}%`, top: "35%", transform: `translate(-50%, -50%) scale(${0.7 + companiesIn * 0.3})`, opacity: companiesIn, padding: "9px 13px", borderRadius: 99, border: `1px solid ${line}`, background: surface, fontSize: 14, fontWeight: 750 }}>{companies[i]}</div>)}
+      {companyX.map((x, i) => <div key={`${x}-person`} style={{ position: "absolute", left: `${x}%`, top: "60%", transform: `translate(-50%, -50%) scale(${0.55 + peopleIn * 0.45})`, opacity: peopleIn, width: 38, height: 38, borderRadius: "50%", color: "#fff", background: i === 0 ? star : signal, display: "grid", placeItems: "center", fontSize: 12, fontWeight: 800 }}>{["MM", "JS", "AJ", "TB"][i]}</div>)}
+      {companyX.map((x, i) => <div key={`${x}-source`} style={{ position: "absolute", left: `${x + 3}%`, top: "50%", width: 11, height: 11, borderRadius: "50%", background: i % 2 ? teal : amber, opacity: researchIn, transform: `scale(${researchIn})` }} />)}
+      <div style={{ position: "absolute", left: "50%", top: "84%", transform: "translate(-50%, -50%)", width: 62, height: 62, borderRadius: "50%", border: `3px solid ${star}`, background: surface, color: star, display: "grid", placeItems: "center", fontSize: 13, fontWeight: 800 }}>YOU</div>
+      <div style={{ position: "absolute", right: 38, top: "61%", opacity: scoreIn, transform: `translateY(${(1 - scoreIn) * 18}px)` }}><div style={{ color: muted, fontSize: 12, letterSpacing: 1, fontWeight: 800, textTransform: "uppercase" }}>Shortlist</div><div style={{ marginTop: 8, borderRadius: 12, background: "rgb(67 56 202 / .08)", border: "1px solid rgb(67 56 202 / .25)", padding: "10px 14px", color: star, fontWeight: 800 }}>Ranked, sourced, explained</div></div>
+      <div style={{ position: "absolute", left: 35, bottom: 24, display: "flex", gap: 26, color: muted, fontSize: 14, fontWeight: 650 }}><span style={{ opacity: companiesIn }}>1 · Companies</span><span style={{ opacity: peopleIn }}>2 · People</span><span style={{ opacity: researchIn }}>3 · Public research</span><span style={{ opacity: scoreIn }}>4 · Scoring</span></div>
+    </Card>
   </Scene>;
 }
 
@@ -178,20 +209,20 @@ function ResearchChip({ text, x, y, angle, local, i }: { text: string; x: number
 function Workflow() {
   const frame = useCurrentFrame();
   const local = frame - scenes.workflow.from;
-  const organize = enter(local, 120, 30);
-  const typed = Math.floor(interpolate(local, [180, 240], [0, demo.city.length], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }));
-  const start = enter(local, 300, 15);
-  const screenTilt = interpolate(local, [120, 300, 410], [5, -3, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) });
+  const organize = enter(local, 34, 16);
+  const typed = Math.floor(interpolate(local, [58, 88], [0, demo.city.length], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }));
+  const start = enter(local, 103, 10);
+  const screenTilt = interpolate(local, [34, 100, 120], [5, -3, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) });
   const chips = [
     ["company site", 19, 24, -7], ["news", 75, 19, 8], ["team page", 79, 57, -8], ["role history", 20, 66, 7], ["public source", 52, 16, -3], ["funding", 52, 76, 4],
   ] as const;
   return <Scene {...scenes.workflow}>
     <Background /><Header />
     <div style={{ position: "absolute", left: 125, top: 157, right: 125, textAlign: "center", opacity: 1 - organize }}>
-      <Eyebrow>Research can splinter quickly.</Eyebrow>
-      <h2 style={{ fontSize: 61, letterSpacing: -3.1, margin: "11px 0 0" }}>Company. People. Evidence. <span style={{ color: star }}>Where do you begin?</span></h2>
+      <Eyebrow>Start with what you know.</Eyebrow>
+      <h2 style={{ fontSize: 61, letterSpacing: -3.1, margin: "11px 0 0" }}>A city and industry are enough for a <span style={{ color: star }}>useful first pass.</span></h2>
     </div>
-    <div style={{ position: "absolute", left: 190, right: 190, top: 315, bottom: 155, opacity: 1 - organize }}>
+    <div style={{ display: "none", position: "absolute", left: 190, right: 190, top: 315, bottom: 155, opacity: 1 - organize }}>
       <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
         {chips.map(([, x, y], i) => <path key={i} d={`M ${x} ${y} Q 50 ${i % 2 ? 75 : 20} 50 48`} fill="none" stroke={i % 2 ? signal : star} strokeWidth="0.32" strokeDasharray="1 1.4" opacity=".48" />)}
       </svg>
@@ -210,7 +241,7 @@ function Workflow() {
             <div style={{ marginTop: 17, borderRadius: 12, background: signal, color: "#fff", padding: "15px 18px", textAlign: "center", fontWeight: 750, fontSize: 17, boxShadow: "0 11px 22px -12px rgb(30 58 138 / .7)", transform: `scale(${0.96 + start * .04})` }}>Search</div>
           </div>
         </div>
-        {start > 0 && <div style={{ position: "absolute", left: 42, right: 42, bottom: 25, height: 42, display: "flex", gap: 10, alignItems: "center", opacity: start }}>{["Companies", "People", "Evidence", "Ranking"].map((step, i) => <div key={step} style={{ flex: 1, position: "relative", height: 6, borderRadius: 99, background: line, overflow: "hidden" }}><div style={{ position: "absolute", inset: 0, transformOrigin: "left", transform: `scaleX(${clamp((local - 330 - i * 30) / 32)})`, background: i === 3 ? star : signal }} /><div style={{ position: "absolute", top: 14, color: muted, whiteSpace: "nowrap", fontSize: 13, fontWeight: 650 }}>{step}</div></div>)}</div>}
+        {start > 0 && <div style={{ position: "absolute", left: 42, right: 42, bottom: 25, color: star, fontSize: 14, fontWeight: 750, textAlign: "center", opacity: start }}>Building your first shortlist →</div>}
       </Card>
     </div>
   </Scene>;
@@ -228,8 +259,10 @@ function Results() {
   const frame = useCurrentFrame();
   const local = frame - scenes.results.from;
   const reveal = spring({ frame: Math.max(0, local - 26), fps: 30, config: { damping: 18, mass: 0.7 } });
-  const personReveal = spring({ frame: Math.max(0, local - 120), fps: 30, config: { damping: 19, mass: 0.7 } });
-  const refine = enter(local, 315, 24);
+  const personReveal = spring({ frame: Math.max(0, local - 72), fps: 30, config: { damping: 19, mass: 0.7 } });
+  const profilePanel = enter(local, 195, 14);
+  const profileCharacters = Math.floor(interpolate(local, [215, 305], [0, demo.profile.length], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }));
+  const refine = enter(local, 330, 24);
   const screenTilt = interpolate(local, [0, 105, 250], [4, -2.5, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) });
   const matches = [
     ["Dream Company", "SaaS · Helsinki", 92, star], ["Orbit Labs", "Climate tech · Helsinki", 84, teal], ["Northstar Systems", "Developer tools · Helsinki", 79, signal], ["Signal Works", "B2B software · Helsinki", 74, amber],
@@ -250,11 +283,11 @@ function Results() {
       <Card style={{ padding: 28, opacity: reveal, transform: `translateX(${(1 - reveal) * -45}px)` }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}><div><div style={{ color: muted, fontSize: 14, fontWeight: 750, letterSpacing: 1, textTransform: "uppercase" }}>Matched companies</div><h3 style={{ margin: "8px 0 0", fontSize: 29, letterSpacing: -1.2 }}>Worth exploring</h3></div><div style={{ color: star, fontWeight: 750 }}>4 found</div></div>
         <div style={{ marginTop: 22 }}>{matches.map(([name, detail, score, color], i) => { const p = enter(local, 75 + i * 27, 18); return <div key={name} style={{ display: "flex", alignItems: "center", gap: 14, borderTop: `1px solid ${line}`, padding: "17px 2px", opacity: p, transform: `translateX(${(1 - p) * -22}px)` }}><Score value={score} color={color} /><div style={{ flex: 1 }}><div style={{ fontSize: 18, fontWeight: 750 }}>{name}</div><div style={{ color: muted, fontSize: 14, marginTop: 3 }}>{detail}</div></div>{i === 0 && <div style={{ color: star, fontSize: 13, fontWeight: 800 }}>SELECTED</div>}</div>; })}</div>
-        <div style={{ marginTop: 12, padding: "13px 14px", borderRadius: 13, border: "1px solid rgb(67 56 202 / .22)", background: "rgb(67 56 202 / .05)", opacity: refine, transform: `translateY(${(1 - refine) * 18}px)` }}><div style={{ color: star, fontSize: 12, fontWeight: 800, letterSpacing: 0.8, textTransform: "uppercase" }}>Second pass · profile added</div><div style={{ marginTop: 5, fontSize: 14, fontWeight: 650 }}>{demo.profile}</div><div style={{ marginTop: 4, color: muted, fontSize: 13 }}>Now includes background fit and common ground.</div></div>
+        <div style={{ marginTop: 12, padding: "13px 14px", borderRadius: 13, border: "1px solid rgb(67 56 202 / .22)", background: "rgb(67 56 202 / .05)", opacity: profilePanel, transform: `translateY(${(1 - profilePanel) * 18}px)` }}><div style={{ color: star, fontSize: 12, fontWeight: 800, letterSpacing: 0.8, textTransform: "uppercase" }}>Second pass · about you</div><div style={{ marginTop: 5, fontSize: 13, lineHeight: 1.35, fontWeight: 650 }}>{demo.profile.slice(0, profileCharacters)}{profileCharacters > 0 && profileCharacters < demo.profile.length ? <span style={{ color: star }}>|</span> : null}</div>{refine > 0.12 && <div style={{ marginTop: 7, color: muted, fontSize: 12 }}>Matched: TypeScript teams → conference talk · developer tools → company post</div>}</div>
       </Card>
       <Card style={{ overflow: "hidden", borderColor: "rgb(67 56 202 / .35)", opacity: personReveal, transform: `translateY(${(1 - personReveal) * 36}px)` }}>
         <div style={{ padding: "24px 30px 17px", background: "linear-gradient(90deg, rgb(67 56 202 / .08), transparent)" }}><div style={{ color: star, fontSize: 14, fontWeight: 800, letterSpacing: 1, textTransform: "uppercase" }}>{demo.company}</div><h3 style={{ margin: "8px 0 5px", fontSize: 31, letterSpacing: -1.5 }}>People who can open a conversation</h3><p style={{ margin: 0, color: muted, fontSize: 15 }}>{refine > 0.08 ? "Profile-aware scores · every point has a reason." : "First pass · decision power only."}</p></div>
-        {people.map((person, i) => { const p = enter(local, 150 + i * 30, 15); const active = person.name === demo.person; const final = Math.round(person.decision + (person.final - person.decision) * refine); return <div key={person.name} style={{ display: "flex", alignItems: "center", gap: 14, padding: "13px 24px", borderTop: `1px solid ${line}`, background: active ? "rgb(67 56 202 / .06)" : surface, opacity: p, transform: `translateX(${(1 - p) * 32}px)` }}><div style={{ width: 36, height: 36, borderRadius: "50%", background: active ? star : "#e9edf7", color: active ? "#fff" : signal, display: "grid", placeItems: "center", fontWeight: 750, fontSize: 13 }}>{person.name.split(" ").map((part) => part[0]).join("")}</div><div style={{ width: 170 }}><div style={{ fontSize: 17, fontWeight: 750 }}>{person.name}</div><div style={{ color: muted, marginTop: 2, fontSize: 13 }}>{person.title}</div></div><div style={{ display: "flex", flex: 1, justifyContent: "flex-end", gap: 7 }}><FactorScore label="Decision" value={person.decision} color={signal} visible={1} /><FactorScore label="Fit" value={person.fit} color={teal} visible={refine} /><FactorScore label="Shared" value={person.shared} color={amber} visible={refine} /></div><div style={{ width: 49, textAlign: "right", color: active ? star : navy, fontWeight: 800, fontSize: 22 }}>{final}</div></div>; })}
+        {people.map((person, i) => { const p = enter(local, 100 + i * 24, 15); const active = person.name === demo.person; const final = Math.round(person.decision + (person.final - person.decision) * refine); return <div key={person.name} style={{ display: "flex", alignItems: "center", gap: 14, padding: "13px 24px", borderTop: `1px solid ${line}`, background: active ? "rgb(67 56 202 / .06)" : surface, opacity: p, transform: `translateX(${(1 - p) * 32}px)` }}><div style={{ width: 36, height: 36, borderRadius: "50%", background: active ? star : "#e9edf7", color: active ? "#fff" : signal, display: "grid", placeItems: "center", fontWeight: 750, fontSize: 13 }}>{person.name.split(" ").map((part) => part[0]).join("")}</div><div style={{ width: 170 }}><div style={{ fontSize: 17, fontWeight: 750 }}>{person.name}</div><div style={{ color: muted, marginTop: 2, fontSize: 13 }}>{person.title}</div></div><div style={{ display: "flex", flex: 1, justifyContent: "flex-end", gap: 7 }}><FactorScore label="Decision" value={person.decision} color={signal} visible={1} /><FactorScore label="Fit" value={person.fit} color={teal} visible={refine} /><FactorScore label="Shared" value={person.shared} color={amber} visible={refine} /></div><div style={{ width: 49, textAlign: "right", color: active ? star : navy, fontWeight: 800, fontSize: 22 }}>{final}</div></div>; })}
       </Card>
     </div>
   </Scene>;
@@ -272,8 +305,8 @@ function Contact() {
       <Card style={{ height: "100%", boxSizing: "border-box", padding: 48, borderColor: "rgb(67 56 202 / .45)", boxShadow: "0 3px 5px rgb(11 27 63 / .06), 0 35px 70px -27px rgb(30 58 138 / .36)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}><div><Eyebrow>One compelling place to begin.</Eyebrow><h2 style={{ margin: "12px 0 6px", fontSize: 58, letterSpacing: -3 }}>{demo.person}</h2><div style={{ color: muted, fontSize: 24 }}>{demo.title} · {demo.company}</div></div><div style={{ width: 106, height: 106, borderRadius: 24, background: "rgb(67 56 202 / .09)", display: "grid", placeItems: "center", color: star, fontSize: 16, fontWeight: 750, textAlign: "center" }}>MATCH<br /><span style={{ fontSize: 38 }}>{demo.score}</span></div></div>
         <div style={{ display: "grid", gridTemplateColumns: "1.1fr .9fr", gap: 26, marginTop: 38 }}>
-          <div style={{ borderLeft: `4px solid ${star}`, padding: "5px 0 5px 22px" }}><div style={{ color: muted, fontSize: 13, textTransform: "uppercase", fontWeight: 800, letterSpacing: 1 }}>Why this person</div><p style={{ fontSize: 24, lineHeight: 1.38, margin: "10px 0 0" }}>A technical leader with direct influence over engineering direction and future headcount.</p></div>
-          <div style={{ border: `1px solid ${line}`, borderRadius: 17, padding: 20, background: "#fbfcff", opacity: evidence, transform: `translateY(${(1 - evidence) * 16}px)` }}><div style={{ color: muted, fontSize: 13, textTransform: "uppercase", fontWeight: 800, letterSpacing: 1 }}>Evidence</div><p style={{ margin: "10px 0 8px", fontSize: 18, lineHeight: 1.35 }}>{demo.evidence}</p><div style={{ color: star, fontSize: 15, fontWeight: 700 }}>View supporting source ↗</div></div>
+          <div style={{ borderLeft: `4px solid ${star}`, padding: "5px 0 5px 22px" }}><div style={{ color: muted, fontSize: 13, textTransform: "uppercase", fontWeight: 800, letterSpacing: 1 }}>Why this person</div><p style={{ fontSize: 24, lineHeight: 1.38, margin: "10px 0 0" }}>A technical leader whose public work on TypeScript teams and developer tools overlaps with what you want to do.</p></div>
+          <div style={{ border: `1px solid ${line}`, borderRadius: 17, padding: 20, background: "#fbfcff", opacity: evidence, transform: `translateY(${(1 - evidence) * 16}px)` }}><div style={{ color: muted, fontSize: 13, textTransform: "uppercase", fontWeight: 800, letterSpacing: 1 }}>Public evidence</div><p style={{ margin: "10px 0 8px", fontSize: 18, lineHeight: 1.35 }}>Company website · conference talk · company post</p><div style={{ color: star, fontSize: 15, fontWeight: 700 }}>See why each score changed ↗</div></div>
         </div>
         <div style={{ marginTop: 29, padding: "20px 23px", borderRadius: 16, background: "linear-gradient(90deg, rgb(30 58 138 / .08), rgb(67 56 202 / .06))", border: "1px solid rgb(67 56 202 / .20)", opacity: angle, transform: `translateY(${(1 - angle) * 16}px)` }}><span style={{ color: star, fontWeight: 800, fontSize: 14, letterSpacing: 1, textTransform: "uppercase" }}>Thoughtful opening&nbsp;&nbsp;</span><span style={{ fontSize: 19 }}>{demo.outreach}</span></div>
       </Card>
@@ -296,5 +329,5 @@ function Closing() {
 }
 
 export function ExagentDemo() {
-  return <AbsoluteFill style={base}><LogoIntro /><Competition /><Reframe /><Workflow /><Results /><Contact /><Closing /></AbsoluteFill>;
+  return <AbsoluteFill style={base}><LogoIntro /><Competition /><Reframe /><Pipeline /><Workflow /><Results /><Contact /><Closing /></AbsoluteFill>;
 }

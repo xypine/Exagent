@@ -5,11 +5,11 @@ const atBar = (bar: number) => bar * 4 * FRAMES_PER_BEAT;
 
 // This is intentionally a fictional cue, not an audio asset. It gives the
 // picture a reliable musical grid now and lets a future track be edited or
-// replaced without rebuilding the visual pacing. 35 bars at 120 BPM = 70 sec.
+// replaced without rebuilding the visual pacing. 25 bars at 120 BPM = 50 sec.
 export const musicCue = {
   bpm: BPM,
   beatsPerBar: 4,
-  bars: 35,
+  bars: 25,
   character: "confident, precise electronic pulse with a warm lift",
 } as const;
 
@@ -21,7 +21,7 @@ export const demo = {
   person: "Matti Meikäläinen",
   title: "CTO",
   score: 92,
-  profile: "Recent software graduate · TypeScript · developer tools",
+  profile: "Recent software graduate with hands-on TypeScript and React experience. Looking for a product-minded role in developer tools or an early-stage team.",
   evidence: "Current role verified · public source available",
   outreach: "Ask about the engineering challenges behind their next stage of growth.",
 };
@@ -30,12 +30,13 @@ export const scenes = {
   // Every entry is a downbeat. The short holds after each arrival make the
   // edit feel intentional rather than like a sequence of rushed slides.
   intro: { from: atBar(0), duration: atBar(1) },
-  competition: { from: atBar(1), duration: atBar(3) },
-  reframe: { from: atBar(4), duration: atBar(4) },
-  workflow: { from: atBar(8), duration: atBar(10) },
-  results: { from: atBar(18), duration: atBar(10) },
-  contact: { from: atBar(28), duration: atBar(4) },
-  close: { from: atBar(32), duration: atBar(3) },
+  competition: { from: atBar(1), duration: atBar(2) },
+  reframe: { from: atBar(3), duration: atBar(2) },
+  pipeline: { from: atBar(5), duration: atBar(3) },
+  workflow: { from: atBar(8), duration: atBar(2) },
+  results: { from: atBar(10), duration: atBar(9) },
+  contact: { from: atBar(19), duration: atBar(4) },
+  close: { from: atBar(23), duration: atBar(2) },
 } as const;
 
 // On-screen language belongs inside each visual rather than in a persistent
