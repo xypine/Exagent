@@ -9,6 +9,7 @@
 node_modules/
 .pnpm-store/
 dist/
+video/out/
 coverage/
 .exagent-cli.json
 

@@ -1,0 +1,21 @@
+{
+  "name": "exagent-demo-video",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "studio": "CHROME_BIN=\"${REMOTION_BROWSER_EXECUTABLE:-$(command -v chromium)}\"; remotion studio src/index.ts --browser-executable \"$CHROME_BIN\" --binaries-directory \"$(pwd)/bin\"",
+    "render": "CHROME_BIN=\"${REMOTION_BROWSER_EXECUTABLE:-$(command -v chromium)}\"; remotion render src/index.ts ExagentDemo out/exagent-demo.mp4 --codec=h264 --crf=18 --browser-executable \"$CHROME_BIN\" --binaries-directory \"$(pwd)/bin\"",
+    "still": "CHROME_BIN=\"${REMOTION_BROWSER_EXECUTABLE:-$(command -v chromium)}\"; remotion still src/index.ts ExagentDemo out/preview.png --frame=2160 --browser-executable \"$CHROME_BIN\" --binaries-directory \"$(pwd)/bin\""
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.543",
+    "remotion": "4.0.543",
+    "react": "19.1.1",
+    "react-dom": "19.1.1"
+  },
+  "devDependencies": {
+    "@types/react": "19.1.16",
+    "@types/react-dom": "19.1.9",
+    "typescript": "5.9.2"
+  }
+}

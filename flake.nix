@@ -25,6 +25,7 @@
               gnumake
               docker
               docker-compose
+              ffmpeg
               codex
             ];
           };

@@ -1,2 +1,5 @@
 packages:
   - frontend
+  - video
+allowBuilds:
+  esbuild: true
