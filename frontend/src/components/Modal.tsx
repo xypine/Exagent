@@ -9,6 +9,66 @@ const FOCUSABLE_SELECTOR = [
   "[tabindex]:not([tabindex='-1'])",
 ].join(", ");
 
+type OverflowStyles = Pick<
+  CSSStyleDeclaration,
+  "overflow" | "overflowX" | "overflowY"
+>;
+
+let scrollLockCount = 0;
+let previousBodyOverflow: OverflowStyles | undefined;
+let previousDocumentOverflow: OverflowStyles | undefined;
+
+function overflowStyles(element: HTMLElement): OverflowStyles {
+  return {
+    overflow: element.style.overflow,
+    overflowX: element.style.overflowX,
+    overflowY: element.style.overflowY,
+  };
+}
+
+function setOverflowStyles(element: HTMLElement, styles: OverflowStyles) {
+  element.style.overflow = styles.overflow;
+  element.style.overflowX = styles.overflowX;
+  element.style.overflowY = styles.overflowY;
+}
+
+function lockDocumentScroll() {
+  const { body, documentElement } = document;
+
+  if (scrollLockCount === 0) {
+    previousBodyOverflow = overflowStyles(body);
+    previousDocumentOverflow = overflowStyles(documentElement);
+    setOverflowStyles(body, {
+      overflow: "hidden",
+      overflowX: "hidden",
+      overflowY: "hidden",
+    });
+    setOverflowStyles(documentElement, {
+      overflow: "hidden",
+      overflowX: "hidden",
+      overflowY: "hidden",
+    });
+  }
+
+  scrollLockCount += 1;
+  let released = false;
+
+  return () => {
+    if (released) return;
+    released = true;
+    scrollLockCount -= 1;
+
+    if (scrollLockCount !== 0) return;
+
+    if (previousBodyOverflow) setOverflowStyles(body, previousBodyOverflow);
+    if (previousDocumentOverflow) {
+      setOverflowStyles(documentElement, previousDocumentOverflow);
+    }
+    previousBodyOverflow = undefined;
+    previousDocumentOverflow = undefined;
+  };
+}
+
 function focusableElements(container: HTMLElement) {
   return Array.from(
     container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
@@ -30,6 +90,8 @@ export function Modal(props: {
       document.activeElement instanceof HTMLElement
         ? document.activeElement
         : null;
+    const releaseScrollLock = lockDocumentScroll();
+    onCleanup(releaseScrollLock);
     dialog?.focus();
   });
 

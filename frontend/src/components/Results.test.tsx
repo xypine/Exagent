@@ -315,6 +315,8 @@ describe("Results", () => {
       name: "Northstar Labs details",
     });
     expect(document.activeElement).toBe(dialog);
+    expect(document.body.style.overflow).toBe("hidden");
+    expect(document.documentElement.style.overflow).toBe("hidden");
 
     const close = screen.getByRole("button", { name: "Close" });
     const visit = screen.getByRole("link", { name: "Visit company website ↗" });
@@ -329,6 +331,8 @@ describe("Results", () => {
       screen.queryByRole("dialog", { name: "Northstar Labs details" }),
     ).toBeNull();
     expect(document.activeElement).toBe(about);
+    expect(document.body.style.overflow).toBe("");
+    expect(document.documentElement.style.overflow).toBe("");
 
     fireEvent.click(about);
     const reopenedDialog = await screen.findByRole("dialog", {
