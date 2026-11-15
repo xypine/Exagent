@@ -3,7 +3,14 @@ import {
   createQuery,
   useQueryClient,
 } from "@tanstack/solid-query";
-import { createEffect, createMemo, createSignal, For, Show } from "solid-js";
+import {
+  createEffect,
+  createMemo,
+  createSignal,
+  For,
+  onCleanup,
+  Show,
+} from "solid-js";
 
 import {
   getMatchRun,
@@ -13,7 +20,7 @@ import {
   startMatchRun,
   storeProfile,
 } from "../api";
-import { rankCompanies } from "../companyRanking";
+import { type CompanyRankingStage, rankCompanies } from "../companyRanking";
 import type {
   Company,
   JobStatus,
@@ -298,6 +305,13 @@ export function Results(props: {
   const [profileExpanded, setProfileExpanded] = createSignal(false);
   const [matchRunId, setMatchRunId] = createSignal<string | null>(null);
   const [matchStarted, setMatchStarted] = createSignal(false);
+  const [companyRankingStage, setCompanyRankingStage] =
+    createSignal<CompanyRankingStage>("exa");
+  const companyCards = new Map<string, HTMLElement>();
+  let previousCompanyPositions = new Map<
+    string,
+    { left: number; top: number }
+  >();
   const job = createQuery(() => ({
     queryKey: ["search", props.jobId],
     queryFn: () => getSearch(props.jobId),
@@ -355,10 +369,15 @@ export function Results(props: {
     );
   };
 
-  const companyRankingStage = () => {
-    if (job.data?.status !== "done") return "exa" as const;
-    return matchRun.data?.status === "done" ? "matches" : "people";
-  };
+  createEffect(() => {
+    if (job.data?.status !== "done") return;
+    if (matchRun.data?.status === "done") {
+      setCompanyRankingStage("matches");
+      return;
+    }
+    setCompanyRankingStage((stage) => (stage === "exa" ? "people" : stage));
+  });
+
   const rankedCompanies = createMemo(() =>
     rankCompanies(
       job.data?.companies ?? [],
@@ -377,6 +396,47 @@ export function Results(props: {
         return "Ordered by Exa relevance.";
     }
   };
+
+  createEffect(() => {
+    // Keep the baseline current when the profile panel changes the cards' layout.
+    profileExpanded();
+    const companies = rankedCompanies();
+    const currentPositions = new Map<string, { left: number; top: number }>();
+    for (const company of companies) {
+      const card = companyCards.get(company.id);
+      if (!card) continue;
+      const { left, top } = card.getBoundingClientRect();
+      currentPositions.set(company.id, { left, top });
+    }
+
+    const reducedMotion = window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    if (!reducedMotion && typeof HTMLElement.prototype.animate === "function") {
+      for (const [companyId, currentPosition] of currentPositions) {
+        const previousPosition = previousCompanyPositions.get(companyId);
+        if (!previousPosition) continue;
+        const deltaX = previousPosition.left - currentPosition.left;
+        const deltaY = previousPosition.top - currentPosition.top;
+        if (deltaX === 0 && deltaY === 0) continue;
+
+        companyCards
+          .get(companyId)
+          ?.animate(
+            [
+              { transform: `translate(${deltaX}px, ${deltaY}px)` },
+              { transform: "translate(0, 0)" },
+            ],
+            { duration: 250, easing: "ease-out" },
+          );
+      }
+    }
+    previousCompanyPositions = currentPositions;
+  });
+
+  onCleanup(() => {
+    companyCards.clear();
+  });
 
   const input = (): SearchInput | undefined => {
     if (props.input) return props.input;
@@ -674,6 +734,7 @@ export function Results(props: {
 
               return (
                 <article
+                  ref={(element) => companyCards.set(company.id, element)}
                   class="group overflow-hidden rounded-2xl border border-line bg-ink-2/60"
                   classList={{
                     "animate-rise": !enteredCompanyIds().has(company.id),
