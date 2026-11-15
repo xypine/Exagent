@@ -1,12 +1,19 @@
-import { fireEvent, render, screen } from "@solidjs/testing-library";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@solidjs/testing-library";
 import { QueryClient, QueryClientProvider } from "@tanstack/solid-query";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   getMatchRun,
   getPersonResearch,
   getSearch,
   getStoredProfile,
+  searchMoreCompanies,
   startMatchRun,
   startPersonResearch,
   storeProfile,
@@ -18,6 +25,7 @@ vi.mock("../api", () => ({
   getSearch: vi.fn(),
   getPersonResearch: vi.fn(),
   startPersonResearch: vi.fn(),
+  searchMoreCompanies: vi.fn(),
   searchMorePeople: vi.fn(),
   getStoredProfile: vi.fn(),
   storeProfile: vi.fn(),
@@ -40,6 +48,7 @@ const JOB: SearchJob = {
       sources: [],
     },
   ],
+  can_load_more_companies: true,
   people: [
     {
       id: "person-1",
@@ -66,6 +75,8 @@ const JOB: SearchJob = {
 };
 
 describe("Results", () => {
+  afterEach(cleanup);
+
   beforeEach(() => {
     vi.mocked(getSearch).mockResolvedValue(JOB);
     vi.mocked(getPersonResearch).mockResolvedValue({
@@ -83,6 +94,7 @@ describe("Results", () => {
       volunteer_experience: [],
     });
     vi.mocked(getStoredProfile).mockReturnValue("");
+    vi.mocked(searchMoreCompanies).mockResolvedValue(JOB);
     vi.mocked(startMatchRun).mockResolvedValue({
       id: "match-1",
       status: "done",
@@ -124,6 +136,26 @@ describe("Results", () => {
     ).not.toBeNull();
     expect(screen.getByText("80 · Very high")).not.toBeNull();
     expect(screen.getByText("Leads product at Northstar Labs.")).not.toBeNull();
+  });
+
+  it("loads more companies only after the user requests it", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(() => (
+      <QueryClientProvider client={queryClient}>
+        <Results jobId="job-1" onReset={() => {}} />
+      </QueryClientProvider>
+    ));
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Load more companies" }),
+    );
+
+    await waitFor(() =>
+      expect(searchMoreCompanies).toHaveBeenCalledWith("job-1"),
+    );
   });
 
   it("keeps the match-profile form collapsed until requested", async () => {

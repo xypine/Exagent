@@ -1,10 +1,15 @@
-import { createMutation, createQuery } from "@tanstack/solid-query";
+import {
+  createMutation,
+  createQuery,
+  useQueryClient,
+} from "@tanstack/solid-query";
 import { createEffect, createSignal, For, Show } from "solid-js";
 
 import {
   getMatchRun,
   getSearch,
   getStoredProfile,
+  searchMoreCompanies,
   searchMorePeople,
   startMatchRun,
   storeProfile,
@@ -157,6 +162,7 @@ export function Results(props: {
   input?: SearchInput;
   onReset: () => void;
 }) {
+  const queryClient = useQueryClient();
   const [enteredCompanyIds, setEnteredCompanyIds] = createSignal<
     ReadonlySet<string>
   >(new Set());
@@ -180,7 +186,14 @@ export function Results(props: {
   const morePeople = createMutation(() => ({
     mutationFn: () => searchMorePeople(props.jobId),
     onSuccess: (data) => {
-      job.setData(data);
+      queryClient.setQueryData(["search", props.jobId], data);
+    },
+  }));
+
+  const moreCompanies = createMutation(() => ({
+    mutationFn: () => searchMoreCompanies(props.jobId),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["search", props.jobId], data);
     },
   }));
 
@@ -281,10 +294,31 @@ export function Results(props: {
         </For>
       </ol>
 
-      <Show when={job.isError || job.data?.status === "failed"}>
+      <Show
+        when={job.isError || job.data?.status === "failed" || job.data?.error}
+      >
         <p class="mt-6 rounded-lg border border-bad/50 p-4 text-bad">
           {job.data?.error ?? job.error?.message ?? "The search failed."}
         </p>
+      </Show>
+
+      <Show
+        when={job.data?.status === "done" && job.data.can_load_more_companies}
+      >
+        <button
+          type="button"
+          disabled={moreCompanies.isPending}
+          onClick={() => moreCompanies.mutate()}
+          class="mt-3 rounded-lg border border-star px-3 py-2 text-sm text-star transition hover:bg-star/10 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {moreCompanies.isPending
+            ? "Loading companies…"
+            : "Load more companies"}
+        </button>
+      </Show>
+
+      <Show when={moreCompanies.isError}>
+        <p class="mt-3 text-sm text-bad">{moreCompanies.error?.message}</p>
       </Show>
 
       <Show when={job.data?.people_search_stats}>
@@ -326,7 +360,7 @@ export function Results(props: {
         >
           {morePeople.isPending
             ? "Starting people search…"
-            : `Search ${Math.min(
+            : `Find people at ${Math.min(
                 job.data?.people_search_stats.batch_size ?? 0,
                 (job.data?.people_search_stats.companies_available ?? 0) -
                   (job.data?.people_search_stats.companies_searched ?? 0),

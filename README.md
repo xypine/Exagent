@@ -63,6 +63,9 @@ it created.
 # Confirm the backend accepts the CLI's client identity.
 pnpm agent -- client
 
+# Confirm the API is healthy before starting a workflow.
+pnpm agent -- health
+
 # Create a search and wait for the background work to finish.
 pnpm agent -- search create \
   --area Helsinki \

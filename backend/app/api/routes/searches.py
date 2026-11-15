@@ -13,7 +13,11 @@ from sqlalchemy.orm import Session
 from app.core.client_identity import ClientContext, enforce_rate_limit
 from app.db.models import CompanySize, MatchRun, PersonResearchCache, SearchJob
 from app.db.session import get_db_session
-from app.services.company_search import CompanySearchService, refresh_company_search
+from app.services.company_search import (
+    CompanySearchService,
+    refresh_company_search,
+    refresh_more_companies,
+)
 from app.services.match_runs import create_match_run, refresh_match_run
 from app.services.matching import ScoredMatch
 from app.services.people_ranking import decision_power_score
@@ -144,6 +148,7 @@ class SearchResponse(SearchCreatedResponse):
     company_size: CompanySize | None
     error: str | None = None
     companies: list[CompanyResponse] = Field(default_factory=list)
+    can_load_more_companies: bool
     people: list[PersonResponse] = Field(default_factory=list)
     people_error: str | None = None
     people_search_stats: PeopleSearchStatsResponse
@@ -176,7 +181,38 @@ async def get_search(job_id: UUID, context: ClientDependency, db: DbDependency) 
     )
     if job is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Search job not found.")
-    return _search_response(job, CompanySearchService(db).settings.people_search_batch_size)
+    settings = CompanySearchService(db).settings
+    return _search_response(
+        job,
+        settings.people_search_batch_size,
+        settings.company_search_max_results,
+    )
+
+
+@router.post(
+    "/searches/{job_id}/companies",
+    response_model=SearchResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def search_more_companies(
+    job_id: UUID,
+    background_tasks: BackgroundTasks,
+    context: ClientDependency,
+    db: DbDependency,
+) -> SearchResponse:
+    job = db.scalar(
+        select(SearchJob).where(SearchJob.id == job_id, SearchJob.client_id == context.client_id)
+    )
+    if job is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Search job not found.")
+    service = CompanySearchService(db)
+    if service.search_more_companies(job):
+        background_tasks.add_task(refresh_more_companies, job.id)
+    return _search_response(
+        job,
+        service.settings.people_search_batch_size,
+        service.settings.company_search_max_results,
+    )
 
 
 @router.post(
@@ -198,7 +234,11 @@ async def search_more_people(
     service = CompanySearchService(db)
     if service.search_more_people(job):
         background_tasks.add_task(refresh_company_search, job.id)
-    return _search_response(job, service.settings.people_search_batch_size)
+    return _search_response(
+        job,
+        service.settings.people_search_batch_size,
+        service.settings.company_search_max_results,
+    )
 
 
 @router.get("/searches/{job_id}/people/{person_id}/research", response_model=PersonResearchResponse)
@@ -277,7 +317,9 @@ async def get_match_run(
     return _match_run_response(run)
 
 
-def _search_response(job: SearchJob, batch_size: int) -> SearchResponse:
+def _search_response(
+    job: SearchJob, batch_size: int, company_max_results: int = 50
+) -> SearchResponse:
     return SearchResponse.model_validate(
         {
             "job_id": job.id,
@@ -287,6 +329,7 @@ def _search_response(job: SearchJob, batch_size: int) -> SearchResponse:
             "company_size": job.company_size,
             "error": job.error,
             "companies": job.companies,
+            "can_load_more_companies": len(job.companies) < company_max_results,
             "people": [
                 {
                     **person,

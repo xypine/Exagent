@@ -68,6 +68,14 @@ export async function getSearch(jobId: string): Promise<SearchJob> {
   return request(`/api/v1/searches/${encodeURIComponent(jobId)}`);
 }
 
+/** Expand a completed company search with one user-requested batch. */
+export async function searchMoreCompanies(jobId: string): Promise<SearchJob> {
+  if (USE_MOCKS) return mockApi.searchMoreCompanies(jobId);
+  return request(`/api/v1/searches/${encodeURIComponent(jobId)}/companies`, {
+    method: "POST",
+  });
+}
+
 /** Start the next capped batch of automatic people research for a completed search. */
 export async function searchMorePeople(jobId: string): Promise<SearchJob> {
   return request(`/api/v1/searches/${encodeURIComponent(jobId)}/people`, {

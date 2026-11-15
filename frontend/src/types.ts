@@ -59,6 +59,7 @@ export interface SearchJob {
   company_size: CompanySize | null;
   error?: string | null;
   companies: Company[];
+  can_load_more_companies: boolean;
   people: Person[];
   people_error?: string | null;
   people_search_stats: PeopleSearchStats;

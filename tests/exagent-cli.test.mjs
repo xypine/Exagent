@@ -16,6 +16,7 @@ test("API client uses the frontend's API paths, payloads, and client header", as
     },
   });
 
+  await api.getHealth();
   await api.getClient();
   await api.createSearch({ area: "Helsinki", industry: "SaaS", company_size: "small" });
   await api.getSearch("job id");
@@ -28,6 +29,11 @@ test("API client uses the frontend's API paths, payloads, and client header", as
   assert.deepEqual(
     calls.map(({ url, init }) => ({ url, method: init.method, body: init.body })),
     [
+      {
+        url: "http://localhost:8000/api/health",
+        method: undefined,
+        body: undefined,
+      },
       {
         url: "http://localhost:8000/api/v1/client",
         method: undefined,
@@ -113,4 +119,8 @@ test("search create sends the same input shape and can poll its job", async () =
 test("argument parsing rejects missing values and validates polling values", () => {
   assert.throws(() => parseArguments(["--api-url"]), /requires a value/);
   assert.throws(() => parseArguments(["--interval", "0"]), /positive integer/);
+});
+
+test("default polling cadence stays below the local API rate limit", () => {
+  assert.equal(parseArguments(["search", "get", "job-1"]).options.interval, 3_000);
 });

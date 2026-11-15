@@ -57,6 +57,7 @@ def test_search_response_exposes_criteria_and_live_request_progress() -> None:
     assert response.people_search_stats.requests_in_flight == 2
     assert response.people_search_stats.requests_completed == 3
     assert response.people_search_stats.requests_failed == 1
+    assert response.can_load_more_companies is True
 
 
 class SearchJobSession:

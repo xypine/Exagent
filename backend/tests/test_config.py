@@ -21,6 +21,8 @@ def test_explicit_psycopg_url_is_unchanged() -> None:
 def test_company_search_result_cap_cannot_exceed_fifty() -> None:
     with pytest.raises(ValidationError):
         Settings(company_search_max_results=51)
+    with pytest.raises(ValidationError):
+        Settings(company_search_initial_results=51)
 
 
 def test_matching_top_n_stays_between_three_and_five() -> None:

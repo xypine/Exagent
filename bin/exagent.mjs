@@ -7,7 +7,10 @@ import { pathToFileURL } from "node:url";
 
 const DEFAULT_API_URL = "http://localhost:8000";
 const DEFAULT_STATE_FILE = ".exagent-cli.json";
-const DEFAULT_INTERVAL_MS = 1_000;
+// The local API's default limit is 30 requests per 60 seconds.  A three-second
+// polling cadence leaves room for the command that started the operation and
+// other requests made by the same anonymous client.
+const DEFAULT_INTERVAL_MS = 3_000;
 const DEFAULT_TIMEOUT_MS = 120_000;
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -27,6 +30,7 @@ Options:
   --help                Show this help
 
 Commands:
+  health
   client
   search create --area <area> --industry <industry> --company-size <small|medium|large>
   search get <job-id>
@@ -37,6 +41,7 @@ Commands:
   match get <job-id> <run-id>
 
 Examples:
+  pnpm agent -- health
   pnpm agent -- client
   pnpm agent -- search create --area Helsinki --industry SaaS --company-size small --wait
   pnpm agent -- person research <job-id> <person-id> --wait --json
@@ -153,6 +158,7 @@ export function createApiClient({ apiUrl, clientId, fetchImpl = fetch }) {
   }
 
   return {
+    getHealth: () => request("/api/health"),
     getClient: () => request("/api/v1/client"),
     createSearch: (input) =>
       request("/api/v1/searches", { method: "POST", body: JSON.stringify(input) }),
@@ -225,7 +231,9 @@ export async function run(argv, dependencies = {}) {
   const [resource, action, ...ids] = positionals;
   let response;
 
-  if (resource === "client" && action === undefined) {
+  if (resource === "health" && action === undefined) {
+    response = await api.getHealth();
+  } else if (resource === "client" && action === undefined) {
     response = await api.getClient();
   } else if (resource === "search" && action === "create") {
     const input = searchInput(options);
@@ -304,6 +312,7 @@ export function formatResponse(response) {
   if (typeof response.person_id === "string") return `Person research ${response.person_id}${status}`;
   if (typeof response.id === "string") return `Match run ${response.id}${status}`;
   if (typeof response.client_id === "string") return `Client ${response.client_id}`;
+  if (typeof response.status === "string") return `API ${response.status}`;
   return JSON.stringify(response, null, 2);
 }
 
