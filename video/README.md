@@ -34,6 +34,28 @@ to support the picture rather than duplicating every on-screen statement, then
 add it as a separate Remotion asset so picture edits do not require
 re-recording a browser demo.
 
+## Recording the real frontend
+
+Use the deterministic frontend mocks for repeatable footage rather than live
+provider output. In one terminal, start the frontend:
+
+```bash
+VITE_USE_MOCKS=true pnpm --dir frontend dev --host 127.0.0.1 --port 4173
+```
+
+Then, from the repository root and inside the development shell, record either
+the actual app flow or the frontend's How it works pipeline:
+
+```bash
+nix develop --command node video/scripts/record-browser-demo.mjs app
+nix develop --command node video/scripts/record-browser-demo.mjs pipeline
+```
+
+The captures are written under `video/out/recordings/` and ignored by Git. The
+script drives Chromium through its DevTools protocol: the form, progress,
+results, public-background modal, and About-you panel are all real frontend
+states, not recreated video UI.
+
 ## Editorial note
 
 All company and person data in this composition are intentionally illustrative.
