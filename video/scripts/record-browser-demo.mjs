@@ -10,8 +10,8 @@ const mode = process.argv[2] ?? "app";
 const fps = 12;
 const width = 1920;
 const height = 1080;
-const durationMs = mode === "pipeline" ? 13_000 : 14_000;
-const output = resolve(root, "video/out/recordings", `${mode}.mp4`);
+const durationMs = mode === "pipeline" ? 13_000 : 20_000;
+const output = resolve(root, "video/public/recordings", `${mode}.mp4`);
 const frames = resolve(root, "video/out/recordings", `${mode}-frames`);
 const devtoolsPort = mode === "pipeline" ? 9334 : 9333;
 const browser = process.env.CHROMIUM ?? "chromium";
@@ -150,6 +150,33 @@ async function main() {
         await wait(85);
       }
     };
+    const clickByText = async (text) => {
+      const result = await evaluate(`(() => {
+        const element = [...document.querySelectorAll('button')].find((button) =>
+          button.textContent?.includes(${JSON.stringify(text)}),
+        );
+        if (!element) return null;
+        element.scrollIntoView({ block: 'center', behavior: 'instant' });
+        const rect = element.getBoundingClientRect();
+        return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+      })()`);
+      const point = result.result.value;
+      if (!point) return;
+      await client.send("Input.dispatchMouseEvent", {
+        type: "mousePressed",
+        x: point.x,
+        y: point.y,
+        button: "left",
+        clickCount: 1,
+      });
+      await client.send("Input.dispatchMouseEvent", {
+        type: "mouseReleased",
+        x: point.x,
+        y: point.y,
+        button: "left",
+        clickCount: 1,
+      });
+    };
 
     const actions = mode === "pipeline"
       ? [
@@ -167,6 +194,7 @@ async function main() {
           [8_800, () => click("button[aria-label='Close']")],
           [9_600, () => click("button[aria-label='Expand Sharpen your matches']")],
           [10_200, () => type("textarea", "TypeScript and React graduate interested in product teams." )],
+          [15_700, () => clickByText("Refresh scores with this profile")],
         ];
     let actionIndex = 0;
     const started = Date.now();

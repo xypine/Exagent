@@ -4,7 +4,10 @@ import {
   Easing,
   Img,
   interpolate,
+  OffthreadVideo,
+  Sequence,
   spring,
+  staticFile,
   useCurrentFrame,
 } from "remotion";
 
@@ -13,7 +16,6 @@ import logo from "../../frontend/public/logo.svg";
 import { ApplicantSea } from "./sections/ApplicantSea";
 import { ManualFriction } from "./sections/ManualFriction";
 import { OpportunityLandscape } from "./sections/OpportunityLandscape";
-import { ProductFlow } from "./sections/ProductFlow";
 import { scenes } from "./script";
 
 const navy = "#0b1b3f";
@@ -162,14 +164,14 @@ function Outcome() {
         <div style={{ padding: "28px 32px 22px", background: "linear-gradient(90deg, rgb(67 56 202 / .10), transparent)", borderBottom: `1px solid ${line}` }}>
           <div style={{ color: star, fontSize: 13, fontWeight: 850, letterSpacing: 1, textTransform: "uppercase" }}>Ranked contact</div>
           <div style={{ marginTop: 8, display: "flex", alignItems: "start", justifyContent: "space-between" }}>
-            <div><div style={{ fontSize: 35, fontWeight: 800, letterSpacing: -1.6 }}>Matti Meikäläinen</div><div style={{ marginTop: 5, color: muted, fontSize: 18 }}>CTO · Dream Company</div></div>
-            <div style={{ width: 70, height: 70, borderRadius: "50%", display: "grid", placeItems: "center", background: "conic-gradient(#4338ca 92%, #e9edf7 0)", fontSize: 20, fontWeight: 850 }}><div style={{ width: 54, height: 54, borderRadius: "50%", display: "grid", placeItems: "center", background: surface }}>92</div></div>
+            <div><div style={{ fontSize: 35, fontWeight: 800, letterSpacing: -1.6 }}>Alan Parson</div><div style={{ marginTop: 5, color: muted, fontSize: 18 }}>CTO · Aurora Robotics</div></div>
+            <div style={{ width: 70, height: 70, borderRadius: "50%", display: "grid", placeItems: "center", background: "conic-gradient(#4338ca 80%, #e9edf7 0)", fontSize: 20, fontWeight: 850 }}><div style={{ width: 54, height: 54, borderRadius: "50%", display: "grid", placeItems: "center", background: surface }}>80</div></div>
           </div>
         </div>
         <div style={{ padding: "28px 32px" }}>
           <div style={{ color: muted, fontSize: 12, fontWeight: 800, letterSpacing: 1, textTransform: "uppercase" }}>Why now</div>
           <p style={{ margin: "10px 0 0", color: navy, fontSize: 22, lineHeight: 1.36 }}>
-            Technical leadership, TypeScript experience, and developer-tools context—each reason is visible.
+            Leads Aurora Robotics’ engineering organization. The public context stays visible.
           </p>
           <div style={{ marginTop: 26, borderRadius: 14, padding: "17px 18px", background: "rgb(67 56 202 / .07)", border: "1px solid rgb(67 56 202 / .19)", color: signal, opacity: reason, transform: `translateY(${(1 - reason) * 16}px)`, fontSize: 17, fontWeight: 700 }}>
             Start with a thoughtful question about their next stage of growth.
@@ -177,6 +179,40 @@ function Outcome() {
         </div>
       </div>
     </Page>
+  );
+}
+
+function RecordedProductSurface({ duration, src }: { duration: number; src: string }) {
+  const frame = useCurrentFrame();
+  const fadeIn = enter(frame, 0, 12);
+  const fadeOut = interpolate(frame, [duration - 12, duration], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  return (
+    <AbsoluteFill style={{ background: surface, opacity: fadeIn * fadeOut }}>
+      <OffthreadVideo
+        src={staticFile(src)}
+        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+      />
+    </AbsoluteFill>
+  );
+}
+
+function RecordedProduct({
+  from,
+  duration,
+  src,
+}: {
+  from: number;
+  duration: number;
+  src: string;
+}) {
+  return (
+    <Sequence from={from} durationInFrames={duration}>
+      <RecordedProductSurface duration={duration} src={src} />
+    </Sequence>
   );
 }
 
@@ -213,7 +249,8 @@ export function ExagentDemo() {
       <ApplicantSea {...scenes.competition} />
       <OpportunityLandscape {...scenes.landscape} />
       <ManualFriction {...scenes.friction} />
-      <ProductFlow {...scenes.product} />
+      <RecordedProduct {...scenes.pipeline} src="recordings/pipeline.mp4" />
+      <RecordedProduct {...scenes.product} src="recordings/app.mp4" />
       <Outcome />
       <EndCard />
     </AbsoluteFill>

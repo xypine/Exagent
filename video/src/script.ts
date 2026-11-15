@@ -34,7 +34,8 @@ export const scenes = {
   competition: { from: 60, duration: 210 },
   landscape: { from: 270, duration: 180 },
   friction: { from: 450, duration: 180 },
-  product: { from: 630, duration: 990 },
+  pipeline: { from: 630, duration: 390 },
+  product: { from: 1020, duration: 600 },
   outcome: { from: 1620, duration: 180 },
   close: { from: 1800, duration: 180 },
 } as const;

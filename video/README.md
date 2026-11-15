@@ -1,9 +1,9 @@
 # Exagent demo video
 
 An editable 66-second, 1920×1080 Remotion composition. It is deliberately built
-from code, rather than a screen-recording timeline, so copy, pacing, fictional
-demo records, and visuals can be revised quickly. Its product sequence recreates
-the real Exagent interface with deterministic illustrative data.
+from code, with the product sequence supplied by real browser recordings of
+the frontend. This keeps the storytelling, copy, pacing, and end cards easy to
+revise while letting the product speak in its actual interface.
 
 ## Preview and render
 
@@ -20,10 +20,10 @@ Chromium and FFmpeg from the development environment; set
 
 ## What to edit
 
-- `src/script.ts` — all fictional demo data and scene timing.
+- `src/script.ts` — scene timing and illustrative opening data.
 - `src/Video.tsx` — composition, outcome, and end-card visuals.
-- `src/sections/` — independently editable opening, landscape, friction, and
-  app-flow scenes.
+- `src/sections/` — independently editable opening, landscape, and friction
+  scenes.
 - `src/Root.tsx` — output format and composition duration.
 
 ## Voiceover
@@ -51,8 +51,9 @@ nix develop --command node video/scripts/record-browser-demo.mjs app
 nix develop --command node video/scripts/record-browser-demo.mjs pipeline
 ```
 
-The captures are written under `video/out/recordings/` and ignored by Git. The
-script drives Chromium through its DevTools protocol: the form, progress,
+The MP4 captures are written under `video/public/recordings/`; intermediate
+frames are written under `video/out/recordings/` and ignored by Git. The script
+drives Chromium through its DevTools protocol: the form, progress,
 results, public-background modal, and About-you panel are all real frontend
 states, not recreated video UI.
 
