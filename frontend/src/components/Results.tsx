@@ -3,7 +3,7 @@ import {
   createQuery,
   useQueryClient,
 } from "@tanstack/solid-query";
-import { createEffect, createSignal, For, Show } from "solid-js";
+import { createEffect, createMemo, createSignal, For, Show } from "solid-js";
 
 import {
   getMatchRun,
@@ -13,6 +13,7 @@ import {
   startMatchRun,
   storeProfile,
 } from "../api";
+import { rankCompanies } from "../companyRanking";
 import type {
   Company,
   JobStatus,
@@ -337,6 +338,29 @@ export function Results(props: {
   const running = () =>
     job.data?.status !== "done" && job.data?.status !== "failed";
 
+  const companyRankingStage = () => {
+    if (job.data?.status !== "done") return "exa" as const;
+    return matchRun.data?.status === "done" ? "matches" : "people";
+  };
+  const rankedCompanies = createMemo(() =>
+    rankCompanies(
+      job.data?.companies ?? [],
+      job.data?.people ?? [],
+      matchRun.data?.results ?? [],
+      companyRankingStage(),
+    ),
+  );
+  const companyRankingLabel = () => {
+    switch (companyRankingStage()) {
+      case "people":
+        return "Ranked by verified key people, then hiring influence.";
+      case "matches":
+        return "Ranked by final match score and scored people; key-people signals break ties.";
+      default:
+        return "Ordered by Exa relevance.";
+    }
+  };
+
   const input = (): SearchInput | undefined => {
     if (props.input) return props.input;
     if (!job.data || job.data.company_size === null) return undefined;
@@ -587,6 +611,9 @@ export function Results(props: {
 
       <div class="mt-8">
         <section class="space-y-4">
+          <Show when={(job.data?.companies.length ?? 0) > 0}>
+            <p class="font-mono text-xs text-dim">{companyRankingLabel()}</p>
+          </Show>
           <Show when={(job.data?.companies.length ?? 0) === 0 && running()}>
             <For each={[0, 1, 2]}>
               {() => (
@@ -603,7 +630,7 @@ export function Results(props: {
               No matches yet — try a broader area or industry.
             </p>
           </Show>
-          <For each={job.data?.companies}>
+          <For each={rankedCompanies()}>
             {(company, i) => {
               const people = () =>
                 job.data?.people.filter(
