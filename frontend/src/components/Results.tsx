@@ -17,6 +17,7 @@ import { rankCompanies } from "../companyRanking";
 import type {
   Company,
   JobStatus,
+  MatchRunStatus,
   Person,
   PersonMatch,
   SearchInput,
@@ -24,10 +25,11 @@ import type {
 import { InsightsPanel } from "./InsightsPanel";
 import { Modal } from "./Modal";
 
-const STEPS: { key: JobStatus; label: string }[] = [
-  { key: "finding_companies", label: "Finding companies" },
-  { key: "finding_people", label: "Finding key people" },
-  { key: "done", label: "Done" },
+const STEPS = [
+  "Finding companies",
+  "Finding key people",
+  "Researching & scoring matches",
+  "Done",
 ];
 
 const COMPANY_SIZE_LABELS: Record<SearchInput["company_size"], string> = {
@@ -36,15 +38,22 @@ const COMPANY_SIZE_LABELS: Record<SearchInput["company_size"], string> = {
   large: "Enterprise",
 };
 
-function stepIndex(status: JobStatus | undefined) {
-  if (status === "done") return 2;
+function stepIndex(
+  status: JobStatus | undefined,
+  matchStatus: MatchRunStatus | undefined,
+) {
+  if (status === "done") return matchStatus === "done" ? 3 : 2;
   if (status === "finding_people") return 1;
   return 0;
 }
 
-function stepIsComplete(status: JobStatus | undefined, index: number) {
-  if (status === "done") return true;
-  return status === "finding_people" && index === 0;
+function stepIsComplete(
+  status: JobStatus | undefined,
+  matchStatus: MatchRunStatus | undefined,
+  index: number,
+) {
+  const currentStep = stepIndex(status, matchStatus);
+  return currentStep === STEPS.length - 1 || index < currentStep;
 }
 
 function People(props: {
@@ -335,8 +344,16 @@ export function Results(props: {
     }
   });
 
-  const running = () =>
-    job.data?.status !== "done" && job.data?.status !== "failed";
+  const running = () => {
+    if (job.data?.status !== "done" && job.data?.status !== "failed") {
+      return true;
+    }
+    return (
+      job.data?.status === "done" &&
+      matchRun.data?.status !== "done" &&
+      matchRun.data?.status !== "failed"
+    );
+  };
 
   const companyRankingStage = () => {
     if (job.data?.status !== "done") return "exa" as const;
@@ -406,7 +423,7 @@ export function Results(props: {
         </button>
       </div>
 
-      <ol class="mt-6 grid grid-cols-3 gap-2 text-xs">
+      <ol class="mt-6 grid grid-cols-4 gap-2 text-xs">
         <For each={STEPS}>
           {(step, i) => (
             <li
@@ -414,18 +431,31 @@ export function Results(props: {
               classList={{
                 "border-star bg-star/80 text-signal-ink": stepIsComplete(
                   job.data?.status,
+                  matchRun.data?.status,
                   i(),
                 ),
                 "border-star text-star":
-                  !stepIsComplete(job.data?.status, i()) &&
-                  i() === stepIndex(job.data?.status),
+                  !stepIsComplete(
+                    job.data?.status,
+                    matchRun.data?.status,
+                    i(),
+                  ) &&
+                  i() === stepIndex(job.data?.status, matchRun.data?.status),
                 "border-line text-dim":
-                  !stepIsComplete(job.data?.status, i()) &&
-                  i() > stepIndex(job.data?.status),
+                  !stepIsComplete(
+                    job.data?.status,
+                    matchRun.data?.status,
+                    i(),
+                  ) && i() > stepIndex(job.data?.status, matchRun.data?.status),
               }}
             >
-              {step.label}
-              <Show when={running() && i() === stepIndex(job.data?.status)}>
+              {step}
+              <Show
+                when={
+                  running() &&
+                  i() === stepIndex(job.data?.status, matchRun.data?.status)
+                }
+              >
                 <span class="absolute inset-y-0 left-0 w-1/3 animate-scan bg-star/15" />
               </Show>
             </li>

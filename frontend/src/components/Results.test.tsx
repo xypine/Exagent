@@ -442,7 +442,7 @@ describe("Results", () => {
     ).not.toBeNull();
   });
 
-  it("fills every progress block when the search is complete", async () => {
+  it("fills every progress block when matching is complete", async () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
@@ -456,8 +456,14 @@ describe("Results", () => {
     await screen.findByText(
       "Company search complete — no more companies to load.",
     );
+    await screen.findByText("1/1 scored · done");
 
-    for (const label of ["Finding companies", "Finding key people", "Done"]) {
+    for (const label of [
+      "Finding companies",
+      "Finding key people",
+      "Researching & scoring matches",
+      "Done",
+    ]) {
       const block = screen.getByText(label).closest("li");
       expect(block?.classList.contains("bg-star/80")).toBe(true);
       expect(block?.classList.contains("text-signal-ink")).toBe(true);
@@ -485,11 +491,56 @@ describe("Results", () => {
 
     const companies = screen.getByText("Finding companies").closest("li");
     const people = screen.getByText("Finding key people").closest("li");
+    const matches = screen
+      .getByText("Researching & scoring matches")
+      .closest("li");
     const done = screen.getByText("Done").closest("li");
 
     expect(companies?.classList.contains("bg-star/80")).toBe(true);
     expect(people?.classList.contains("bg-star/80")).toBe(false);
     expect(people?.classList.contains("border-star")).toBe(true);
+    expect(matches?.classList.contains("bg-star/80")).toBe(false);
+    expect(done?.classList.contains("bg-star/80")).toBe(false);
+  });
+
+  it("keeps Done pending while matches are being researched and scored", async () => {
+    vi.mocked(startMatchRun).mockResolvedValue({
+      id: "match-1",
+      status: "researching",
+      candidate_count: 1,
+      completed_count: 0,
+      results: [],
+    });
+    vi.mocked(getMatchRun).mockResolvedValue({
+      id: "match-1",
+      status: "matching",
+      candidate_count: 1,
+      completed_count: 0,
+      results: [],
+    });
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    render(() => (
+      <QueryClientProvider client={queryClient}>
+        <Results jobId="job-1" onReset={() => {}} />
+      </QueryClientProvider>
+    ));
+
+    await screen.findByText("0/1 scored · matching");
+
+    const companies = screen.getByText("Finding companies").closest("li");
+    const people = screen.getByText("Finding key people").closest("li");
+    const matches = screen
+      .getByText("Researching & scoring matches")
+      .closest("li");
+    const done = screen.getByText("Done").closest("li");
+
+    expect(companies?.classList.contains("bg-star/80")).toBe(true);
+    expect(people?.classList.contains("bg-star/80")).toBe(true);
+    expect(matches?.classList.contains("bg-star/80")).toBe(false);
+    expect(matches?.classList.contains("border-star")).toBe(true);
     expect(done?.classList.contains("bg-star/80")).toBe(false);
   });
 
