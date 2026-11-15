@@ -4,7 +4,7 @@
 
 Create a programmatic, editable demo video for a Junction hackathon audience:
 other attendees and the challenge partner. It must be at most two minutes;
-the current target is a 65–75 second landscape cut.
+the current target is a 40–60 second landscape cut (approximately 50 seconds).
 
 The video should communicate, without relying on narration, that applying to an
 existing job post makes it hard to stand out; a better path can be finding a
@@ -51,36 +51,68 @@ and text economy rather than rewriting it:
 6. **One compelling person to contact**
 7. **Closing statement**
 
-## Opening visual: application sea
+## Current creative decisions
 
-The opening metaphor is a calm, abstract sea: a gently wavy matrix of
-application dots. Our applicant begins distinct just long enough to establish
-their point of view, then blends into the same visual treatment as every other
-dot.
+These decisions are the brief for the next edit and take precedence over
+earlier exploratory language in this plan:
 
-This represents difficulty differentiating from a large existing applicant
-pool. It must not be stressful, hostile, or a depiction of rejection:
+- **Brand and UI:** preserve the light Exagent visual language. The product
+  scenes should closely recreate the current application rather than invent a
+  dashboard: its search form, company/key-people results, first-pass
+  decision-power state, profile-match expansion, score factors, public
+  background, and source evidence.
+- **Opening metaphor:** keep the close-up logo opening, then turn the former
+  application sea into an angled forest of undiscovered employer “gems.” The
+  viewer is the searcher. Finding a promising route through an unmarked forest
+  is difficult and confusing, without suggesting that the candidate is
+  unqualified or rejected. Avoid literal people in this metaphor unless they
+  have a clear, necessary role.
+- **Pipeline:** it should be short but legible, explaining the hand-off from
+  input to companies, people, public research, scoring, and a shortlist. It
+  must be a coherent progression, not a fast decorative graph.
+- **First pass / second pass:** the first pass starts with no profile, so only
+  decision power is assessed. The second pass literally types a nuanced
+  profile into an app-faithful surface; it changes visible results just as the
+  latest product’s matching flow would. The reason for each change must be
+  inspectable rather than asserted.
+- **Final detail:** make a practical outreach angle the hero. Support it with
+  the person’s public background (including work history), score explanation,
+  evidence sources, and visible gaps where relevant.
+- **End card:** retain a minimal final Exagent card and add a link plus QR
+  code.
 
-- No growing pile of CVs, trash/discard imagery, panic, red alarms, or
-  overwhelming density.
-- No claim that the applicant is weak, unlucky, or unqualified.
-- The dot field should feel calm and neutral; the meaning comes from visual
-  indistinguishability.
+## Opening visual: opportunity forest
 
-The field can then resolve into an opportunity landscape and a path toward
-`Dream Company`.
+The opening metaphor is a calm, abstract forest of hidden employer gems,
+seen at an angle. It represents valuable companies that are hard to discover
+when there are no signposts or a coherent search route. The searcher moves
+through the field; Exagent later gives the exploration a useful direction.
+
+This should not be stressful, hostile, or a depiction of rejection:
+
+- No applicant queue, discarded CVs, panic, red alarms, or dense visual noise.
+- No claim that the searcher is weak, unlucky, or unqualified.
+- The field should feel intriguing rather than threatening; the friction is
+  lack of orientation, not lack of opportunity.
+
+The forest can resolve into a route toward `Dream Company` once the product
+workflow begins.
 
 ## Visual approach
 
 This must be motion graphics, not a sequence of static slides with fades.
 Motion should explain concepts:
 
-- application dots drift in a wavy grid and equalise;
-- a route forms from the applicant toward companies;
-- manual company/person/source research splinters into a tangled network;
-- Exagent's branded form organizes that network into a clear pipeline;
-- companies, people, evidence, and ranking cards physically assemble, sort,
-  connect, and collapse into the final recommendation.
+- employer gems establish depth in the opening forest, while the searcher
+  lacks a route;
+- a short, sequential product pipeline makes the stages of discovery legible;
+- the actual form begins the product journey;
+- app-faithful company and people results establish a decision-power-only
+  first pass;
+- a typed profile expands the existing result cards into evidence-backed
+  matches; the visible score factors and ranking respond;
+- the chosen person opens into an outreach-first detail view with work history,
+  public evidence, and a concrete approach.
 
 Use sparse, integrated on-screen copy. Remove the persistent black caption
 box used in the first animatic. Useful short statements include:
@@ -141,10 +173,16 @@ ignored.
 
 ## Follow-up pass
 
-1. Review the rendered silent cut for timing, line length, and whether the
-   visual transformations read at a glance. The current pacing pattern is
+1. Replace the opening and the fragile pipeline visualization with the
+   opportunity-forest metaphor and a short, understandable sequence.
+2. Recreate the current application’s light form, results, first-pass state,
+   profile match, and insight details closely enough that the demo reads as a
+   product demonstration rather than an invented dashboard.
+3. Make the refined match lead into an outreach angle, supported by work
+   history and transparent score/source evidence.
+4. Add a minimal end card with a real destination link and QR code once that
+   destination is supplied.
+5. Review the rendered silent cut for timing, line length, and whether the
+   visual transformations read at a glance. The pacing pattern remains
    transition, hold, transition: quick, graceful moves followed by a readable
    beat before the next idea.
-2. Tighten or replace any copy that asks the viewer to read too much.
-3. Only after the muted edit works, optionally add ElevenLabs voiceover and a
-   restrained music/sound layer.

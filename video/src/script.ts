@@ -5,11 +5,12 @@ const atBar = (bar: number) => bar * 4 * FRAMES_PER_BEAT;
 
 // This is intentionally a fictional cue, not an audio asset. It gives the
 // picture a reliable musical grid now and lets a future track be edited or
-// replaced without rebuilding the visual pacing. 25 bars at 120 BPM = 50 sec.
+// replaced without rebuilding the visual pacing. The edit is 60 seconds;
+// individual scene boundaries follow the approved editorial timing below.
 export const musicCue = {
   bpm: BPM,
   beatsPerBar: 4,
-  bars: 25,
+  bars: 30,
   character: "confident, precise electronic pulse with a warm lift",
 } as const;
 
@@ -27,16 +28,15 @@ export const demo = {
 };
 
 export const scenes = {
-  // Every entry is a downbeat. The short holds after each arrival make the
-  // edit feel intentional rather than like a sequence of rushed slides.
-  intro: { from: atBar(0), duration: atBar(1) },
-  competition: { from: atBar(1), duration: atBar(2) },
-  reframe: { from: atBar(3), duration: atBar(2) },
-  pipeline: { from: atBar(5), duration: atBar(3) },
-  workflow: { from: atBar(8), duration: atBar(2) },
-  results: { from: atBar(10), duration: atBar(9) },
-  contact: { from: atBar(19), duration: atBar(4) },
-  close: { from: atBar(23), duration: atBar(2) },
+  // These are the approved 60-second rewrite timings, in frames at 30 fps.
+  // Holds are built into each scene rather than stretched by the editor.
+  intro: { from: 0, duration: 60 },
+  competition: { from: 60, duration: 210 },
+  landscape: { from: 270, duration: 180 },
+  friction: { from: 450, duration: 180 },
+  product: { from: 630, duration: 810 },
+  outcome: { from: 1440, duration: 180 },
+  close: { from: 1620, duration: 180 },
 } as const;
 
 // On-screen language belongs inside each visual rather than in a persistent
