@@ -48,7 +48,7 @@ const base: React.CSSProperties = {
 
 function Scene({ from, duration, children }: { from: number; duration: number; children: React.ReactNode }) {
   const frame = useCurrentFrame();
-  return <AbsoluteFill style={{ opacity: enter(frame, from) * leave(frame, from + duration) }}>{children}</AbsoluteFill>;
+  return <AbsoluteFill style={{ opacity: enter(frame, from, 10) * leave(frame, from + duration, 10) }}>{children}</AbsoluteFill>;
 }
 
 function Background() {
@@ -81,6 +81,22 @@ function Card({ children, style }: { children: React.ReactNode; style?: React.CS
   return <div style={{ borderRadius: 24, border: `1px solid ${line}`, background: surface, boxShadow: shadow, ...style }}>{children}</div>;
 }
 
+function LogoIntro() {
+  const frame = useCurrentFrame();
+  const local = frame - scenes.intro.from;
+  const settle = spring({ frame: local, fps: 30, config: { damping: 17, stiffness: 110 } });
+  const exit = leave(local, scenes.intro.duration, 12);
+  return <Scene {...scenes.intro}>
+    <Background />
+    <div style={{ display: "grid", height: "100%", placeItems: "center", opacity: exit, transform: `scale(${0.9 + settle * 0.1})` }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
+        <Img src={logo} style={{ width: 164, height: 164, objectFit: "contain" }} />
+        <div style={{ fontSize: 104, fontWeight: 700, letterSpacing: -6 }}>Exagent</div>
+      </div>
+    </div>
+  </Scene>;
+}
+
 const seaDots = Array.from({ length: 104 }, (_, i) => ({
   x: 9 + (i % 13) * 6.9 + (i % 2) * 1.2,
   y: 28 + Math.floor(i / 13) * 7 + Math.sin(i * 1.7) * 1.1,
@@ -89,7 +105,7 @@ const seaDots = Array.from({ length: 104 }, (_, i) => ({
 function SeaDot({ x, y, i, local, featured = false }: { x: number; y: number; i: number; local: number; featured?: boolean }) {
   const driftX = Math.sin(local / 28 + i * 1.93) * 5;
   const driftY = Math.cos(local / 25 + i * 1.17) * 8 + Math.sin(local / 45 + i) * 6;
-  const blend = enter(local, 245, 70);
+  const blend = enter(local, 180, 45);
   const color = featured && blend < 0.98 ? star : signal;
   const size = featured && blend < 0.98 ? 20 - blend * 9 : 10;
   return <div style={{ position: "absolute", left: `${x}%`, top: `${y + driftY / 12}%`, width: size, height: size, marginLeft: -size / 2, marginTop: -size / 2, borderRadius: "50%", background: color, opacity: featured ? 1 : 0.62 + (i % 3) * 0.1, transform: `translateX(${driftX}px)`, boxShadow: featured && blend < 0.9 ? "0 0 0 7px rgb(67 56 202 / .13)" : "none" }} />;
@@ -125,7 +141,7 @@ function Reframe() {
   const frame = useCurrentFrame();
   const local = frame - scenes.reframe.from;
   const t = enter(local, 18, 26);
-  const route = enter(local, 125, 85);
+  const route = enter(local, 90, 60);
   return <Scene {...scenes.reframe}>
     <Background /><Header />
     <div style={{ position: "absolute", left: 130, top: 220, width: 620, opacity: t }}>
@@ -163,9 +179,9 @@ function ResearchChip({ text, x, y, angle, local, i }: { text: string; x: number
 function Workflow() {
   const frame = useCurrentFrame();
   const local = frame - scenes.workflow.from;
-  const organize = enter(local, 230, 38);
-  const typed = Math.floor(interpolate(local, [345, 460], [0, demo.city.length], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }));
-  const start = enter(local, 470, 18);
+  const organize = enter(local, 120, 30);
+  const typed = Math.floor(interpolate(local, [180, 240], [0, demo.city.length], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }));
+  const start = enter(local, 300, 15);
   const chips = [
     ["company site", 19, 24, -7], ["news", 75, 19, 8], ["team page", 79, 57, -8], ["role history", 20, 66, 7], ["public source", 52, 16, -3], ["funding", 52, 76, 4],
   ] as const;
@@ -187,10 +203,10 @@ function Workflow() {
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 5, background: `linear-gradient(90deg, ${signal}, ${star})`, borderRadius: "24px 24px 0 0" }} />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}><div><Eyebrow>Exagent organizes the work.</Eyebrow><h2 style={{ margin: "8px 0 0", fontSize: 45, letterSpacing: -2.2 }}>Start with where you want to contribute.</h2></div><div style={{ color: muted, fontSize: 15, fontWeight: 700, paddingTop: 12 }}>ILLUSTRATIVE DEMO</div></div>
         <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr .72fr", gap: 18, marginTop: 42 }}>
-          {[["City", demo.city.slice(0, typed)], ["Industry", local > 420 ? demo.industry : ""], ["Stage", local > 455 ? "Startup" : ""]].map(([label, value], i) => <div key={label}><div style={{ color: star, fontSize: 14, fontWeight: 750, textTransform: "uppercase", letterSpacing: 1, marginBottom: 9 }}>{label}</div><div style={{ height: 64, borderRadius: 12, boxSizing: "border-box", background: surface, border: `1px solid ${i === 0 && typed > 0 ? "rgb(67 56 202 / .65)" : line}`, padding: "18px 17px", fontSize: 20, color: value ? navy : muted }}>{value || "Select…"}{i === 0 && typed > 0 && typed < demo.city.length ? <span style={{ color: star }}>|</span> : null}</div></div>)}
+          {[["City", demo.city.slice(0, typed)], ["Industry", local > 240 ? demo.industry : ""], ["Stage", local > 270 ? "Startup" : ""]].map(([label, value], i) => <div key={label}><div style={{ color: star, fontSize: 14, fontWeight: 750, textTransform: "uppercase", letterSpacing: 1, marginBottom: 9 }}>{label}</div><div style={{ height: 64, borderRadius: 12, boxSizing: "border-box", background: surface, border: `1px solid ${i === 0 && typed > 0 ? "rgb(67 56 202 / .65)" : line}`, padding: "18px 17px", fontSize: 20, color: value ? navy : muted }}>{value || "Select…"}{i === 0 && typed > 0 && typed < demo.city.length ? <span style={{ color: star }}>|</span> : null}</div></div>)}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 22, marginTop: 44 }}><div style={{ borderRadius: 12, background: signal, color: "#fff", padding: "17px 26px", fontWeight: 750, fontSize: 19, boxShadow: "0 11px 22px -12px rgb(30 58 138 / .7)", transform: `scale(${0.96 + start * .04})` }}>Find opportunities</div>{start > 0 && <div style={{ color: muted, fontSize: 17, opacity: start }}>Mapping companies <span style={{ color: star }}>→</span> finding people <span style={{ color: star }}>→</span> checking evidence</div>}</div>
-        {start > 0 && <div style={{ position: "absolute", left: 42, right: 42, bottom: 42, height: 84, display: "flex", gap: 10, alignItems: "center" }}>{["Companies", "People", "Evidence", "Ranking"].map((step, i) => <div key={step} style={{ flex: 1, position: "relative", height: 8, borderRadius: 99, background: line, overflow: "hidden" }}><div style={{ position: "absolute", inset: 0, transformOrigin: "left", transform: `scaleX(${clamp((local - 500 - i * 34) / 52)})`, background: i === 3 ? star : signal }} /><div style={{ position: "absolute", top: 18, color: muted, whiteSpace: "nowrap", fontSize: 14, fontWeight: 650 }}>{step}</div></div>)}</div>}
+        {start > 0 && <div style={{ position: "absolute", left: 42, right: 42, bottom: 42, height: 84, display: "flex", gap: 10, alignItems: "center" }}>{["Companies", "People", "Evidence", "Ranking"].map((step, i) => <div key={step} style={{ flex: 1, position: "relative", height: 8, borderRadius: 99, background: line, overflow: "hidden" }}><div style={{ position: "absolute", inset: 0, transformOrigin: "left", transform: `scaleX(${clamp((local - 330 - i * 30) / 32)})`, background: i === 3 ? star : signal }} /><div style={{ position: "absolute", top: 18, color: muted, whiteSpace: "nowrap", fontSize: 14, fontWeight: 650 }}>{step}</div></div>)}</div>}
       </Card>
     </div>
   </Scene>;
@@ -204,7 +220,7 @@ function Results() {
   const frame = useCurrentFrame();
   const local = frame - scenes.results.from;
   const reveal = spring({ frame: Math.max(0, local - 26), fps: 30, config: { damping: 18, mass: 0.7 } });
-  const personReveal = spring({ frame: Math.max(0, local - 170), fps: 30, config: { damping: 19, mass: 0.7 } });
+  const personReveal = spring({ frame: Math.max(0, local - 120), fps: 30, config: { damping: 19, mass: 0.7 } });
   const matches = [
     ["Dream Company", "SaaS · Helsinki", 92, star], ["Orbit Labs", "Climate tech · Helsinki", 84, teal], ["Northstar Systems", "Developer tools · Helsinki", 79, signal], ["Signal Works", "B2B software · Helsinki", 74, amber],
   ] as const;
@@ -222,7 +238,7 @@ function Results() {
       </Card>
       <Card style={{ overflow: "hidden", borderColor: "rgb(67 56 202 / .35)", opacity: personReveal, transform: `translateY(${(1 - personReveal) * 36}px)` }}>
         <div style={{ padding: "27px 30px 22px", background: "linear-gradient(90deg, rgb(67 56 202 / .08), transparent)" }}><div style={{ color: star, fontSize: 14, fontWeight: 800, letterSpacing: 1, textTransform: "uppercase" }}>{demo.company}</div><h3 style={{ margin: "8px 0 7px", fontSize: 32, letterSpacing: -1.5 }}>People who can open a conversation</h3><p style={{ margin: 0, color: muted, fontSize: 16 }}>Ranked by relevance and ability to influence a hiring decision.</p></div>
-        {people.map(([name, title, score], i) => { const p = enter(local, 205 + i * 24, 18); const active = i === 0; return <div key={name} style={{ display: "flex", alignItems: "center", gap: 18, padding: "16px 30px", borderTop: `1px solid ${line}`, background: active ? "rgb(67 56 202 / .06)" : surface, opacity: p, transform: `translateX(${(1 - p) * 32}px)` }}><div style={{ width: 39, height: 39, borderRadius: "50%", background: active ? star : "#e9edf7", color: active ? "#fff" : signal, display: "grid", placeItems: "center", fontWeight: 750 }}>{name.split(" ").map((part) => part[0]).join("")}</div><div style={{ flex: 1 }}><div style={{ fontSize: 19, fontWeight: 750 }}>{name}</div><div style={{ color: muted, marginTop: 2, fontSize: 15 }}>{title}</div></div><div style={{ color: active ? star : muted, fontWeight: 800, fontSize: 20 }}>{score}</div></div>; })}
+        {people.map(([name, title, score], i) => { const p = enter(local, 150 + i * 30, 15); const active = i === 0; return <div key={name} style={{ display: "flex", alignItems: "center", gap: 18, padding: "16px 30px", borderTop: `1px solid ${line}`, background: active ? "rgb(67 56 202 / .06)" : surface, opacity: p, transform: `translateX(${(1 - p) * 32}px)` }}><div style={{ width: 39, height: 39, borderRadius: "50%", background: active ? star : "#e9edf7", color: active ? "#fff" : signal, display: "grid", placeItems: "center", fontWeight: 750 }}>{name.split(" ").map((part) => part[0]).join("")}</div><div style={{ flex: 1 }}><div style={{ fontSize: 19, fontWeight: 750 }}>{name}</div><div style={{ color: muted, marginTop: 2, fontSize: 15 }}>{title}</div></div><div style={{ color: active ? star : muted, fontWeight: 800, fontSize: 20 }}>{score}</div></div>; })}
       </Card>
     </div>
   </Scene>;
@@ -232,8 +248,8 @@ function Contact() {
   const frame = useCurrentFrame();
   const local = frame - scenes.contact.from;
   const card = spring({ frame: Math.max(0, local - 12), fps: 30, config: { damping: 16, stiffness: 115 } });
-  const evidence = enter(local, 125, 22);
-  const angle = enter(local, 245, 25);
+  const evidence = enter(local, 60, 18);
+  const angle = enter(local, 120, 20);
   return <Scene {...scenes.contact}>
     <Background /><Header />
     <div style={{ position: "absolute", left: 290, right: 290, top: 177, bottom: 125, opacity: card, transform: `scale(${0.95 + card * .05})` }}>
@@ -264,5 +280,5 @@ function Closing() {
 }
 
 export function ExagentDemo() {
-  return <AbsoluteFill style={base}><Competition /><Reframe /><Workflow /><Results /><Contact /><Closing /></AbsoluteFill>;
+  return <AbsoluteFill style={base}><LogoIntro /><Competition /><Reframe /><Workflow /><Results /><Contact /><Closing /></AbsoluteFill>;
 }

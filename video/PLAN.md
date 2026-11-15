@@ -4,7 +4,7 @@
 
 Create a programmatic, editable demo video for a Junction hackathon audience:
 other attendees and the challenge partner. It must be at most two minutes;
-the current target is a 90–110 second landscape cut.
+the current target is a 65–75 second landscape cut.
 
 The video should communicate, without relying on narration, that applying to an
 existing job post makes it hard to stand out; a better path can be finding a
@@ -14,6 +14,10 @@ find that company and person.
 
 Voiceover is optional polish (likely ElevenLabs), never a dependency. Captions
 must not carry the story alone and there must be no text walls.
+
+For the current silent edit, picture follows a fictional 120 BPM, 4/4 music
+cue: scene entries land on downbeats, while the visual moves land on following
+beats and then hold. No temporary audio asset is required yet.
 
 ## Product and data constraints
 
@@ -138,7 +142,9 @@ ignored.
 ## Follow-up pass
 
 1. Review the rendered silent cut for timing, line length, and whether the
-   visual transformations read at a glance.
+   visual transformations read at a glance. The current pacing pattern is
+   transition, hold, transition: quick, graceful moves followed by a readable
+   beat before the next idea.
 2. Tighten or replace any copy that asks the viewer to read too much.
 3. Only after the muted edit works, optionally add ElevenLabs voiceover and a
    restrained music/sound layer.
